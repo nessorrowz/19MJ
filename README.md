@@ -3,7 +3,7 @@
 | Name                      | NRP        | Field      | Jobdesc                                  |
 | ------------------------- | ---------- | ---------- | ---------------------------------------- |
 | Muhamad Arrayyan	        | 5027231014 | Frontend   | UI Designer                              |
-| Kevin Anugerah Faza       | 5027231027 | Backend    | UI Engineer                              |
+| Kevin Anugerah Faza       | 5027231027 | Backend    | AI Engineer                              |
 | RM. Novian Malcolm B      | 5027231035 | Full-Stack | DevOps / QA                              |
 | Dzaky Faiq                | 5027231047 | Full-stack | Backend / Frontend Developer             |
 | Johanes Edward Nathanael  | 5027231067 | Full-stack | Project Manager / Security Assessor      |
@@ -12,7 +12,7 @@
 19 Million Jobs (19MJ) is a AI Career Development & Hiring Platform
 
 ## Features 
-    
+
 
 ## Tech Stack
    - Frontend: React.js
