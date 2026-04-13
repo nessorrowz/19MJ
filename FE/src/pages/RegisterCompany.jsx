@@ -102,12 +102,8 @@ export default function RegisterCompany() {
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? 'Creating...' : 'Buat Akun Perusahaan'}
           </button>
-
-          <div className="bottom-link" style={{ marginTop: 16 }}>
-            Bukan perusahaan? <Link to="/register">Daftar di sini</Link>
-          </div>
           <div className="bottom-link">
-            Sudah punya akun? <Link to="/company/login">Login Perusahaan</Link>
+            Sudah punya akun? <Link to="/company/login">Log in</Link>
           </div>
         </form>
       </div>
