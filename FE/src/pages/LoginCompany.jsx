@@ -107,7 +107,7 @@ export default function LoginCompany() {
             Belum punya akun perusahaan? <Link to="/company/register">Daftar di sini</Link>
           </div>
           <div className="bottom-link">
-            Kamu kandidat? <Link to="/login">Login sebagai Kandidat</Link>
+            Kamu bukan perusahaan? <Link to="/login">Daftar di sini</Link>
           </div>
         </form>
       </div>
