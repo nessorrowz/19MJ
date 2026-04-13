@@ -104,7 +104,7 @@ export default function RegisterCompany() {
           </button>
 
           <div className="bottom-link" style={{ marginTop: 16 }}>
-            Kandidat? <Link to="/register">Daftar sebagai Kandidat</Link>
+            Bukan perusahaan? <Link to="/register">Daftar di sini</Link>
           </div>
           <div className="bottom-link">
             Sudah punya akun? <Link to="/company/login">Login Perusahaan</Link>
