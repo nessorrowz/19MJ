@@ -27,6 +27,10 @@ export default function RegisterCompany() {
     if (!form.company_name || !form.email || !form.password || !form.confirm) {
       triggerShake(); setError('Nama perusahaan, email, dan password wajib diisi.'); return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      triggerShake(); setError('Format email tidak valid. Contoh: hr@perusahaan.com'); return;
+    }
     if (form.password !== form.confirm) {
       triggerShake(); setError('Password tidak sama.'); return;
     }

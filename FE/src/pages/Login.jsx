@@ -29,6 +29,12 @@ export default function Login() {
       setError('Email dan password wajib diisi.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      triggerShake();
+      setError('Format email tidak valid. Contoh: nama@gmail.com');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -105,9 +111,6 @@ export default function Login() {
 
           <div className="bottom-link">
             Belum punya akun? <Link to="/register">Daftar sebagai Kandidat</Link>
-          </div>
-          <div className="bottom-link">
-            Kamu perusahaan? <Link to="/company/login">Login sebagai Perusahaan</Link>
           </div>
         </form>
       </div>

@@ -31,6 +31,12 @@ export default function LoginCompany() {
       setError('Email dan password wajib diisi.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      triggerShake();
+      setError('Format email tidak valid. Contoh: hr@perusahaan.com');
+      return;
+    }
 
     setLoading(true);
     setError('');

@@ -7,7 +7,7 @@ import './Auth.css';
 // US-001: Register Candidate
 export default function RegisterCandidate() {
   const navigate = useNavigate();
-  const [form, setForm]       = useState({ username: '', email: '', full_name: '', password: '', confirm: '' });
+  const [form, setForm]       = useState({ email: '', full_name: '', password: '', confirm: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   const [shake, setShake]     = useState(false);
@@ -24,8 +24,12 @@ export default function RegisterCandidate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.username || !form.email || !form.password || !form.confirm) {
-      triggerShake(); setError('Semua field wajib diisi.'); return;
+    if (!form.email || !form.password || !form.confirm) {
+      triggerShake(); setError('Email dan password wajib diisi.'); return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      triggerShake(); setError('Format email tidak valid. Contoh: nama@gmail.com'); return;
     }
     if (form.password !== form.confirm) {
       triggerShake(); setError('Password tidak sama.'); return;
@@ -38,7 +42,6 @@ export default function RegisterCandidate() {
     setError('');
     try {
       await api.post('/auth/register/candidate', {
-        username:  form.username,
         email:     form.email,
         password:  form.password,
         full_name: form.full_name || undefined,
@@ -64,14 +67,10 @@ export default function RegisterCandidate() {
           {error && <div className="error-banner">{error}</div>}
 
           <div className="field">
-            <label htmlFor="username">Username</label>
-            <input id="username" name="username" type="text"
-              placeholder="johndoe123" value={form.username} onChange={handleChange} />
-          </div>
-          <div className="field">
             <label htmlFor="email">Email</label>
             <input id="email" name="email" type="email"
-              placeholder="contoh@email.com" value={form.email} onChange={handleChange} />
+              placeholder="nama@gmail.com" value={form.email} onChange={handleChange}
+              autoComplete="email" />
           </div>
           <div className="field">
             <label htmlFor="full_name">Nama Lengkap <span className="optional">(opsional)</span></label>

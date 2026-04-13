@@ -17,18 +17,21 @@ const signToken = (payload) =>
 // POST /api/auth/register/candidate
 // ============================================================
 const registerCandidate = async (req, res) => {
-  const { username, email, password, full_name } = req.body;
+  const { email, password, full_name } = req.body;
 
   // Validasi wajib
-  if (!username || !email || !password) {
-    return res.status(400).json({ message: 'Username, email, dan password wajib diisi.' });
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email dan password wajib diisi.' });
   }
   if (!isValidEmail(email)) {
-    return res.status(400).json({ message: 'Format email tidak valid.' });
+    return res.status(400).json({ message: 'Format email tidak valid. Gunakan email seperti nama@gmail.com.' });
   }
   if (password.length < 6) {
     return res.status(400).json({ message: 'Password minimal 6 karakter.' });
   }
+
+  // Auto-generate username dari email (bagian sebelum @)
+  const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
 
   const client = await pool.connect();
   try {
@@ -43,13 +46,13 @@ const registerCandidate = async (req, res) => {
       return res.status(409).json({ message: 'Email sudah terdaftar.' });
     }
 
-    // Cek username sudah dipakai
-    const usernameCheck = await client.query(
-      'SELECT id FROM candidates WHERE username = $1', [username]
-    );
-    if (usernameCheck.rows.length > 0) {
-      await client.query('ROLLBACK');
-      return res.status(409).json({ message: 'Username sudah digunakan.' });
+    // Generate unique username (tambah angka random jika sudah ada)
+    let username = baseUsername;
+    let usernameCheck = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
+    let counter = 1;
+    while (usernameCheck.rows.length > 0) {
+      username = `${baseUsername}${counter++}`;
+      usernameCheck = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
     }
 
     // Hash password & buat user
