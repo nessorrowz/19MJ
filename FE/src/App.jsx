@@ -3,6 +3,7 @@ import Login            from './pages/Login';
 import RegisterCandidate from './pages/RegisterCandidate';
 import RegisterCompany   from './pages/RegisterCompany';
 import LoginCompany      from './pages/LoginCompany';
+import AuthCallback      from './pages/AuthCallback';
 
 // Protected route
 function PrivateRoute({ children, allowedRole }) {
@@ -60,6 +61,9 @@ export default function App() {
         {/* Legacy redirects */}
         <Route path="/register/candidate" element={<Navigate to="/register"         replace />} />
         <Route path="/register/company"   element={<Navigate to="/company/register" replace />} />
+
+        {/* Google OAuth callback */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Root: redirect sesuai login status & role */}
         <Route path="/" element={<RootRedirect />} />

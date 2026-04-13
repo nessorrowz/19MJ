@@ -75,7 +75,7 @@ export default function Login() {
             <label htmlFor="email">Email</label>
             <input
               id="email" name="email" type="email"
-              placeholder="contoh@email.com"
+              placeholder="nama@gmail.com"
               value={form.email} onChange={handleChange}
               autoComplete="email"
             />
@@ -104,7 +104,11 @@ export default function Login() {
 
           <div className="divider">Or With</div>
 
-          <button type="button" className="btn btn-google">
+          <button
+            type="button"
+            className="btn btn-google"
+            onClick={() => window.location.href = 'http://localhost:3000/api/auth/google'}
+          >
             <GoogleIcon />
             Log in with Google
           </button>

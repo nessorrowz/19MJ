@@ -1,18 +1,33 @@
 const express  = require('express');
 const router   = express.Router();
+const passport = require('../config/passport');
+
+// ── US-001: Register Candidate ────────────────────────────
 const { registerCandidate, registerCompany, login, getMe } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
-// ── US-001: Register Candidate ────────────────────────────
+// Email/password routes
 router.post('/register/candidate', registerCandidate);
+router.post('/register/company',   registerCompany);
+router.post('/login',              login);
+router.get('/me', protect,         getMe);
 
-// ── US-003: Register Company ──────────────────────────────
-router.post('/register/company', registerCompany);
+// ── Google OAuth ──────────────────────────────────────────
+// Step 1: Redirect ke Google
+router.get('/google',
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
 
-// ── US-002 & US-004: Login (Candidate & Company) ─────────
-router.post('/login', login);
-
-// ── Protected ─────────────────────────────────────────────
-router.get('/me', protect, getMe);
+// Step 2: Callback dari Google → redirect ke FE dengan token
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.FE_URL || 'http://localhost:5173'}/login?error=google_failed` }),
+  (req, res) => {
+    const { token, user } = req.user;
+    const feUrl = process.env.FE_URL || 'http://localhost:5173';
+    // Redirect ke FE dengan token di query param (FE akan simpan ke localStorage)
+    const redirectPath = user.role === 'company' ? '/company/dashboard' : '/dashboard';
+    res.redirect(`${feUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}&redirect=${redirectPath}`);
+  }
+);
 
 module.exports = router;
