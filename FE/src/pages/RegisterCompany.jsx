@@ -44,7 +44,7 @@ export default function RegisterCompany() {
         industry:     form.industry || undefined,
         website:      form.website  || undefined,
       });
-      navigate('/login', { state: { registered: true } });
+      navigate('/company/login', { state: { registered: true } });
     } catch (err) {
       triggerShake();
       setError(err.message);
@@ -100,10 +100,10 @@ export default function RegisterCompany() {
           </button>
 
           <div className="bottom-link" style={{ marginTop: 16 }}>
-            Kandidat? <Link to="/register/candidate">Daftar sebagai Kandidat</Link>
+            Kandidat? <Link to="/register">Daftar sebagai Kandidat</Link>
           </div>
           <div className="bottom-link">
-            Sudah punya akun? <Link to="/login">Log in</Link>
+            Sudah punya akun? <Link to="/company/login">Login Perusahaan</Link>
           </div>
         </form>
       </div>
