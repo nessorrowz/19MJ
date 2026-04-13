@@ -114,7 +114,7 @@ export default function Login() {
           </button>
 
           <div className="bottom-link">
-            Belum punya akun? <Link to="/register">Daftar sebagai Kandidat</Link>
+            Belum punya akun? <Link to="/register">Daftar di sini</Link>
           </div>
         </form>
       </div>
