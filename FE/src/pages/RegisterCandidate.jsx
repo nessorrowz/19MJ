@@ -24,8 +24,8 @@ export default function RegisterCandidate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.confirm) {
-      triggerShake(); setError('Email dan password wajib diisi.'); return;
+    if (!form.email || !form.password || !form.confirm || !form.full_name) {
+      triggerShake(); setError('Semua field wajib diisi.'); return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
@@ -44,7 +44,7 @@ export default function RegisterCandidate() {
       await api.post('/auth/register/candidate', {
         email:     form.email,
         password:  form.password,
-        full_name: form.full_name || undefined,
+        full_name: form.full_name,
       });
       navigate('/login', { state: { registered: true } });
     } catch (err) {
@@ -73,7 +73,7 @@ export default function RegisterCandidate() {
               autoComplete="email" />
           </div>
           <div className="field">
-            <label htmlFor="full_name">Nama Lengkap <span className="optional">(opsional)</span></label>
+            <label htmlFor="full_name">Nama Lengkap</label>
             <input id="full_name" name="full_name" type="text"
               placeholder="John Doe" value={form.full_name} onChange={handleChange} />
           </div>

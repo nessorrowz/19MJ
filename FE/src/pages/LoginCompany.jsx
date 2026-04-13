@@ -106,9 +106,6 @@ export default function LoginCompany() {
           <div className="bottom-link" style={{ marginTop: 20 }}>
             Belum punya akun perusahaan? <Link to="/company/register">Daftar di sini</Link>
           </div>
-          <div className="bottom-link">
-            Kamu bukan perusahaan? <Link to="/login">Daftar di sini</Link>
-          </div>
         </form>
       </div>
       <RightPanel />
