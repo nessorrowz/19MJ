@@ -68,6 +68,11 @@ export default function Login() {
             <p>Selamat datang kembali! Masukkan akunmu.</p>
           </div>
 
+          <div className="role-switch">
+            <button type="button" className="active">👨‍💼 Kandidat</button>
+            <button type="button" onClick={() => navigate('/company/login')}>🏢 Perusahaan</button>
+          </div>
+
           {success && <div className="success-banner">{success}</div>}
           {error   && <div className="error-banner">{error}</div>}
 

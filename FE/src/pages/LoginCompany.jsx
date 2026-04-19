@@ -71,6 +71,11 @@ export default function LoginCompany() {
             <p>Masuk dan temukan talenta terbaik untuk timmu.</p>
           </div>
 
+          <div className="role-switch">
+            <button type="button" onClick={() => navigate('/login')}>👨‍💼 Kandidat</button>
+            <button type="button" className="active">🏢 Perusahaan</button>
+          </div>
+
           {success && <div className="success-banner">{success}</div>}
           {error   && <div className="error-banner">{error}</div>}
 
