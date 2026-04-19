@@ -77,3 +77,29 @@ CREATE TRIGGER candidates_updated_at
 CREATE TRIGGER companies_updated_at
   BEFORE UPDATE ON companies
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- â”€â”€ Permintaan reset password berbasis PIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+CREATE TABLE IF NOT EXISTS password_reset_requests (
+  id              SERIAL PRIMARY KEY,
+  user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  email_snapshot   VARCHAR(100) NOT NULL,
+  pin_hash         VARCHAR(255) NOT NULL,
+  expires_at       TIMESTAMP NOT NULL,
+  attempt_count    INTEGER NOT NULL DEFAULT 0,
+  max_attempts     INTEGER NOT NULL DEFAULT 3,
+  verified_at      TIMESTAMP NULL,
+  verification_consumed_at TIMESTAMP NULL,
+  consumed_at      TIMESTAMP NULL,
+  invalidated_at   TIMESTAMP NULL,
+  last_sent_at     TIMESTAMP NOT NULL DEFAULT NOW(),
+  created_at       TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_requests_user_id
+  ON password_reset_requests(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_requests_email_snapshot
+  ON password_reset_requests(email_snapshot);
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_requests_expires_at
+  ON password_reset_requests(expires_at);

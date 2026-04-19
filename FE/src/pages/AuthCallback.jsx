@@ -31,7 +31,7 @@ export default function AuthCallback() {
     } else {
       navigate('/login', { replace: true });
     }
-  }, []);
+  }, [navigate, params]);
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'DM Sans, sans-serif' }}>

@@ -40,5 +40,8 @@ app.listen(PORT, () => {
   console.log(`📡 Endpoints:`);
   console.log(`   POST /api/auth/register`);
   console.log(`   POST /api/auth/login`);
+  console.log(`   POST /api/auth/forgot-password/request`);
+  console.log(`   POST /api/auth/forgot-password/verify-pin`);
+  console.log(`   POST /api/auth/forgot-password/reset`);
   console.log(`   GET  /api/auth/me  (protected)`);
 });

@@ -10,7 +10,11 @@ export default function LoginCompany() {
   const location  = useLocation();
   const [form, setForm]       = useState({ email: '', password: '' });
   const [error, setError]     = useState('');
-  const [success, setSuccess] = useState(location.state?.registered ? 'Registrasi berhasil! Silakan login.' : '');
+  const success = location.state?.registered
+    ? 'Registrasi berhasil! Silakan login.'
+    : location.state?.resetSuccess
+      ? 'Password berhasil direset. Silakan login kembali.'
+      : '';
   const [loading, setLoading] = useState(false);
   const [shake, setShake]     = useState(false);
 
@@ -101,7 +105,7 @@ export default function LoginCompany() {
 
           <div className="meta-row">
             <span />
-            <a href="#" className="forgot">Forgot Password?</a>
+            <Link to="/forgot-password?role=company" className="forgot">Forgot Password?</Link>
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>

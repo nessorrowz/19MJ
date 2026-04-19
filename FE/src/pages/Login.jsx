@@ -8,7 +8,11 @@ export default function Login() {
   const location  = useLocation();
   const [form, setForm]       = useState({ email: '', password: '' });
   const [error, setError]     = useState('');
-  const [success, setSuccess] = useState(location.state?.registered ? 'Registrasi berhasil! Silakan login.' : '');
+  const success = location.state?.registered
+    ? 'Registrasi berhasil! Silakan login.'
+    : location.state?.resetSuccess
+      ? 'Password berhasil direset. Silakan login kembali.'
+      : '';
   const [loading, setLoading] = useState(false);
   const [shake, setShake]     = useState(false);
 
@@ -100,7 +104,7 @@ export default function Login() {
             <label className="remember">
               <input type="checkbox" /> Remember me
             </label>
-            <a href="#" className="forgot">Forgot Password?</a>
+            <Link to="/forgot-password?role=candidate" className="forgot">Forgot Password?</Link>
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading}>

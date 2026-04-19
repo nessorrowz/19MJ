@@ -303,6 +303,13 @@
 }
 .btn-primary:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(15,124,130,.45); }
 
+.btn-secondary {
+  background: #eef6f6;
+  color: var(--teal);
+  border: 1.5px solid rgba(15,124,130,.15);
+}
+.btn-secondary:hover:not(:disabled) { background: #e6f2f2; }
+
 .divider {
   text-align: center;
   color: var(--gray-500);
@@ -348,6 +355,13 @@
   transition: opacity .2s;
 }
 .bottom-link a:hover { opacity: .75; }
+
+.resend-hint {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--gray-500);
+}
 
 /* ── RESPONSIVE ───────────────────────────────────────────── */
 @media (max-width: 860px) {

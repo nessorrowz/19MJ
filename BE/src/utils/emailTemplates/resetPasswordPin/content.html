@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kode Reset Password {{product_name}}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: #f2f4f6;
+        color: #51545e;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      .wrapper {
+        width: 100%;
+        padding: 32px 16px;
+        box-sizing: border-box;
+      }
+
+      .card {
+        max-width: 640px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid #e5e7eb;
+      }
+
+      .header {
+        padding: 28px 32px 12px;
+        text-align: center;
+      }
+
+      .brand {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f7c82;
+      }
+
+      .body {
+        padding: 16px 32px 32px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 24px;
+        color: #111827;
+      }
+
+      p {
+        margin: 0 0 14px;
+        line-height: 1.7;
+        font-size: 16px;
+      }
+
+      .pin-box {
+        margin: 28px 0;
+        padding: 22px 18px;
+        border: 1px solid #dbe4ea;
+        border-radius: 14px;
+        background: #f8fafc;
+        text-align: center;
+      }
+
+      .pin-label {
+        margin: 0 0 10px;
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #6b7280;
+      }
+
+      .pin-value {
+        margin: 0;
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        color: #0f7c82;
+      }
+
+      .footer {
+        padding-top: 18px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 13px;
+      }
+
+      a {
+        color: #0f7c82;
+        text-decoration: none;
+      }
+
+      @media (max-width: 600px) {
+        .body {
+          padding: 16px 20px 28px;
+        }
+
+        .pin-value {
+          font-size: 28px;
+          letter-spacing: 0.16em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="card">
+        <div class="header">
+          <p class="brand"><a href="{{app_url}}">{{product_name}}</a></p>
+        </div>
+        <div class="body">
+          <h1>Halo {{name}},</h1>
+          <p>Kami menerima permintaan untuk mereset password akun {{product_name}} Anda.</p>
+          <p>Gunakan kode verifikasi berikut untuk melanjutkan proses reset password:</p>
+
+          <div class="pin-box">
+            <p class="pin-label">Kode Verifikasi</p>
+            <p class="pin-value">{{pin_display}}</p>
+          </div>
+
+          <p><strong>Kode ini berlaku selama {{expiry_minutes}} menit dan hanya dapat dicoba sebanyak {{max_attempts}} kali.</strong></p>
+          <p>Jika Anda tidak meminta reset password, abaikan email ini. Password Anda belum berubah.</p>
+
+          <div class="footer">
+            <p>Butuh bantuan? Hubungi <a href="mailto:{{support_email}}">{{support_email}}</a> atau kunjungi <a href="{{support_url}}">{{support_url}}</a>.</p>
+            <p>Email ini dikirim otomatis oleh {{product_name}}. Mohon tidak membalas email ini.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

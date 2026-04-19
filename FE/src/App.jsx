@@ -4,6 +4,9 @@ import RegisterCandidate from './pages/RegisterCandidate';
 import RegisterCompany   from './pages/RegisterCompany';
 import LoginCompany      from './pages/LoginCompany';
 import AuthCallback      from './pages/AuthCallback';
+import ForgotPassword    from './pages/ForgotPassword';
+import VerifyResetPin    from './pages/VerifyResetPin';
+import ResetPassword     from './pages/ResetPassword';
 
 // Protected route
 function PrivateRoute({ children, allowedRole }) {
@@ -47,6 +50,9 @@ export default function App() {
         {/* ── Candidate routes (default, no prefix) ── */}
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<RegisterCandidate />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/verify-reset-pin" element={<VerifyResetPin />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/dashboard" element={
           <PrivateRoute allowedRole="candidate"><Dashboard role="candidate" /></PrivateRoute>
         } />
