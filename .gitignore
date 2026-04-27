@@ -1,5 +1,25 @@
 # Necessary folder
 BE/script
+notes.md
+plan.md
+
+# Local AI runtime artifacts
+AI/.venv/
+AI/**/__pycache__/
+AI/**/*.py[cod]
+AI/models/model_cache/
+AI/models/**/*.gguf
+AI/storage/
+AI/tmp/
+
+# Backend runtime uploads/storage
+BE/storage/
+BE/uploads/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
 
 # Logs
 logs
