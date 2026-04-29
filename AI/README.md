@@ -158,7 +158,187 @@ Response sukses:
 }
 ```
 
-## 8. Test Lewat Backend
+## 8. Endpoint Internal AI
+
+Endpoint service ini bersifat internal untuk BE. FE tidak boleh memanggil service ini langsung.
+
+```text
+GET  /health
+POST /transcribe
+```
+
+### `GET /health`
+
+Dipakai untuk memastikan model dan command STT siap.
+
+Response penting:
+
+```json
+{
+  "status": "ok",
+  "service": "19MJ Local STT",
+  "model": {
+    "model_file": "whisper-medium-q8_0.gguf",
+    "model_exists": true,
+    "command_path": "D:/Programming/Capstone/19MJ/AI/tools/whisper.cpp/Release/whisper-cli.exe",
+    "command_exists": true
+  }
+}
+```
+
+### `POST /transcribe`
+
+Dipakai BE setelah media interview diupload ke storage backend.
+
+Request:
+
+```json
+{
+  "audio_path": "D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3",
+  "language": "id"
+}
+```
+
+Response:
+
+```json
+{
+  "status": "completed",
+  "transcript": "Hasil transcript...",
+  "segments": [],
+  "latency_ms": 12000,
+  "model": {
+    "model_file": "whisper-medium-q8_0.gguf",
+    "audio_path": "D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3"
+  }
+}
+```
+
+Error publik:
+
+```text
+400 audio_file_not_found
+400 invalid_audio_path
+401 ai_service_unauthorized
+503 stt_model_not_found
+503 stt_command_not_found
+503 stt_timeout
+503 stt_command_failed
+```
+
+## 9. Integrasi BE
+
+BE adalah satu-satunya caller yang seharusnya memanggil AI service.
+
+Env BE yang terkait:
+
+```env
+AI_STT_SERVICE_URL=http://localhost:8001
+AI_SERVICE_TOKEN=
+```
+
+Jika `AI_SERVICE_TOKEN` diisi di AI, value yang sama wajib ada di BE. BE akan mengirim token lewat header:
+
+```text
+X-19MJ-AI-Token: <AI_SERVICE_TOKEN>
+```
+
+Flow transkripsi dari BE:
+
+```text
+Candidate login
+  -> POST /api/ai/interviews
+  -> POST /api/ai/interviews/:id/media
+  -> POST /api/ai/interviews/:id/transcribe
+  -> BE calls AI POST /transcribe
+  -> BE saves raw transcript
+  -> PATCH /api/ai/interviews/:id/transcript
+  -> POST /api/ai/interviews/:id/evaluate
+```
+
+Endpoint BE untuk candidate:
+
+```text
+GET    /api/ai/health
+GET    /api/ai/candidate/health
+
+POST   /api/ai/cv-review
+GET    /api/ai/cv-review/latest
+GET    /api/ai/cv-review/:id
+
+POST   /api/ai/career-roadmap
+GET    /api/ai/career-roadmap/latest
+GET    /api/ai/career-roadmap/:id
+
+POST   /api/ai/interviews
+POST   /api/ai/interviews/:id/media
+POST   /api/ai/interviews/:id/transcribe
+PATCH  /api/ai/interviews/:id/transcript
+POST   /api/ai/interviews/:id/evaluate
+GET    /api/ai/interviews/:id
+
+POST   /api/ai/screening/answers
+```
+
+Endpoint BE untuk company:
+
+```text
+GET    /api/ai/company/health
+
+POST   /api/ai/screening/questions
+POST   /api/ai/screening/evaluate
+GET    /api/ai/screening/candidates/:candidateUserId/evaluation
+```
+
+Semua endpoint BE di atas membutuhkan JWT dari `/api/auth/login`. Role candidate dan company divalidasi di route BE.
+
+## 10. Integrasi FE
+
+FE hanya berkomunikasi dengan BE Express, bukan dengan AI FastAPI.
+
+Aturan integrasi FE:
+
+- Jangan simpan `AI_STT_SERVICE_URL`, `AI_SERVICE_TOKEN`, path model, atau path storage di FE.
+- Upload media interview ke `POST /api/ai/interviews/:id/media` dengan `multipart/form-data` field `media`.
+- Trigger transkripsi lewat `POST /api/ai/interviews/:id/transcribe`.
+- Ambil hasil sesi lewat `GET /api/ai/interviews/:id`.
+- Tampilkan `raw_transcript` sebagai hasil awal dan simpan koreksi user lewat `PATCH /api/ai/interviews/:id/transcript`.
+- Jalankan evaluasi interview lewat `POST /api/ai/interviews/:id/evaluate` setelah transcript tersedia.
+
+Contoh flow FE interview:
+
+```text
+Create session
+  -> Upload file
+  -> Trigger transcribe
+  -> Poll/refetch session
+  -> User edits transcript
+  -> Evaluate transcript
+  -> Render evaluation result
+```
+
+State minimal yang perlu FE simpan:
+
+```text
+interviewSessionId
+uploadStatus
+transcriptionStatus
+rawTranscript
+editedTranscript
+evaluationResult
+```
+
+## 11. Catatan Operasional
+
+- Jalankan AI service hanya di `127.0.0.1` untuk local development.
+- Jangan expose AI service ke publik tanpa `AI_SERVICE_TOKEN` dan network restriction.
+- `AI_ALLOWED_AUDIO_ROOT` harus mengarah ke folder upload backend agar `/transcribe` tidak bisa membaca path arbitrary.
+- Restart AI service setiap mengubah model, command path, allowed root, atau token.
+- Restart BE setiap mengubah `AI_STT_SERVICE_URL` atau `AI_SERVICE_TOKEN`.
+- File model, `AI/tools/`, `AI/storage/`, dan file test lokal tidak perlu masuk Git.
+- FE harus menganggap semua response AI sebagai data dari BE, bukan dari service Python.
+
+## 12. Test Lewat Backend
 
 Pastikan backend dan AI service hidup.
 
@@ -188,7 +368,16 @@ PATCH /api/ai/interviews/:id/transcript
 
 Semua endpoint backend di atas membutuhkan JWT candidate.
 
-## 9. Troubleshooting
+Smoke test E2E backend:
+
+```bash
+cd /d/Programming/Capstone/19MJ/BE
+npm run test:e2e:ai
+```
+
+Script ini membuat akun test candidate dan company, menjalankan flow AI utama, lalu menghapus akun test.
+
+## 13. Troubleshooting
 
 Jika `/health` masih q8 padahal `.env` sudah q4:
 
