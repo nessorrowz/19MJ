@@ -42,5 +42,6 @@ const getCachedResult = async ({
 };
 
 module.exports = {
+  FEATURE_CACHE_SOURCES,
   getCachedResult,
 };

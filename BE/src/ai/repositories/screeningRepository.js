@@ -47,6 +47,31 @@ const createAnswer = async ({
   return result.rows[0];
 };
 
+//Ambil jawaban screening dengan ownership pertanyaan company.
+const getAnswerForCompany = async ({
+  companyUserId,
+  screeningAnswerId,
+}) => {
+  const result = await pool.query(
+    `
+      SELECT
+        answer.*,
+        question.company_user_id,
+        question.job_id,
+        question.question_text,
+        question.rubric_json
+      FROM screening_answers answer
+      JOIN screening_questions question
+        ON question.id = answer.screening_question_id
+      WHERE answer.id = $1
+        AND question.company_user_id = $2
+    `,
+    [screeningAnswerId, companyUserId]
+  );
+
+  return result.rows[0] || null;
+};
+
 //Simpan evaluasi kandidat hasil validasi AI.
 const createCandidateEvaluation = async ({
   companyUserId,
@@ -119,6 +144,7 @@ const getCandidateEvaluation = async ({
 module.exports = {
   createQuestion,
   createAnswer,
+  getAnswerForCompany,
   createCandidateEvaluation,
   getCandidateEvaluation,
 };

@@ -8,6 +8,7 @@ const { getCachedResult } = require('./aiCacheService');
 const { assertWithinLimit } = require('./aiBudgetService');
 const { parseAndValidateAiOutput } = require('./aiOutputService');
 const { createAiHash } = require('../utils/aiHash');
+const { logAiEvent } = require('../utils/aiLogger');
 const { normalizeText } = require('../utils/textNormalization');
 const {
   CAREER_PLANNER_PROMPT_VERSION,
@@ -110,6 +111,12 @@ const createCareerRoadmap = async ({
       outputSizeChars: JSON.stringify(cached.result_json).length,
       metadata: { cachedAiRequestId: cached.ai_request_id },
     });
+    logAiEvent('ai_request_completed', {
+      feature: FEATURE,
+      status: 'cache_hit',
+      cacheHit: true,
+      attemptCount: 0,
+    });
 
     return {
       cached: true,
@@ -168,6 +175,15 @@ const createCareerRoadmap = async ({
       attemptCount: (llmResult.attempts?.length || 0) + 1,
       metadata: { attempts: llmResult.attempts || [] },
     });
+    logAiEvent('ai_request_completed', {
+      feature: FEATURE,
+      provider: llmResult.provider,
+      model: llmResult.model,
+      latencyMs: llmResult.latencyMs,
+      status: 'succeeded',
+      cacheHit: false,
+      attemptCount: (llmResult.attempts?.length || 0) + 1,
+    });
 
     return {
       cached: false,
@@ -181,6 +197,12 @@ const createCareerRoadmap = async ({
       errorMessage: error.message,
       attemptCount: error.details?.attempts?.length || 1,
       metadata: { attempts: error.details?.attempts || [] },
+    });
+    logAiEvent('ai_request_failed', {
+      feature: FEATURE,
+      status: 'failed',
+      errorCategory: error.category || 'unknown',
+      attemptCount: error.details?.attempts?.length || 1,
     });
 
     throw new AiServiceError(

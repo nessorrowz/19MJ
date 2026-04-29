@@ -119,6 +119,24 @@ const getTranscriptBySessionId = async (interviewSessionId) => {
   return result.rows[0] || null;
 };
 
+//Update edited transcript tanpa mengubah raw transcript.
+const updateTranscript = async ({
+  interviewSessionId,
+  editedTranscript,
+}) => {
+  const result = await pool.query(
+    `
+      UPDATE interview_transcripts
+      SET edited_transcript = $2
+      WHERE interview_session_id = $1
+      RETURNING *
+    `,
+    [interviewSessionId, editedTranscript]
+  );
+
+  return result.rows[0] || null;
+};
+
 //Simpan evaluasi interview hasil validasi AI.
 const createEvaluation = async ({
   interviewSessionId,
@@ -173,5 +191,6 @@ module.exports = {
   saveMedia,
   createTranscript,
   getTranscriptBySessionId,
+  updateTranscript,
   createEvaluation,
 };

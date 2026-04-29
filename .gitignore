@@ -4,13 +4,17 @@ notes.md
 plan.md
 
 # Local AI runtime artifacts
+AI/.env
 AI/.venv/
 AI/**/__pycache__/
 AI/**/*.py[cod]
 AI/models/model_cache/
 AI/models/**/*.gguf
 AI/storage/
+AI/tools/
+AI/tes/
 AI/tmp/
+AI/**/*.tmp
 
 # Backend runtime uploads/storage
 BE/storage/
