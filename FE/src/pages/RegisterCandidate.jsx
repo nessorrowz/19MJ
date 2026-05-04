@@ -1,19 +1,40 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { RightPanel } from './Login';
 import './Auth.css';
 
-// US-001: Register Candidate
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiBriefcase,
+  FiEye,
+  FiEyeOff
+} from "react-icons/fi";
+
 export default function RegisterCandidate() {
   const navigate = useNavigate();
-  const [form, setForm]       = useState({ email: '', full_name: '', password: '', confirm: '' });
-  const [error, setError]     = useState('');
+
+  const [form, setForm] = useState({
+    email: '',
+    full_name: '',
+    password: '',
+    confirm: ''
+  });
+
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [shake, setShake]     = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+
     setError('');
   };
 
@@ -24,80 +45,353 @@ export default function RegisterCandidate() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.email || !form.password || !form.confirm || !form.full_name) {
-      triggerShake(); setError('Semua field wajib diisi.'); return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      triggerShake(); setError('Format email tidak valid. Contoh: nama@gmail.com'); return;
-    }
-    if (form.password !== form.confirm) {
-      triggerShake(); setError('Password tidak sama.'); return;
-    }
-    if (form.password.length < 6) {
-      triggerShake(); setError('Password minimal 6 karakter.'); return;
+      triggerShake();
+      setError('Semua field wajib diisi.');
+      return;
     }
 
-    setLoading(true);
-    setError('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(form.email)) {
+      triggerShake();
+      setError('Format email tidak valid.');
+      return;
+    }
+
+    if (form.password !== form.confirm) {
+      triggerShake();
+      setError('Password tidak sama.');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      triggerShake();
+      setError('Password minimal 6 karakter.');
+      return;
+    }
+
     try {
+      setLoading(true);
+
       await api.post('/auth/register/candidate', {
-        email:     form.email,
-        password:  form.password,
-        full_name: form.full_name,
+        email: form.email,
+        password: form.password,
+        full_name: form.full_name
       });
-      navigate('/login', { state: { registered: true } });
+
+      navigate('/login', {
+        state: {
+          registered: true
+        }
+      });
+
     } catch (err) {
       triggerShake();
       setError(err.message);
+
     } finally {
       setLoading(false);
     }
   };
 
+  const inputStyle = {
+    width: "100%",
+    height: "58px",
+    padding: "0 18px",
+    borderRadius: "14px",
+    border: "1px solid #E5E7EB",
+    fontSize: "15px",
+    boxSizing: "border-box"
+  };
+
+  const inputWrapper = {
+    position: "relative",
+    marginBottom: "16px"
+  };
+
+  const leftIconStyle = {
+    position: "absolute",
+    left: "18px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#9CA3AF",
+    fontSize: "18px",
+    zIndex: 2
+  };
+
+  const inputWithIcon = {
+    ...inputStyle,
+    paddingLeft: "48px"
+  };
+
   return (
-    <div className="auth-page">
-      <div className="auth-left">
-        <form className={`auth-card ${shake ? 'shake' : ''}`} onSubmit={handleSubmit} noValidate>
-          <div className="card-header">
-            <h2>Daftar sebagai<br/>Kandidat</h2>
-            <p>Temukan karir impianmu bersama 19MJ.</p>
+    <div className="auth-layout">
+
+      {/* LEFT SIDE */}
+      <div className="auth-left-panel">
+
+        <img
+          src="/gambar/19mj.png"
+          alt="logo"
+          style={{
+            width: "150px",
+            marginBottom: "20px"
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            background: "#8FA5B8",
+            borderRadius: "25px",
+            height: "500px",
+            overflow: "hidden"
+          }}
+        >
+
+          <img
+            src="/gambar/ceweray.png"
+            alt="character"
+            className="character-animation"
+            style={{
+              position: "absolute",
+              bottom: "0",
+              left: "50%",
+              width: "85%",
+              maxHeight: "95%",
+              objectFit: "contain"
+            }}
+          />
+
+        </div>
+
+      </div>
+
+
+      {/* RIGHT SIDE */}
+      <div className="auth-right-panel">
+
+        <form
+          onSubmit={handleSubmit}
+          className={shake ? "shake" : ""}
+          style={{
+            width: "100%",
+            maxWidth: "500px"
+          }}
+        >
+
+          {/* HEADER */}
+          <h1
+            style={{
+              textAlign: "center",
+              marginBottom: "8px"
+            }}
+          >
+            Create your account
+          </h1>
+
+          <p
+            style={{
+              textAlign: "center",
+              color: "#777",
+              marginBottom: "30px"
+            }}
+          >
+            Join thousands preparing for their next role
+          </p>
+
+
+          {/* ROLE SWITCH */}
+          <div
+            style={{
+              display: "flex",
+              background: "#f5f5f5",
+              borderRadius: "14px",
+              padding: "4px",
+              gap: "4px",
+              marginBottom: "35px"
+            }}
+          >
+
+            <button
+              type="button"
+              style={{
+                flex: 1,
+                height: "52px",
+                border: "none",
+                borderRadius: "12px",
+                background: "#0f7c82",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px"
+              }}
+            >
+              <FiUser size={18} />
+              Candidate
+            </button>
+
+
+            <button
+              type="button"
+              onClick={() => navigate("/company/register")}
+              style={{
+                flex: 1,
+                height: "52px",
+                border: "none",
+                borderRadius: "12px",
+                background: "white",
+                color: "#475467",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px"
+              }}
+            >
+              <FiBriefcase size={18} />
+              Company
+            </button>
+
           </div>
 
-          {error && <div className="error-banner">{error}</div>}
 
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input id="email" name="email" type="email"
-              placeholder="nama@gmail.com" value={form.email} onChange={handleChange}
-              autoComplete="email" />
-          </div>
-          <div className="field">
-            <label htmlFor="full_name">Nama Lengkap</label>
-            <input id="full_name" name="full_name" type="text"
-              placeholder="John Doe" value={form.full_name} onChange={handleChange} />
-          </div>
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input id="password" name="password" type="password"
-              placeholder="••••••••" value={form.password} onChange={handleChange} />
-          </div>
-          <div className="field">
-            <label htmlFor="confirm">Confirm Password</label>
-            <input id="confirm" name="confirm" type="password"
-              placeholder="••••••••" value={form.confirm} onChange={handleChange} />
+          {error && (
+            <div className="error-banner">
+              {error}
+            </div>
+          )}
+
+
+          {/* FULL NAME */}
+          <div style={inputWrapper}>
+
+            <FiUser style={leftIconStyle} />
+
+            <input
+              name="full_name"
+              placeholder="Full Name"
+              value={form.full_name}
+              onChange={handleChange}
+              style={inputWithIcon}
+            />
+
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Creating...' : 'Buat Akun Kandidat'}
+
+          {/* EMAIL */}
+          <div style={inputWrapper}>
+
+            <FiMail style={leftIconStyle} />
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Email Address"
+              value={form.email}
+              onChange={handleChange}
+              style={inputWithIcon}
+            />
+
+          </div>
+
+
+          {/* PASSWORD */}
+          <div style={inputWrapper}>
+
+            <FiLock style={leftIconStyle} />
+
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              style={{
+                ...inputWithIcon,
+                paddingRight: "50px"
+              }}
+            />
+
+            <div
+              className="eye-icon"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FiEyeOff /> : <FiEye />}
+            </div>
+
+          </div>
+
+
+          {/* CONFIRM PASSWORD */}
+          <div style={inputWrapper}>
+
+            <FiLock style={leftIconStyle} />
+
+            <input
+              name="confirm"
+              type={showConfirm ? "text" : "password"}
+              placeholder="Confirm Password"
+              value={form.confirm}
+              onChange={handleChange}
+              style={{
+                ...inputWithIcon,
+                paddingRight: "50px"
+              }}
+            />
+
+            <div
+              className="eye-icon"
+              onClick={() => setShowConfirm(!showConfirm)}
+            >
+              {showConfirm ? <FiEyeOff /> : <FiEye />}
+            </div>
+
+          </div>
+
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              height: "58px",
+              background: "#0f7c82",
+              color: "white",
+              border: "none",
+              borderRadius: "14px",
+              marginTop: "10px",
+              cursor: "pointer",
+              fontWeight: "600"
+            }}
+          >
+            {loading ? "Creating..." : "Create Account"}
           </button>
 
-          <div className="bottom-link" style={{ marginTop: 16 }}>
-            Sudah punya akun? <Link to="/login">Log in</Link>
+
+          {/* FOOTER */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "25px"
+            }}
+          >
+            Already have an account?{" "}
+            <Link to="/login">
+              Sign In
+            </Link>
           </div>
+
         </form>
+
       </div>
-      <RightPanel />
+
     </div>
   );
 }

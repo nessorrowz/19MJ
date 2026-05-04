@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
-import { RightPanel } from './Login';
 import {
   RESET_PIN_RESEND_COOLDOWN_SECONDS,
   getLoginRouteByRole,

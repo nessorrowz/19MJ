@@ -1,0 +1,143 @@
+import { useNavigate } from "react-router-dom";
+import {
+  FiGrid,
+  FiUser,
+  FiFileText,
+  FiMap,
+  FiMic,
+  FiSearch,
+  FiBriefcase,
+  FiLogOut,
+} from "react-icons/fi";
+
+export default function CandidateSidebar({
+  active,
+}) {
+  const navigate = useNavigate();
+
+  const logout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
+
+  return (
+    <div style={styles.sidebar}>
+
+      <div>
+
+        <img
+          src="/gambar/19mj.png"
+          alt="logo"
+          style={{
+            width: 120,
+            marginBottom: 20,
+          }}
+        />
+
+        <MenuItem
+          active={
+            active === "dashboard"
+          }
+          icon={<FiGrid />}
+          text="Dashboard"
+          onClick={() =>
+            navigate("/dashboard")
+          }
+        />
+
+        <MenuItem
+          active={
+            active === "my-profile"
+          }
+          icon={<FiUser />}
+          text="My Profile"
+          onClick={() =>
+            navigate("/my-profile")
+          }
+        />
+
+        <MenuItem
+          active={active === "cv"}
+          icon={<FiFileText />}
+          text="CV & AI Review"
+          onClick={() => navigate("/cv-review")}
+        />
+
+        <MenuItem
+          active={active === "career"}
+          icon={<FiMap />}
+          text="Career Planner"
+          onClick={() => navigate("/career-planner")}
+        />
+
+        <MenuItem
+          icon={<FiMic />}
+          text="Interview Practice"
+        />
+
+        <MenuItem
+          icon={<FiSearch />}
+          text="Find Jobs"
+        />
+
+        <MenuItem
+          icon={<FiBriefcase />}
+          text="My Applications"
+        />
+
+      </div>
+
+      <MenuItem
+        icon={<FiLogOut />}
+        text="Logout"
+        onClick={logout}
+      />
+
+    </div>
+  );
+}
+
+function MenuItem({
+  icon,
+  text,
+  onClick,
+  active,
+}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        ...styles.menu,
+        background: active
+          ? "#0f7c82"
+          : "transparent",
+        color: active
+          ? "white"
+          : "#222",
+      }}
+    >
+      {icon}
+      {text}
+    </div>
+  );
+}
+
+const styles = {
+  sidebar: {
+    width: 260,
+    background: "#d9edf8",
+    padding: 20,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+  },
+
+  menu: {
+    display: "flex",
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    marginTop: 10,
+    cursor: "pointer",
+  },
+};

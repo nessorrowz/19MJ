@@ -7,6 +7,10 @@ import AuthCallback      from './pages/AuthCallback';
 import ForgotPassword    from './pages/ForgotPassword';
 import VerifyResetPin    from './pages/VerifyResetPin';
 import ResetPassword     from './pages/ResetPassword';
+import CandidateDashboard from './dashboard/CandidateDashboard';
+import CandidateProfile from "./dashboard/CandidateProfile";
+import CVReview from "./dashboard/CVReview";
+import CareerPlannerPage from "./dashboard/CareerPlannerPage";
 
 // Protected route
 function PrivateRoute({ children, allowedRole }) {
@@ -53,9 +57,6 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-reset-pin" element={<VerifyResetPin />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/dashboard" element={
-          <PrivateRoute allowedRole="candidate"><Dashboard role="candidate" /></PrivateRoute>
-        } />
 
         {/* ── Company routes (/company prefix) ── */}
         <Route path="/company/login"    element={<LoginCompany />} />
@@ -76,6 +77,20 @@ export default function App() {
 
         {/* 404 fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/*dashboard route */}
+        <Route path="/dashboard" element={<CandidateDashboard />}/>
+        <Route path="/my-profile" element={ <PrivateRoute allowedRole="candidate"> <CandidateProfile /> </PrivateRoute> }/>
+        <Route path="/cv-review" element={ <PrivateRoute allowedRole="candidate"> <CVReview /> </PrivateRoute>}/>
+
+<Route
+  path="/career-planner"
+  element={
+    <PrivateRoute allowedRole="candidate">
+      <CareerPlannerPage />
+    </PrivateRoute>
+  }
+/>
       </Routes>
     </BrowserRouter>
   );
