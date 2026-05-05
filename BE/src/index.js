@@ -1,13 +1,14 @@
 require('dotenv').config();
-const express    = require('express');
-const cors       = require('cors');
-const passport   = require('./config/passport');
+const express = require('express');
+const cors = require('cors');
+const passport = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
+const aiRoutes = require('./ai/routes/aiRoutes');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
+//Middleware
 app.use(cors({
   origin: [
     process.env.FE_URL || 'http://localhost:5173',
@@ -21,24 +22,26 @@ app.use(cors({
 app.use(express.json());
 app.use(passport.initialize());
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
+//Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/ai', aiRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: '19MJ Backend is running 🚀' });
+  res.json({ status: 'ok', message: '19MJ Backend is running' });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.method} ${req.path} tidak ditemukan.` });
 });
 
-// ─── Start Server ─────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
-  console.log(`📡 Endpoints:`);
-  console.log(`   POST /api/auth/register`);
-  console.log(`   POST /api/auth/login`);
-  console.log(`   GET  /api/auth/me  (protected)`);
+  console.log(`Server berjalan di http://localhost:${PORT}`);
+  console.log('Endpoints:');
+  console.log('   POST /api/auth/register');
+  console.log('   POST /api/auth/login');
+  console.log('   POST /api/auth/forgot-password/request');
+  console.log('   POST /api/auth/forgot-password/verify-pin');
+  console.log('   POST /api/auth/forgot-password/reset');
+  console.log('   GET  /api/auth/me  (protected)');
+  console.log('   GET  /api/ai/health  (protected)');
 });

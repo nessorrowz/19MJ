@@ -1,9 +1,18 @@
 const express  = require('express');
 const router   = express.Router();
 const passport = require('../config/passport');
+const { forgotPasswordRequestLimiter } = require('../middleware/rateLimitForgotPassword');
 
 // ── US-001: Register Candidate ────────────────────────────
-const { registerCandidate, registerCompany, login, getMe } = require('../controllers/authController');
+const {
+  registerCandidate,
+  registerCompany,
+  login,
+  getMe,
+  requestPasswordReset,
+  verifyPasswordResetPin,
+  resetPasswordWithPin,
+} = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Email/password routes
@@ -11,6 +20,9 @@ router.post('/register/candidate', registerCandidate);
 router.post('/register/company',   registerCompany);
 router.post('/login',              login);
 router.get('/me', protect,         getMe);
+router.post('/forgot-password/request', forgotPasswordRequestLimiter, requestPasswordReset);
+router.post('/forgot-password/verify-pin', verifyPasswordResetPin);
+router.post('/forgot-password/reset', resetPasswordWithPin);
 
 // ── Google OAuth ──────────────────────────────────────────
 // Step 1: Redirect ke Google

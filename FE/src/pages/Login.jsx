@@ -2,18 +2,42 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import './Auth.css';
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiGlobe,
+  FiBriefcase,
+  FiEye,
+  FiEyeOff
+} from "react-icons/fi";
 
 export default function Login() {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const [form, setForm]       = useState({ email: '', password: '' });
-  const [error, setError]     = useState('');
-  const [success, setSuccess] = useState(location.state?.registered ? 'Registrasi berhasil! Silakan login.' : '');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [form, setForm] = useState({
+    email: '',
+    password: ''
+  });
+
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [shake, setShake]     = useState(false);
+  const [shake, setShake] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const success = location.state?.registered
+    ? 'Registrasi berhasil! Silakan login.'
+    : location.state?.resetSuccess
+    ? 'Password berhasil direset. Silakan login kembali.'
+    : '';
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value
+    });
+
     setError('');
   };
 
@@ -24,12 +48,15 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!form.email || !form.password) {
       triggerShake();
       setError('Email dan password wajib diisi.');
       return;
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(form.email)) {
       triggerShake();
       setError('Format email tidak valid. Contoh: nama@gmail.com');
@@ -41,16 +68,19 @@ export default function Login() {
 
     try {
       const data = await api.post('/auth/login', form);
-      // Pastikan yang login adalah kandidat
+
       if (data.user.role !== 'candidate') {
         triggerShake();
-        setError('Akun ini bukan akun kandidat. Gunakan halaman login perusahaan.');
+        setError('Akun ini bukan akun kandidat. Gunakan login perusahaan.');
         return;
       }
-      localStorage.setItem('token',       data.token);
+
+      localStorage.setItem('token', data.token);
       localStorage.setItem('currentUser', JSON.stringify(data.user));
-      localStorage.setItem('isLogin',     'true');
+      localStorage.setItem('isLogin', 'true');
+
       navigate('/dashboard');
+
     } catch (err) {
       triggerShake();
       setError(err.message);
@@ -59,92 +89,285 @@ export default function Login() {
     }
   };
 
+  const inputStyle = {
+  width: "100%",
+  height: "58px",
+  padding: "0 18px",
+  borderRadius: "14px",
+  border: "1px solid #E5E7EB",
+  fontSize: "15px",
+  boxSizing: "border-box",
+  outline: "none",
+  transition: "all 0.2s ease"
+  };
+
+  const inputWrapper = {
+    position: "relative",
+    marginBottom: "14px"
+  };
+
+  const leftIconStyle = {
+    position: "absolute",
+    left: "18px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#9CA3AF",
+    fontSize: "18px",
+    zIndex: 2
+  };
+
+  const inputWithIcon = {
+    ...inputStyle,
+    paddingLeft: "48px"
+  };
+  
   return (
-    <div className="auth-page">
-      <div className="auth-left">
-        <form className={`auth-card ${shake ? 'shake' : ''}`} onSubmit={handleSubmit} noValidate>
-          <div className="card-header">
-            <h2>Log In</h2>
-            <p>Selamat datang kembali! Masukkan akunmu.</p>
-          </div>
+    <div className="auth-layout">
 
-          {success && <div className="success-banner">{success}</div>}
-          {error   && <div className="error-banner">{error}</div>}
+      {/* LEFT SIDE */}
+     <div className="auth-left-panel">
 
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email" name="email" type="email"
-              placeholder="nama@gmail.com"
-              value={form.email} onChange={handleChange}
-              autoComplete="email"
-            />
-          </div>
+        {/* Logo */}
+        <img
+          src="/gambar/19mj.png"
+          alt="logo"
+          style={{
+            width: "150px",
+            marginBottom: "20px"
+          }}
+        />
 
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password" name="password" type="password"
-              placeholder="••••••••"
-              value={form.password} onChange={handleChange}
-              autoComplete="current-password"
-            />
-          </div>
+        {/* Illustration */}
+        <div
+          style={{
+            position: "relative",
+            background: "#8FA5B8",
+            borderRadius: "25px",
+            height: "500px",
+            overflow: "hidden"
+          }}
+        >
 
-          <div className="meta-row">
-            <label className="remember">
-              <input type="checkbox" /> Remember me
-            </label>
-            <a href="#" className="forgot">Forgot Password?</a>
-          </div>
+          <img
+            src="/gambar/ceweray.png"
+            alt="character"
+            className="character-animation"
+            style={{
+              position: "absolute",
+              bottom: "0",
+              left: "50%",
+              width: "85%",
+              maxHeight: "95%",
+              objectFit: "contain"
+            }}
+          />
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Loading...' : 'Log in'}
-          </button>
+        </div>
 
-          <div className="divider">Or With</div>
-
-          <button
-            type="button"
-            className="btn btn-google"
-            onClick={() => window.location.href = 'http://localhost:3000/api/auth/google'}
-          >
-            <GoogleIcon />
-            Log in with Google
-          </button>
-
-          <div className="bottom-link">
-            Belum punya akun? <Link to="/register">Daftar di sini</Link>
-          </div>
-        </form>
       </div>
 
-      <RightPanel />
-    </div>
-  );
-}
 
-function GoogleIcon() {
-  return (
-    <svg className="google-icon" viewBox="0 0 48 48">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-    </svg>
-  );
-}
+      {/* RIGHT SIDE */}
+      <div className="auth-right-panel">
 
-export function RightPanel() {
-  return (
-    <div className="auth-right">
-      <div className="right-circle" />
-      <div className="right-circle2" />
-      <img src="/gambar/19mj.png" className="logo" alt="19MJ Logo" />
-      <svg className="wave-svg" viewBox="0 0 80 800" preserveAspectRatio="none">
-        <path d="M80,0 C30,200 30,600 80,800 L80,800 L80,0 Z" fill="#0f7c82"/>
-      </svg>
-      <img src="/gambar/ceweray.png" className="hero-img" alt="Illustration" />
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className={shake ? "shake" : ""}
+          style={{
+            width: "100%",
+            maxWidth: "500px"
+          }}
+        >
+
+          {/* HEADER */}
+          <div style={{ marginBottom: "45px" }}>
+            <h1
+              style={{
+                textAlign: "center",
+                fontSize: "42px",
+                marginBottom: "12px"
+              }}
+            >
+              Welcome Back
+            </h1>
+
+            <p
+              style={{
+                textAlign: "center",
+                color: "#777"
+              }}
+            >
+              Sign in to your account
+            </p>
+          </div>
+
+
+          {/* ROLE SWITCH */}
+          <div
+            style={{
+              display: "flex",
+              background: "#f5f5f5",
+              borderRadius: "14px",
+              padding: "4px",
+              gap: "4px",
+              marginBottom: "40px"
+            }}
+          >
+
+            {/* Candidate */}
+            <button
+              type="button"
+              style={{
+                flex: 1,
+                height: "52px",
+                border: "none",
+                borderRadius: "12px",
+                background: "#0f7c82",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                fontSize: "15px"
+              }}
+            >
+              <FiUser size={18} />
+              Candidate
+            </button>
+
+
+            {/* Company */}
+            <button
+              type="button"
+              onClick={() => navigate("/company/login")}
+              style={{
+                flex: 1,
+                height: "52px",
+                border: "none",
+                borderRadius: "12px",
+                background: "white",
+                color: "#475467",
+                cursor: "pointer",
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "10px",
+                fontSize: "15px"
+              }}
+            >
+              <FiBriefcase size={18} />
+              Company
+            </button>
+
+          </div>
+
+
+          {success && <div className="success-banner">{success}</div>}
+          {error && <div className="error-banner">{error}</div>}
+
+
+          {/* INPUT SECTION */}
+          <div style={{ marginBottom: "30px" }}>
+
+            {/* EMAIL */}
+            <div style={inputWrapper}>
+
+              <FiMail style={leftIconStyle} />
+
+              <input
+                name="email"
+                type="email"
+                placeholder="Email Address"
+                value={form.email}
+                onChange={handleChange}
+                style={inputWithIcon}
+              />
+
+            </div>
+
+
+            {/* PASSWORD */}
+            <div style={inputWrapper}>
+
+              <FiLock style={leftIconStyle} />
+
+              <input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                style={{
+                  ...inputWithIcon,
+                  paddingRight: "50px"
+                }}
+              />
+
+              <div
+                className="eye-icon"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <FiEyeOff /> : <FiEye />}
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* FORGOT */}
+          <div
+            style={{
+              textAlign: "right",
+              marginBottom: "35px"
+            }}
+          >
+            <Link to="/forgot-password?role=candidate">
+              Forgot Password?
+            </Link>
+          </div>
+
+
+          {/* BUTTON */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "16px",
+              background: "#0f7c82",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontSize: "16px"
+            }}
+          >
+            {loading ? "Loading..." : "Sign In"}
+          </button>
+
+
+          {/* FOOTER */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "35px",
+              color: "#666"
+            }}
+          >
+            Don’t have an account?{" "}
+            <Link to="/register">
+              Create one
+            </Link>
+          </div>
+
+        </form>
+
+      </div>
+
     </div>
   );
 }

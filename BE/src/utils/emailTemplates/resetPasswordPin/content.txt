@@ -1,0 +1,17 @@
+Gunakan kode ini untuk reset password akun {{product_name}}. Kode berlaku {{expiry_minutes}} menit.
+
+{{product_name}} ({{app_url}})
+
+Halo {{name}},
+
+Kami menerima permintaan untuk mereset password akun {{product_name}} Anda.
+
+Gunakan kode verifikasi berikut untuk melanjutkan proses reset password:
+
+{{pin_display}}
+
+Kode ini berlaku selama {{expiry_minutes}} menit dan hanya dapat dicoba sebanyak {{max_attempts}} kali.
+
+Jika Anda tidak meminta reset password, abaikan email ini. Password Anda belum berubah.
+
+Butuh bantuan? Hubungi {{support_email}} atau kunjungi {{support_url}}.
