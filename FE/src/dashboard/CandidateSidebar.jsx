@@ -71,13 +71,17 @@ export default function CandidateSidebar({
         />
 
         <MenuItem
+          active={active === "practice"}
           icon={<FiMic />}
           text="Interview Practice"
+          onClick={() => navigate("/interview-practice")}
         />
 
         <MenuItem
+          active={active === "jobs"}
           icon={<FiSearch />}
           text="Find Jobs"
+          onClick={() => navigate("/find-jobs")}
         />
 
         <MenuItem
