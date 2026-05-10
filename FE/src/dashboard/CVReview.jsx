@@ -9,13 +9,15 @@ import {
 
 import * as pdfjsLib from "pdfjs-dist";
 
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+
 import mammoth from "mammoth";
 
 import CandidateSidebar from "./CandidateSidebar";
 
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-  `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+  pdfWorkerUrl;
 
 
 

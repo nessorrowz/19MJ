@@ -4,6 +4,7 @@ const cors = require('cors');
 const passport = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
 const aiRoutes = require('./ai/routes/aiRoutes');
+const { mountAiSwaggerDocs } = require('./ai/docs/aiSwagger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,7 @@ app.use(passport.initialize());
 
 //Routes
 app.use('/api/auth', authRoutes);
+mountAiSwaggerDocs(app);
 app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {

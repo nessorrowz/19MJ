@@ -83,7 +83,20 @@ const updateInterviewTranscript = async ({
 
   const transcript = await dependencies.interviewRepository.getTranscriptBySessionId(session.id);
   if (!transcript) {
-    throw new AiServiceError(400, 'Transkrip belum tersedia untuk sesi interview ini.');
+    const manualTranscript = await dependencies.interviewRepository.createTranscript({
+      interviewSessionId: session.id,
+      rawTranscript: editedTranscript,
+      editedTranscript,
+      segments: [],
+      metadata: { source: 'manual_input' },
+    });
+
+    await dependencies.interviewRepository.updateSessionStatus(session.id, userId, {
+      status: 'transcribed',
+      errorMessage: null,
+    });
+
+    return { session, transcript: manualTranscript };
   }
 
   const updatedTranscript = await dependencies.interviewRepository.updateTranscript({

@@ -26,6 +26,26 @@ const { handleInterviewMediaUpload, verifyInterviewSessionOwnership } = require(
 
 const router = express.Router();
 
+//Log status route AI tanpa payload sensitif.
+const logAiHttpRequest = (req, res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return next();
+  }
+
+  res.on('finish', () => {
+    console.log(JSON.stringify({
+      event: 'ai_http_request',
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: res.statusCode,
+      role: req.user?.role || null,
+    }));
+  });
+
+  return next();
+};
+
+router.use(logAiHttpRequest);
 router.use(protect);
 
 router.get('/health', getAiHealth);
