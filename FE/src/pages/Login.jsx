@@ -25,6 +25,8 @@ import {
   jwtDecode
 } from "jwt-decode";
 
+import PageTransition from "../components/PageTransition";
+
 export default function Login() {
   const navigate =
     useNavigate();
@@ -56,20 +58,19 @@ export default function Login() {
     location.state?.registered
       ? "Registrasi berhasil! Silakan login."
       : location.state?.resetSuccess
-      ? "Password berhasil direset."
-      : "";
+        ? "Password berhasil direset."
+        : "";
 
-  const handleChange = (
-    e
-  ) => {
-    setForm({
-      ...form,
-      [e.target.name]:
-        e.target.value
-    });
+  const handleChange =
+    (e) => {
+      setForm({
+        ...form,
+        [e.target.name]:
+          e.target.value
+      });
 
-    setError("");
-  };
+      setError("");
+    };
 
   const triggerShake =
     () => {
@@ -143,8 +144,8 @@ export default function Login() {
           err.response
             ?.data
             ?.message ||
-            err.message ||
-            "Login gagal"
+          err.message ||
+          "Login gagal"
         );
 
       } finally {
@@ -163,19 +164,19 @@ export default function Login() {
           );
 
         const googleUser =
-          {
-            username:
-              userInfo.name,
+        {
+          username:
+            userInfo.name,
 
-            email:
-              userInfo.email,
+          email:
+            userInfo.email,
 
-            photo:
-              userInfo.picture,
+          photo:
+            userInfo.picture,
 
-            role:
-              "candidate"
-          };
+          role:
+            "candidate"
+        };
 
         localStorage.setItem(
           "currentUser",
@@ -198,169 +199,338 @@ export default function Login() {
 
         setError(
           err.message ||
-            "Google login gagal"
+          "Google login gagal"
         );
       }
     };
 
   const inputStyle = {
     width: "100%",
-    height: "58px",
+    height: "52px",
     padding: "0 18px",
-    borderRadius: "14px",
+    borderRadius: "12px",
     border:
-      "1px solid #E5E7EB",
+      "1.5px solid #D1D5DB",
     fontSize: "15px",
+    fontFamily:
+      "Inter, sans-serif",
     boxSizing:
       "border-box",
-    outline: "none"
+    outline: "none",
+    background:
+      "white"
   };
 
-  const inputWrapper =
-    {
-      position:
-        "relative",
-      marginBottom:
-        "14px"
-    };
+  const inputWrapper = {
+    position:
+      "relative",
+    marginBottom:
+      "16px"
+  };
 
-  const leftIconStyle =
-    {
-      position:
-        "absolute",
-      left: "18px",
-      top: "50%",
-      transform:
-        "translateY(-50%)",
-      color: "#9CA3AF",
-      zIndex: 2
-    };
+  const leftIconStyle = {
+    position:
+      "absolute",
+    left: "16px",
+    top: "50%",
+    transform:
+      "translateY(-50%)",
+    color: "#94A3B8",
+    zIndex: 2
+  };
 
-  const inputWithIcon =
-    {
-      ...inputStyle,
-      paddingLeft:
-        "48px"
-    };
+  const inputWithIcon = {
+    ...inputStyle,
+    paddingLeft:
+      "48px"
+  };
 
   return (
-    <div className="auth-layout">
+    <PageTransition>
+      <div className="auth-layout">
 
-      {/* LEFT */}
-      <div className="auth-left-panel">
+        {/* LEFT */}
+        <div className="auth-left-panel">
 
-        <img
-          src="/gambar/19mj.png"
-          alt="logo"
-          style={{
-            width: "150px",
-            marginBottom:
-              "20px"
-          }}
-        />
-
-        <div
-          style={{
-            background:
-              "#8FA5B8",
-            borderRadius:
-              "25px",
-            height:
-              "500px",
-            position:
-              "relative",
-            overflow:
-              "hidden"
-          }}
-        >
           <img
-            src="/gambar/ceweray.png"
-            alt="character"
+            src="/gambar/19mj.png"
+            alt="logo"
             style={{
-              position:
-                "absolute",
-              bottom: 0,
-              left: "50%",
-              width:
-                "85%",
-              transform:
-                "translateX(-50%)"
+              width: "150px",
+              marginBottom:
+                "20px"
             }}
           />
+
+          <div
+            style={{
+              background:
+                "#8FA5B8",
+              borderRadius:
+                "25px",
+              height:
+                "500px",
+              position:
+                "relative",
+              overflow:
+                "hidden"
+            }}
+          >
+            <img
+              className="character-animation"
+              src="/gambar/ceweray.png"
+              alt="character"
+              style={{
+                position:
+                  "absolute",
+                bottom: 0,
+                left: "50%",
+                width:
+                  "85%",
+                transform:
+                  "translateX(-50%)"
+              }}
+            />
+          </div>
+
         </div>
 
-      </div>
-
-      {/* RIGHT */}
-      <div className="auth-right-panel">
-
-        <form
-          onSubmit={
-            handleSubmit
-          }
-          className={
-            shake
-              ? "shake"
-              : ""
-          }
+        {/* RIGHT */}
+        <div
+          className="auth-right-panel"
           style={{
-            width: "100%",
-            maxWidth:
-              "500px"
+            flex: 1,
+            background:
+              "white",
+            borderRadius:
+              "32px",
+            display:
+              "flex",
+            justifyContent:
+              "center",
+            alignItems:
+              "center",
+            padding:
+              "40px"
           }}
         >
 
-          {/* HEADER */}
-          <div
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className={
+              shake
+                ? "shake"
+                : ""
+            }
             style={{
-              marginBottom:
-                "45px"
-            }}
-          >
-            <h1
-              style={{
-                textAlign:
-                  "center",
-                fontSize:
-                  "42px"
-              }}
-            >
-              Welcome Back
-            </h1>
-
-            <p
-              style={{
-                textAlign:
-                  "center",
-                color:
-                  "#777"
-              }}
-            >
-              Sign in to your account
-            </p>
-          </div>
-
-          {/* ROLE SWITCH */}
-          <div
-            style={{
-              display:
-                "flex",
-              background:
-                "#f5f5f5",
-              borderRadius:
-                "14px",
-              padding:
-                "4px",
-              gap: "4px",
-              marginBottom:
-                "40px"
+              width: "100%",
+              maxWidth:
+                "420px",
+              fontFamily:
+                "Inter, sans-serif"
             }}
           >
 
+            {/* HEADER */}
+            <div
+              style={{
+                marginBottom:
+                  "28px"
+              }}
+            >
+              <h1
+                style={{
+                  textAlign:
+                    "center",
+                  fontSize:
+                    "28px",
+                  fontWeight:
+                    700,
+                  color:
+                    "#0F172A",
+                  marginBottom:
+                    "8px"
+                }}
+              >
+                Welcome back
+              </h1>
+
+              <p
+                style={{
+                  textAlign:
+                    "center",
+                  color:
+                    "#64748B",
+                  fontSize:
+                    "15px"
+                }}
+              >
+                Sign in to your 19 MJ account
+              </p>
+            </div>
+
+            {/* ROLE SWITCH */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginBottom: "24px"
+              }}
+            >
+
+              {/* ACTIVE */}
+              <button
+                type="button"
+                style={{
+                  flex: 1,
+                  height: "48px",
+                  border: "none",
+                  borderRadius: "12px",
+                  background: "#0f7c82",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow:
+                    "0 2px 8px rgba(0,0,0,0.06)"
+                }}
+              >
+                <FiUser /> Job Seeker
+              </button>
+
+              {/* INACTIVE */}
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/company/login")
+                }
+                style={{
+                  flex: 1,
+                  height: "48px",
+                  border:
+                    "1px solid #0f7c82",
+                  borderRadius: "12px",
+                  background: "white",
+                  color: "#0f7c82",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                <FiBriefcase /> Company
+              </button>
+
+            </div>
+
+            {success && (
+              <div className="success-banner">
+                {success}
+              </div>
+            )}
+
+            {error && (
+              <div className="error-banner">
+                {error}
+              </div>
+            )}
+
+            {/* EMAIL */}
+            <div
+              style={
+                inputWrapper
+              }
+            >
+              <FiMail
+                style={
+                  leftIconStyle
+                }
+              />
+
+              <input
+                name="email"
+                type="email"
+                placeholder="Email address"
+                value={
+                  form.email
+                }
+                onChange={
+                  handleChange
+                }
+                style={
+                  inputWithIcon
+                }
+              />
+            </div>
+
+            {/* PASSWORD */}
+            <div
+              style={
+                inputWrapper
+              }
+            >
+              <FiLock
+                style={
+                  leftIconStyle
+                }
+              />
+
+              <input
+                name="password"
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                placeholder="Password"
+                value={
+                  form.password
+                }
+                onChange={
+                  handleChange
+                }
+                style={{
+                  ...inputWithIcon,
+                  paddingRight:
+                    "50px"
+                }}
+              />
+
+              <div
+                className="eye-icon"
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
+              >
+                {showPassword
+                  ? <FiEyeOff />
+                  : <FiEye />}
+              </div>
+            </div>
+
+            {/* FORGOT */}
+            <div
+              style={{
+                textAlign:
+                  "right",
+                marginBottom:
+                  "24px"
+              }}
+            >
+              <Link to="/forgot-password">
+                Forgot your password?
+              </Link>
+            </div>
+
+            {/* LOGIN */}
             <button
-              type="button"
+              type="submit"
+              disabled={
+                loading
+              }
               style={{
-                flex: 1,
+                width: "100%",
                 height:
                   "52px",
                 border:
@@ -370,246 +540,103 @@ export default function Login() {
                 background:
                   "#0f7c82",
                 color:
-                  "white"
+                  "white",
+                fontWeight:
+                  600,
+                fontSize:
+                  "16px",
+                cursor:
+                  "pointer"
               }}
             >
-              <FiUser />
-              Candidate
+              {loading
+                ? "Loading..."
+                : "Sign In"}
             </button>
 
-            <button
-              type="button"
-              onClick={() =>
-                navigate(
-                  "/company/login"
-                )
-              }
+            {/* DIVIDER */}
+            <div
               style={{
-                flex: 1,
-                height:
-                  "52px",
-                border:
-                  "none",
-                borderRadius:
-                  "12px",
-                background:
-                  "white"
+                display:
+                  "flex",
+                alignItems:
+                  "center",
+                gap: "12px",
+                margin:
+                  "24px 0"
               }}
             >
-              <FiBriefcase />
-              Company
-            </button>
+              <div
+                style={{
+                  flex: 1,
+                  height:
+                    "1px",
+                  background:
+                    "#D1D5DB"
+                }}
+              />
 
-          </div>
+              <span>
+                Or With
+              </span>
 
-          {success && (
-            <div className="success-banner">
-              {success}
+              <div
+                style={{
+                  flex: 1,
+                  height:
+                    "1px",
+                  background:
+                    "#D1D5DB"
+                }}
+              />
             </div>
-          )}
 
-          {error && (
-            <div className="error-banner">
-              {error}
-            </div>
-          )}
-
-          {/* EMAIL */}
-          <div
-            style={
-              inputWrapper
-            }
-          >
-            <FiMail
-              style={
-                leftIconStyle
-              }
-            />
-
-            <input
-              name="email"
-              type="email"
-              placeholder="Email Address"
-              value={
-                form.email
-              }
-              onChange={
-                handleChange
-              }
-              style={
-                inputWithIcon
-              }
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div
-            style={
-              inputWrapper
-            }
-          >
-            <FiLock
-              style={
-                leftIconStyle
-              }
-            />
-
-            <input
-              name="password"
-              type={
-                showPassword
-                  ? "text"
-                  : "password"
-              }
-              placeholder="Password"
-              value={
-                form.password
-              }
-              onChange={
-                handleChange
-              }
-              style={{
-                ...inputWithIcon,
-                paddingRight:
-                  "50px"
-              }}
-            />
-
+            {/* GOOGLE */}
             <div
-              className="eye-icon"
-              onClick={() =>
-                setShowPassword(
-                  !showPassword
-                )
-              }
+              style={{
+                display:
+                  "flex",
+                justifyContent:
+                  "center"
+              }}
             >
-              {showPassword
-                ? <FiEyeOff />
-                : <FiEye />}
+              <GoogleLogin
+                onSuccess={
+                  handleGoogleLogin
+                }
+                onError={() =>
+                  setError(
+                    "Google login gagal"
+                  )
+                }
+                theme="outline"
+                size="large"
+                width="400"
+              />
             </div>
-          </div>
 
-          {/* FORGOT */}
-          <div
-            style={{
-              textAlign:
-                "right",
-              marginBottom:
-                "35px"
-            }}
-          >
-            <Link to="/forgot-password">
-              Forgot Password?
-            </Link>
-          </div>
-
-          {/* LOGIN */}
-          <button
-            type="submit"
-            disabled={
-              loading
-            }
-            style={{
-              width: "100%",
-              height:
-                "58px",
-              border:
-                "none",
-              borderRadius:
-                "14px",
-              background:
-                "#0f7c82",
-              color:
-                "white",
-              cursor:
-                "pointer"
-            }}
-          >
-            {loading
-              ? "Loading..."
-              : "Sign In"}
-          </button>
-
-          {/* DIVIDER */}
-          <div
-            style={{
-              display:
-                "flex",
-              alignItems:
-                "center",
-              gap: "14px",
-              margin:
-                "28px 0"
-            }}
-          >
+            {/* FOOTER */}
             <div
               style={{
-                flex: 1,
-                height:
-                  "1px",
-                background:
-                  "#E5E7EB"
+                textAlign:
+                  "center",
+                marginTop:
+                  "24px",
+                color:
+                  "#64748B"
               }}
-            />
+            >
+              Don’t have an account?{" "}
+              <Link to="/register">
+                Create one
+              </Link>
+            </div>
 
-            <span>
-              Or With
-            </span>
+          </form>
 
-            <div
-              style={{
-                flex: 1,
-                height:
-                  "1px",
-                background:
-                  "#E5E7EB"
-              }}
-            />
-          </div>
-
-          {/* GOOGLE */}
-          <div
-            style={{
-              display:
-                "flex",
-              justifyContent:
-                "center"
-            }}
-          >
-            <GoogleLogin
-              onSuccess={
-                handleGoogleLogin
-              }
-              onError={() =>
-                setError(
-                  "Google login gagal"
-                )
-              }
-              theme="outline"
-              size="large"
-              width="420"
-            />
-          </div>
-
-          {/* FOOTER */}
-          <div
-            style={{
-              textAlign:
-                "center",
-              marginTop:
-                "30px"
-            }}
-          >
-            Don’t have an account?{" "}
-            <Link to="/register">
-              Create one
-            </Link>
-          </div>
-
-        </form>
+        </div>
 
       </div>
-
-    </div>
+    </PageTransition>
   );
 }

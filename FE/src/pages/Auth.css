@@ -3,7 +3,13 @@
    Mempertahankan desain asli dari login.html & register.html
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+*,
+*::before,
+*::after {
+  font-family: 'Inter', sans-serif !important;
+}
 
 :root {
   --teal:       #0f7c82;
@@ -23,7 +29,7 @@
   min-height: 100vh;
   display: flex;
   align-items: stretch;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--white);
   overflow: hidden;
 }
@@ -72,6 +78,7 @@
   background: rgba(255,255,255,.06);
   z-index: 0;
 }
+
 .right-circle2 {
   position: absolute;
   top: -60px; left: -60px;
@@ -219,7 +226,7 @@
 
 @keyframes float {
   0%,100% { transform: translateY(0); }
-  50%      { transform: translateY(-14px); }
+  50% { transform: translateY(-14px); }
 }
 
 /* ── CARD ─────────────────────────────────────────────────── */
@@ -231,25 +238,30 @@
 
 @keyframes slideUp {
   from { opacity:0; transform: translateY(30px); }
-  to   { opacity:1; transform: translateY(0); }
+  to { opacity:1; transform: translateY(0); }
 }
 
 @keyframes shake {
   0%,100% { transform: translateX(0); }
-  20%     { transform: translateX(-8px); }
-  40%     { transform: translateX(8px); }
-  60%     { transform: translateX(-5px); }
-  80%     { transform: translateX(5px); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
 }
 
-.auth-card.shake { animation: shake .4s ease; }
+.auth-card.shake {
+  animation: shake .4s ease;
+}
 
 /* ── HEADER ───────────────────────────────────────────────── */
-.card-header { margin-bottom: 28px; }
+.card-header {
+  margin-bottom: 28px;
+}
 
 .card-header h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Inter', sans-serif;
   font-size: 36px;
+  font-weight: 700;
   color: var(--text);
   line-height: 1.1;
 }
@@ -293,23 +305,26 @@
   margin-bottom: 24px;
   gap: 4px;
 }
+
 .role-switch button {
   flex: 1;
   padding: 10px;
   border: none;
   background: transparent;
   border-radius: calc(var(--radius) - 4px);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
   color: var(--gray-500);
   cursor: pointer;
   transition: all 0.2s;
 }
+
 .role-switch button:hover:not(.active) {
   color: var(--text);
   background: rgba(0,0,0,0.04);
 }
+
 .role-switch button.active {
   background: var(--white);
   color: var(--teal);
@@ -344,7 +359,7 @@
   padding: 14px 18px;
   border: 1.5px solid var(--gray-300);
   border-radius: var(--radius);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: var(--text);
   background: var(--gray-100);
@@ -377,7 +392,8 @@
 }
 
 .remember input[type="checkbox"] {
-  width: 16px; height: 16px;
+  width: 16px;
+  height: 16px;
   accent-color: var(--teal);
   cursor: pointer;
 }
@@ -388,7 +404,10 @@
   font-weight: 500;
   transition: opacity .2s;
 }
-.forgot:hover { opacity: .7; }
+
+.forgot:hover {
+  opacity: .7;
+}
 
 /* ── BUTTONS ──────────────────────────────────────────────── */
 .btn {
@@ -396,15 +415,22 @@
   padding: 15px;
   border: none;
   border-radius: var(--radius);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: transform .15s, box-shadow .15s, opacity .2s;
   margin-top: 6px;
 }
-.btn:active { transform: scale(.98); }
-.btn:disabled { opacity: .7; cursor: not-allowed; }
+
+.btn:active {
+  transform: scale(.98);
+}
+
+.btn:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+}
 
 .btn-primary {
   background: var(--teal);
@@ -412,14 +438,20 @@
   box-shadow: 0 4px 18px rgba(15,124,130,.35);
   letter-spacing: .3px;
 }
-.btn-primary:hover:not(:disabled) { box-shadow: 0 6px 24px rgba(15,124,130,.45); }
+
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 24px rgba(15,124,130,.45);
+}
 
 .btn-secondary {
   background: #eef6f6;
   color: var(--teal);
   border: 1.5px solid rgba(15,124,130,.15);
 }
-.btn-secondary:hover:not(:disabled) { background: #e6f2f2; }
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e6f2f2;
+}
 
 .divider {
   text-align: center;
@@ -428,7 +460,9 @@
   margin: 16px 0;
   position: relative;
 }
-.divider::before, .divider::after {
+
+.divider::before,
+.divider::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -436,8 +470,14 @@
   height: 1px;
   background: var(--gray-300);
 }
-.divider::before { left: 0; }
-.divider::after  { right: 0; }
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
 
 .btn-google {
   background: var(--white);
@@ -449,9 +489,16 @@
   gap: 10px;
   margin-top: 0;
 }
-.btn-google:hover { background: var(--gray-100); }
 
-.google-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.btn-google:hover {
+  background: var(--gray-100);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
 
 .bottom-link {
   text-align: center;
@@ -459,13 +506,17 @@
   font-size: 14px;
   color: var(--gray-500);
 }
+
 .bottom-link a {
   color: var(--teal);
   font-weight: 500;
   text-decoration: none;
   transition: opacity .2s;
 }
-.bottom-link a:hover { opacity: .75; }
+
+.bottom-link a:hover {
+  opacity: .75;
+}
 
 .resend-hint {
   margin-top: 8px;
@@ -476,9 +527,30 @@
 
 /* ── RESPONSIVE ───────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .auth-page { overflow: auto; flex-direction: column; }
-  .auth-left  { flex: none; padding: 60px 30px 50px; width: 100%; }
-  .auth-right { flex: none; width: 100%; min-height: 280px; }
-  .hero-img   { width: 60%; max-width: 260px; margin-bottom: -20px; }
-  .wave-svg   { display: none; }
+  .auth-page {
+    overflow: auto;
+    flex-direction: column;
+  }
+
+  .auth-left {
+    flex: none;
+    padding: 60px 30px 50px;
+    width: 100%;
+  }
+
+  .auth-right {
+    flex: none;
+    width: 100%;
+    min-height: 280px;
+  }
+
+  .hero-img {
+    width: 60%;
+    max-width: 260px;
+    margin-bottom: -20px;
+  }
+
+  .wave-svg {
+    display: none;
+  }
 }

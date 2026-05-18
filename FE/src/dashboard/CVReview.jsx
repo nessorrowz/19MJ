@@ -8,30 +8,43 @@ import {
 } from "react-icons/fi";
 
 import * as pdfjsLib from "pdfjs-dist";
-
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
 import mammoth from "mammoth";
 
 import CandidateSidebar from "./CandidateSidebar";
 
-
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   pdfWorkerUrl;
 
-
-
 export default function CVReview() {
 
-  const savedProfile = JSON.parse(
-    localStorage.getItem(
-      "candidateProfile"
-    ) || "{}"
+  // =========================
+  // USER + PROFILE
+  // =========================
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "{}"
+  );
+
+  const profileStorageKey =
+    `candidateProfile_${currentUser.email}`;
+
+  const profile = JSON.parse(
+    localStorage.getItem(profileStorageKey) || "{}"
+  );
+
+  // =========================
+  // CV STORAGE
+  // =========================
+  const cvStorageKey =
+    `candidateCV_${currentUser.email}`;
+
+  const savedCVList = JSON.parse(
+    localStorage.getItem(cvStorageKey) || "[]"
   );
 
 
   const [cvList, setCvList] =
-    useState([]);
+    useState(savedCVList);
 
   const [loading, setLoading] =
     useState(false);
@@ -42,7 +55,29 @@ export default function CVReview() {
 
 
   // =========================
-  // EXTRACT PDF
+  // SAVE CV
+  // =========================
+  const updateCVList = (
+    newList
+  ) => {
+
+    setCvList(
+      newList
+    );
+
+    localStorage.setItem(
+      cvStorageKey,
+      JSON.stringify(
+        newList
+      )
+    );
+
+  };
+
+
+
+  // =========================
+  // PDF
   // =========================
   const extractPDFText =
     async (file) => {
@@ -67,9 +102,7 @@ export default function CVReview() {
       ) {
 
         const page =
-          await pdf.getPage(
-            i
-          );
+          await pdf.getPage(i);
 
         const content =
           await page.getTextContent();
@@ -77,12 +110,9 @@ export default function CVReview() {
         text +=
           content.items
             .map(
-              item =>
-                item.str
+              item => item.str
             )
-            .join(
-              " "
-            );
+            .join(" ");
 
       }
 
@@ -93,7 +123,7 @@ export default function CVReview() {
 
 
   // =========================
-  // EXTRACT DOCX
+  // DOCX
   // =========================
   const extractDOCXText =
     async (file) => {
@@ -114,16 +144,19 @@ export default function CVReview() {
 
 
   // =========================
-  // DELETE CV
+  // DELETE
   // =========================
   const deleteCV =
     (index) => {
 
-      setCvList(
+      const updated =
         cvList.filter(
           (_, i) =>
             i !== index
-        )
+        );
+
+      updateCVList(
+        updated
       );
 
     };
@@ -131,7 +164,7 @@ export default function CVReview() {
 
 
   // =========================
-  // HANDLE UPLOAD + AI
+  // UPLOAD
   // =========================
   const handleUpload =
     async (e) => {
@@ -142,22 +175,17 @@ export default function CVReview() {
       if (!file)
         return;
 
-
       try {
 
         setLoading(
           true
         );
 
-
         let cvText =
           "";
 
-
         if (
-          file.name.endsWith(
-            ".pdf"
-          )
+          file.name.endsWith(".pdf")
         ) {
 
           cvText =
@@ -167,9 +195,7 @@ export default function CVReview() {
 
         } else if (
 
-          file.name.endsWith(
-            ".docx"
-          )
+          file.name.endsWith(".docx")
 
         ) {
 
@@ -194,7 +220,6 @@ export default function CVReview() {
             "token"
           );
 
-
         const response =
           await fetch(
             "http://localhost:3000/api/ai/cv-review",
@@ -211,21 +236,16 @@ export default function CVReview() {
               },
 
               body:
-                JSON.stringify(
-                  {
-                    cvText,
-
-                    targetRole:
-                      "Software Engineer"
-                  }
-                )
+                JSON.stringify({
+                  cvText,
+                  targetRole:
+                    "Software Engineer"
+                })
             }
           );
 
-
         const result =
           await response.json();
-
 
         const newCV = {
           name:
@@ -236,9 +256,7 @@ export default function CVReview() {
               file.size /
               1024 /
               1024
-            ).toFixed(
-              1
-            )} MB`,
+            ).toFixed(1)} MB`,
 
           date:
             new Date().toLocaleDateString(),
@@ -251,15 +269,18 @@ export default function CVReview() {
             result
         };
 
+        const updated =
+          [
+            newCV,
+            ...cvList
+          ];
 
-        setCvList([
-          newCV,
-          ...cvList
-        ]);
-
+        updateCVList(
+          updated
+        );
 
       } catch (
-        error
+      error
       ) {
 
         console.error(
@@ -291,40 +312,40 @@ export default function CVReview() {
 
 
         {/* HEADER */}
-      
         <div style={styles.header}>
 
           <h2>
             CV & AI Review
           </h2>
 
-
           <div style={styles.headerUser}>
 
             <FiBell />
 
-
-            {savedProfile.photo ? (
+            {profile.photo ? (
 
               <img
-                src={savedProfile.photo}
+                src={
+                  profile.photo
+                }
                 alt="profile"
                 style={{
                   width: 40,
                   height: 40,
-                  borderRadius: "50%",
-                  objectFit: "cover"
+                  borderRadius:
+                    "50%",
+                  objectFit:
+                    "cover"
                 }}
               />
 
             ) : (
 
               <div style={styles.avatar}>
-                {(savedProfile.fullName || "U")[0]}
+                {(profile.fullName || "U")[0]}
               </div>
 
             )}
-
 
             <div>
 
@@ -333,9 +354,8 @@ export default function CVReview() {
                   fontWeight: 600
                 }}
               >
-                {savedProfile.fullName || "User"}
+                {profile.fullName || "User"}
               </div>
-
 
               <div
                 style={{
@@ -343,7 +363,7 @@ export default function CVReview() {
                   color: "#666"
                 }}
               >
-                Candidate
+                Job Seeker
               </div>
 
             </div>
@@ -379,27 +399,15 @@ export default function CVReview() {
 
 
           {/* UPLOAD */}
-          <div
-            style={
-              styles.uploadBox
-            }
-          >
+          <div style={styles.uploadBox}>
 
-            <div
-              style={
-                styles.uploadIcon
-              }
-            >
-
+            <div style={styles.uploadIcon}>
               <FiUpload />
-
             </div>
-
 
             <h3>
               Drag and drop your CV here
             </h3>
-
 
             <p
               style={{
@@ -411,12 +419,7 @@ export default function CVReview() {
               Supports PDF & DOCX
             </p>
 
-
-            <label
-              style={
-                styles.uploadButton
-              }
-            >
+            <label style={styles.uploadButton}>
 
               {loading
                 ? "Analyzing..."
@@ -440,18 +443,15 @@ export default function CVReview() {
 
 
 
-          {/* CV LIST */}
+          {/* LIST */}
           <h3
             style={{
               marginTop: 40,
               marginBottom: 20
             }}
           >
-            Your CVs (
-            {cvList.length}
-            )
+            Your CVs ({cvList.length})
           </h3>
-
 
 
           {cvList.map(
@@ -462,9 +462,7 @@ export default function CVReview() {
 
               <div
                 key={index}
-                style={
-                  styles.cvCard
-                }
+                style={styles.cvCard}
               >
 
                 <div
@@ -489,7 +487,6 @@ export default function CVReview() {
                       {cv.name}
                     </div>
 
-
                     <div
                       style={{
                         color:
@@ -504,7 +501,6 @@ export default function CVReview() {
                   </div>
 
                 </div>
-
 
 
                 <div
@@ -529,7 +525,6 @@ export default function CVReview() {
                   >
                     View AI Review
                   </button>
-
 
                   <FiTrash2
                     onClick={() =>
@@ -565,7 +560,6 @@ export default function CVReview() {
                 AI Review
               </h2>
 
-
               <pre
                 style={{
                   whiteSpace:
@@ -595,7 +589,6 @@ export default function CVReview() {
 
 
 const styles = {
-
   container: {
     display: "flex",
     minHeight:
@@ -726,5 +719,4 @@ const styles = {
     padding: 30,
     marginTop: 30
   }
-
 };
