@@ -2,8 +2,15 @@ import { FiBell, FiMic, FiZap } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
 
 export default function InterviewPracticePage() {
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "{}"
+  );
+
+  const profileStorageKey =
+    `candidateProfile_${currentUser.email}`;
+
   const profile = JSON.parse(
-    localStorage.getItem("candidateProfile") || "{}"
+    localStorage.getItem(profileStorageKey) || "{}"
   );
 
   const sessions = [

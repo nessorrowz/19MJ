@@ -3,7 +3,8 @@ const express    = require('express');
 const cors       = require('cors');
 const passport   = require('./config/passport');
 const authRoutes = require('./routes/authRoutes');
-const aiRoutes   = require('./routes/aiRoutes');
+const aiRoutes   = require('./ai/routes/aiRoutes');
+const { mountAiSwaggerDocs } = require('./ai/docs/aiSwagger');
 
 // Trigger DB connection test on startup
 require('./config/db');
@@ -27,7 +28,8 @@ app.use(passport.initialize());
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
-app.use('/api/ai',   aiRoutes);
+mountAiSwaggerDocs(app);
+app.use('/api/ai', aiRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '19MJ Backend is running' });

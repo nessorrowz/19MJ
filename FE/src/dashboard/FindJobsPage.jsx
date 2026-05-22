@@ -2,8 +2,15 @@ import { FiBell, FiSearch, FiMapPin, FiStar, FiClock, FiChevronRight } from "rea
 import CandidateSidebar from "./CandidateSidebar";
 
 export default function FindJobsPage() {
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "{}"
+  );
+
+  const profileStorageKey =
+    `candidateProfile_${currentUser.email}`;
+
   const profile = JSON.parse(
-    localStorage.getItem("candidateProfile") || "{}"
+    localStorage.getItem(profileStorageKey) || "{}"
   );
 
   const jobs = [

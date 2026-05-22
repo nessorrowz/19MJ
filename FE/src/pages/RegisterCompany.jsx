@@ -1,421 +1,605 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import api from '../utils/api';
-import './Auth.css';
+import { useState } from "react";
+import {
+  Link,
+  useNavigate
+} from "react-router-dom";
+
+import api from "../utils/api";
+import "./Auth.css";
 
 import {
   FiUser,
   FiBriefcase,
   FiMail,
-  FiGlobe,
-  FiLayers,
   FiLock,
   FiEye,
   FiEyeOff
 } from "react-icons/fi";
 
-// US-003: Register Company
+import {
+  GoogleLogin
+} from "@react-oauth/google";
+
+import {
+  jwtDecode
+} from "jwt-decode";
+
+import PageTransition from "../components/PageTransition";
+
 export default function RegisterCompany() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [form, setForm] = useState({
-    company_name: '',
-    email: '',
-    password: '',
-    confirm: '',
-    industry: '',
-    website: ''
-  });
-
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [shake, setShake] = useState(false);
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
+  const [form, setForm] =
+    useState({
+      company_name: "",
+      email: "",
+      password: "",
+      confirm: ""
     });
 
-    setError('');
-  };
+  const [error, setError] =
+    useState("");
 
-  const triggerShake = () => {
-    setShake(true);
-    setTimeout(() => setShake(false), 400);
-  };
+  const [loading, setLoading] =
+    useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const [shake, setShake] =
+    useState(false);
 
-    if (!form.company_name || !form.email || !form.password || !form.confirm) {
-      triggerShake();
-      setError('Nama perusahaan, email, dan password wajib diisi.');
-      return;
-    }
+  const [
+    showPassword,
+    setShowPassword
+  ] = useState(false);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const [
+    showConfirm,
+    setShowConfirm
+  ] = useState(false);
 
-    if (!emailRegex.test(form.email)) {
-      triggerShake();
-      setError('Format email tidak valid.');
-      return;
-    }
-
-    if (form.password !== form.confirm) {
-      triggerShake();
-      setError('Password tidak sama.');
-      return;
-    }
-
-    if (form.password.length < 6) {
-      triggerShake();
-      setError('Password minimal 6 karakter.');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      await api.post('/auth/register/company', {
-        company_name: form.company_name,
-        email: form.email,
-        password: form.password,
-        industry: form.industry || undefined,
-        website: form.website || undefined
+  const handleChange =
+    (e) => {
+      setForm({
+        ...form,
+        [e.target.name]:
+          e.target.value
       });
 
-      navigate('/company/login', {
-        state: {
-          registered: true
-        }
-      });
+      setError("");
+    };
 
-    } catch (err) {
-      triggerShake();
-      setError(err.message);
+  const triggerShake =
+    () => {
+      setShake(true);
 
-    } finally {
-      setLoading(false);
-    }
-  };
+      setTimeout(() => {
+        setShake(false);
+      }, 400);
+    };
+
+  const handleSubmit =
+    async (e) => {
+      e.preventDefault();
+
+      if (
+        !form.company_name ||
+        !form.email ||
+        !form.password ||
+        !form.confirm
+      ) {
+        triggerShake();
+
+        setError(
+          "Semua field wajib diisi."
+        );
+
+        return;
+      }
+
+      if (
+        form.password !==
+        form.confirm
+      ) {
+        triggerShake();
+
+        setError(
+          "Password tidak sama."
+        );
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        await api.post(
+          "/auth/register/company",
+          {
+            company_name:
+              form.company_name,
+
+            email:
+              form.email,
+
+            password:
+              form.password
+          }
+        );
+
+        navigate(
+          "/company/login",
+          {
+            state: {
+              registered: true
+            }
+          }
+        );
+
+      } catch (err) {
+        triggerShake();
+
+        setError(
+          err.message
+        );
+
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  const handleGoogleLogin =
+    async (
+      credentialResponse
+    ) => {
+      try {
+        const userInfo =
+          jwtDecode(
+            credentialResponse.credential
+          );
+
+        const googleUser =
+        {
+          username:
+            userInfo.name,
+
+          email:
+            userInfo.email,
+
+          photo:
+            userInfo.picture,
+
+          role:
+            "company"
+        };
+
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify(
+            googleUser
+          )
+        );
+
+        localStorage.setItem(
+          "isLogin",
+          "true"
+        );
+
+        navigate(
+          "/company/dashboard"
+        );
+
+      } catch (err) {
+        triggerShake();
+
+        setError(
+          "Google login gagal"
+        );
+      }
+    };
 
   const inputStyle = {
     width: "100%",
-    height: "58px",
+    height: "52px",
     padding: "0 18px",
-    borderRadius: "14px",
-    border: "1px solid #E5E7EB",
+    borderRadius: "12px",
+    border:
+      "1.5px solid #D1D5DB",
     fontSize: "15px",
-    boxSizing: "border-box"
+    boxSizing:
+      "border-box",
+    background:
+      "white",
+    outline: "none"
   };
 
   const inputWrapper = {
-    position: "relative",
-    marginBottom: "16px"
+    position:
+      "relative",
+    marginBottom:
+      "14px"
   };
 
   const leftIconStyle = {
-    position: "absolute",
-    left: "18px",
+    position:
+      "absolute",
+    left: "16px",
     top: "50%",
-    transform: "translateY(-50%)",
-    color: "#9CA3AF",
-    fontSize: "18px",
+    transform:
+      "translateY(-50%)",
+    color: "#94A3B8",
     zIndex: 2
   };
 
   const inputWithIcon = {
     ...inputStyle,
-    paddingLeft: "48px"
+    paddingLeft:
+      "48px"
   };
 
   return (
-    <div className="auth-layout">
+    <PageTransition>
+      <div className="auth-layout">
 
-      {/* LEFT SIDE */}
-      <div className="auth-left-panel">
-
-        <img
-          src="/gambar/19mj.png"
-          alt="logo"
-          style={{
-            width: "150px",
-            marginBottom: "20px"
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            background: "#8FA5B8",
-            borderRadius: "25px",
-            height: "500px",
-            overflow: "hidden"
-          }}
-        >
+        {/* LEFT */}
+        <div className="auth-left-panel">
 
           <img
-            src="/gambar/ceweray.png"
-            alt="character"
-            className="character-animation"
+            src="/gambar/19mj.png"
+            alt="logo"
             style={{
-              position: "absolute",
-              bottom: "0",
-              left: "50%",
-              width: "85%",
-              maxHeight: "95%",
-              objectFit: "contain"
+              width: "150px",
+              marginBottom:
+                "20px"
             }}
           />
 
+          <div
+            style={{
+              position:
+                "relative",
+              background:
+                "#8FA5B8",
+              borderRadius:
+                "25px",
+              height:
+                "500px",
+              overflow:
+                "hidden"
+            }}
+          >
+            <img
+              src="/gambar/ceweray.png"
+              alt="character"
+              className="character-animation"
+              style={{
+                position:
+                  "absolute",
+                bottom: 0,
+                left: "50%",
+                width:
+                  "85%",
+                transform:
+                  "translateX(-50%)"
+              }}
+            />
+          </div>
+
         </div>
 
-      </div>
-
-
-      {/* RIGHT SIDE */}
-      <div className="auth-right-panel">
-
-        <form
-          onSubmit={handleSubmit}
-          className={shake ? "shake" : ""}
+        {/* RIGHT */}
+        <div
+          className="auth-right-panel"
           style={{
-            width: "100%",
-            maxWidth: "500px"
+            borderRadius:
+              "32px",
+            padding:
+              "40px"
           }}
         >
 
-          {/* HEADER */}
-          <h1
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className={
+              shake
+                ? "shake"
+                : ""
+            }
             style={{
-              textAlign: "center",
-              marginBottom: "8px"
-            }}
-          >
-            Create company account
-          </h1>
-
-          <p
-            style={{
-              textAlign: "center",
-              color: "#777",
-              marginBottom: "30px"
-            }}
-          >
-            Find the best talents with 19MJ
-          </p>
-
-
-          {/* ROLE SWITCH */}
-          <div
-            style={{
-              display: "flex",
-              background: "#f5f5f5",
-              borderRadius: "14px",
-              padding: "4px",
-              gap: "4px",
-              marginBottom: "35px"
+              width: "100%",
+              maxWidth:
+                "420px"
             }}
           >
 
-            <button
-              type="button"
-              onClick={() => navigate("/register")}
+            {/* HEADER */}
+            <div
               style={{
-                flex: 1,
-                height: "52px",
-                border: "none",
-                borderRadius: "12px",
-                background: "white",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px"
+                marginBottom:
+                  "28px"
               }}
             >
-              <FiUser size={18} />
-              Candidate
-            </button>
+              <h1
+                style={{
+                  textAlign:
+                    "center",
+                  fontSize:
+                    "28px",
+                  fontWeight:
+                    700,
+                  marginBottom:
+                    "8px"
+                }}
+              >
+                Create your account
+              </h1>
 
-            <button
-              type="button"
+              <p
+                style={{
+                  textAlign:
+                    "center",
+                  color:
+                    "#64748B"
+                }}
+              >
+                Join thousands preparing for their next role
+              </p>
+            </div>
+
+            {/* ROLE SWITCH */}
+            <div
               style={{
-                flex: 1,
+                display:
+                  "flex",
+                gap: "12px",
+                marginBottom:
+                  "24px"
+              }}
+            >
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(
+                    "/register"
+                  )
+                }
+                style={{
+                  flex: 1,
+                  height:
+                    "48px",
+                  border:
+                    "1px solid #0f7c82",
+                  borderRadius:
+                    "12px",
+                  background:
+                    "white",
+                  color:
+                    "#0f7c82",
+                  fontWeight:
+                    600
+                }}
+              >
+                <FiUser /> Job Seeker
+              </button>
+
+              <button
+                type="button"
+                style={{
+                  flex: 1,
+                  height:
+                    "48px",
+                  border:
+                    "none",
+                  borderRadius:
+                    "12px",
+                  background:
+                    "#0f7c82",
+                  color:
+                    "white",
+                  fontWeight:
+                    600
+                }}
+              >
+                <FiBriefcase /> Company
+              </button>
+
+            </div>
+
+            {error && (
+              <div className="error-banner">
+                {error}
+              </div>
+            )}
+
+            {/* COMPANY NAME */}
+            <div style={inputWrapper}>
+              <FiBriefcase style={leftIconStyle} />
+
+              <input
+                name="company_name"
+                placeholder="Company Name"
+                value={form.company_name}
+                onChange={handleChange}
+                style={inputWithIcon}
+              />
+            </div>
+
+            {/* EMAIL */}
+            <div style={inputWrapper}>
+              <FiMail style={leftIconStyle} />
+
+              <input
+                name="email"
+                placeholder="Email address"
+                value={form.email}
+                onChange={handleChange}
+                style={inputWithIcon}
+              />
+            </div>
+
+            {/* PASSWORD */}
+            <div style={inputWrapper}>
+              <FiLock style={leftIconStyle} />
+
+              <input
+                name="password"
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                style={{
+                  ...inputWithIcon,
+                  paddingRight:
+                    "50px"
+                }}
+              />
+
+              <div
+                className="eye-icon"
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
+              >
+                {showPassword
+                  ? <FiEyeOff />
+                  : <FiEye />}
+              </div>
+            </div>
+
+            {/* CONFIRM */}
+            <div style={inputWrapper}>
+              <FiLock style={leftIconStyle} />
+
+              <input
+                name="confirm"
+                type={
+                  showConfirm
+                    ? "text"
+                    : "password"
+                }
+                placeholder="Confirm Password"
+                value={form.confirm}
+                onChange={handleChange}
+                style={{
+                  ...inputWithIcon,
+                  paddingRight:
+                    "50px"
+                }}
+              />
+
+              <div
+                className="eye-icon"
+                onClick={() =>
+                  setShowConfirm(
+                    !showConfirm
+                  )
+                }
+              >
+                {showConfirm
+                  ? <FiEyeOff />
+                  : <FiEye />}
+              </div>
+            </div>
+
+            {/* BUTTON */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
                 height: "52px",
                 border: "none",
                 borderRadius: "12px",
                 background: "#0f7c82",
                 color: "white",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px"
+                fontWeight: 600,
+                marginTop: "10px"
               }}
             >
-              <FiBriefcase size={18} />
-              Company
+              {loading
+                ? "Creating..."
+                : "Create Account"}
             </button>
 
-          </div>
-
-
-          {error && (
-            <div className="error-banner">
-              {error}
-            </div>
-          )}
-
-
-          {/* COMPANY NAME */}
-          <div style={inputWrapper}>
-            <FiBriefcase style={leftIconStyle} />
-
-            <input
-              name="company_name"
-              placeholder="Company Name"
-              value={form.company_name}
-              onChange={handleChange}
-              style={inputWithIcon}
-            />
-          </div>
-
-
-          {/* EMAIL */}
-          <div style={inputWrapper}>
-            <FiMail style={leftIconStyle} />
-
-            <input
-              name="email"
-              type="email"
-              placeholder="Company Email"
-              value={form.email}
-              onChange={handleChange}
-              style={inputWithIcon}
-            />
-          </div>
-
-
-          {/* INDUSTRY */}
-          <div style={inputWrapper}>
-            <FiLayers style={leftIconStyle} />
-
-            <input
-              name="industry"
-              placeholder="Industry (Optional)"
-              value={form.industry}
-              onChange={handleChange}
-              style={inputWithIcon}
-            />
-          </div>
-
-
-          {/* WEBSITE */}
-          <div style={inputWrapper}>
-            <FiGlobe style={leftIconStyle} />
-
-            <input
-              name="website"
-              placeholder="Website (Optional)"
-              value={form.website}
-              onChange={handleChange}
-              style={inputWithIcon}
-            />
-          </div>
-
-
-          {/* PASSWORD */}
-          <div style={inputWrapper}>
-            <FiLock style={leftIconStyle} />
-
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              style={{
-                ...inputWithIcon,
-                paddingRight: "50px"
-              }}
-            />
-
+            {/* DIVIDER */}
             <div
-              className="eye-icon"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <FiEyeOff /> : <FiEye />}
-            </div>
-          </div>
-
-
-          {/* CONFIRM PASSWORD */}
-          <div style={inputWrapper}>
-            <FiLock style={leftIconStyle} />
-
-            <input
-              name="confirm"
-              type={showConfirm ? "text" : "password"}
-              placeholder="Confirm Password"
-              value={form.confirm}
-              onChange={handleChange}
               style={{
-                ...inputWithIcon,
-                paddingRight: "50px"
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                margin: "24px 0"
               }}
-            />
-
-            <div
-              className="eye-icon"
-              onClick={() => setShowConfirm(!showConfirm)}
             >
-              {showConfirm ? <FiEyeOff /> : <FiEye />}
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "#D1D5DB"
+                }}
+              />
+
+              <span>
+                Or With
+              </span>
+
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "#D1D5DB"
+                }}
+              />
             </div>
-          </div>
 
+            {/* GOOGLE */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center"
+              }}
+            >
+              <GoogleLogin
+                onSuccess={
+                  handleGoogleLogin
+                }
+                onError={() =>
+                  setError(
+                    "Google login gagal"
+                  )
+                }
+                theme="outline"
+                size="large"
+                width="400"
+              />
+            </div>
 
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              height: "58px",
-              background: "#0f7c82",
-              color: "white",
-              border: "none",
-              borderRadius: "14px",
-              cursor: "pointer",
-              fontWeight: "600",
-              marginTop: "10px"
-            }}
-          >
-            {loading ? "Creating..." : "Create Account"}
-          </button>
+            {/* FOOTER */}
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "24px",
+                color: "#64748B"
+              }}
+            >
+              Already have an account?{" "}
+              <Link to="/company/login">
+                Log in
+              </Link>
+            </div>
 
+          </form>
 
-          {/* FOOTER */}
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "25px"
-            }}
-          >
-            Already have an account?{" "}
-            <Link to="/company/login">
-              Sign In
-            </Link>
-          </div>
-
-        </form>
+        </div>
 
       </div>
-
-    </div>
+    </PageTransition>
   );
 }

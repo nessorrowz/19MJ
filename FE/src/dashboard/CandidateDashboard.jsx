@@ -1,4 +1,6 @@
+import React from "react";
 import { useNavigate } from "react-router-dom";
+
 import {
   FiBell,
   FiUpload,
@@ -11,15 +13,72 @@ import {
 
 import CandidateSidebar from "./CandidateSidebar";
 
+
+// ====================
+// ICON HELPERS
+// ====================
+
+const createIconCircle = (
+  bg,
+  color
+) => ({
+  wrapper: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "50%",
+    background: bg,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: "18px"
+  },
+
+  color
+});
+
+
+const uploadIcon =
+  createIconCircle(
+    "rgba(16,185,129,0.12)",
+    "#059669"
+  );
+
+const interviewIcon =
+  createIconCircle(
+    "rgba(245,158,11,0.12)",
+    "#D97706"
+  );
+
+const jobsIcon =
+  createIconCircle(
+    "rgba(99,102,241,0.12)",
+    "#4F46E5"
+  );
+
+
+// ====================
+// COMPONENT
+// ====================
+
 export default function CandidateDashboard() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   const user = JSON.parse(
+    localStorage.getItem(
+      "currentUser"
+    ) || "{}"
+  );
+
+  const currentUser = JSON.parse(
     localStorage.getItem("currentUser") || "{}"
   );
 
+  const profileStorageKey =
+    `candidateProfile_${currentUser.email}`;
+
   const profile = JSON.parse(
-    localStorage.getItem("candidateProfile") || "{}"
+    localStorage.getItem(profileStorageKey) || "{}"
   );
 
   const displayName =
@@ -37,11 +96,15 @@ export default function CandidateDashboard() {
     profile.experience
   ];
 
-  const percentage = Math.round(
-    (fields.filter(Boolean).length /
-      fields.length) *
-      100
-  );
+  const percentage =
+    Math.round(
+      (
+        fields.filter(
+          Boolean
+        ).length /
+        fields.length
+      ) * 100
+    );
 
   return (
     <div style={styles.container}>
@@ -52,104 +115,124 @@ export default function CandidateDashboard() {
 
 
         {/* HEADER */}
-        
         <div
-        style={{
-            background: "white",
+          style={{
+            background:
+              "white",
             height: "88px",
-            padding: "0 32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            borderBottom: "1px solid #eee",
-            boxSizing: "border-box"
-        }}
+            padding:
+              "0 32px",
+            display:
+              "flex",
+            alignItems:
+              "center",
+            justifyContent:
+              "space-between",
+            borderBottom:
+              "1px solid #eee",
+            boxSizing:
+              "border-box"
+          }}
         >
 
-        {/* LEFT */}
-        <h2
+          <h2
             style={{
-            margin: 0,
-            fontSize: 28,
-            fontWeight: 700
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 700
             }}
-        >
-            Profile
-            {/* ganti sesuai page:
-                Candidate
-                Profile
-                CV & AI Review
-                Career Planner
-            */}
-        </h2>
+          >
+            Candidate
+          </h2>
 
 
-        {/* RIGHT */}
-        <div
+          <div
             style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 16
+              display:
+                "flex",
+              alignItems:
+                "center",
+              gap: 16
             }}
-        >
+          >
 
             <FiBell size={18} />
 
             {profile.photo ? (
 
-            <img
-                src={profile.photo}
+              <img
+                src={
+                  profile.photo
+                }
                 alt="profile"
                 style={{
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                objectFit: "cover"
+                  width: 42,
+                  height: 42,
+                  borderRadius:
+                    "50%",
+                  objectFit:
+                    "cover"
                 }}
-            />
+              />
 
             ) : (
 
-            <div
+              <div
                 style={{
-                width: 42,
-                height: 42,
-                borderRadius: "50%",
-                background: "#0f7c82",
-                color: "white",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                fontWeight: 700
+                  width: 42,
+                  height: 42,
+                  borderRadius:
+                    "50%",
+                  background:
+                    "#0f7c82",
+                  color:
+                    "white",
+                  display:
+                    "flex",
+                  justifyContent:
+                    "center",
+                  alignItems:
+                    "center",
+                  fontWeight:
+                    700
                 }}
-            >
-                {(profile.fullName || "U")[0]}
-            </div>
+              >
+                {(
+                  profile.fullName ||
+                  "U"
+                )[0]}
+              </div>
 
             )}
 
             <div>
 
-            <div
+              <div
                 style={{
-                fontWeight: 600
+                  fontWeight:
+                    600
                 }}
-            >
-                {profile.fullName || "User"}
-            </div>
+              >
+                {
+                  profile.fullName ||
+                  "User"
+                }
+              </div>
 
-            <div
+              <div
                 style={{
-                fontSize: 12,
-                color: "#666"
+                  fontSize:
+                    12,
+                  color:
+                    "#666"
                 }}
-            >
-                Candidate
-            </div>
+              >
+                Job Seeker
+              </div>
 
             </div>
 
-        </div>
+          </div>
 
         </div>
 
@@ -163,8 +246,13 @@ export default function CandidateDashboard() {
               Good morning, {displayName} 👋
             </h1>
 
-            <p style={{ color: "#666" }}>
-              Complete your profile
+            <p
+              style={{
+                color:
+                  "#666"
+              }}
+            >
+              You have things to complete.
             </p>
 
           </div>
@@ -180,16 +268,21 @@ export default function CandidateDashboard() {
               <div
                 style={{
                   ...styles.progressFill,
-                  width: `${percentage}%`
+                  width:
+                    `${percentage}%`
                 }}
               />
 
             </div>
 
             <button
-              style={styles.outlineButton}
+              style={
+                styles.outlineButton
+              }
               onClick={() =>
-                navigate("/my-profile")
+                navigate(
+                  "/my-profile"
+                )
               }
             >
               Complete Profile
@@ -204,24 +297,42 @@ export default function CandidateDashboard() {
         <div style={styles.featureGrid}>
 
           <FeatureCard
-            icon={<FiUpload />}
+            icon={
+              <FiUpload />
+            }
             title="Upload Your CV"
-            desc="Get AI-powered review in seconds"
+            desc="Get instant feedback on your CV"
             onClick={() =>
-              navigate("/cv-review")
+              navigate(
+                "/cv-review"
+              )
             }
           />
 
           <FeatureCard
-            icon={<FiMic />}
+            icon={
+              <FiMic />
+            }
             title="Practice Interview"
-            desc="Simulate interview with AI"
+            desc="Practice interview with AI"
+            onClick={() =>
+              navigate(
+                "/interview-practice"
+              )
+            }
           />
 
           <FeatureCard
-            icon={<FiSearch />}
+            icon={
+              <FiSearch />
+            }
             title="Find Jobs"
-            desc="Browse matching jobs"
+            desc="Browse roles that match you"
+            onClick={() =>
+              navigate(
+                "/find-jobs"
+              )
+            }
           />
 
         </div>
@@ -230,8 +341,10 @@ export default function CandidateDashboard() {
         {/* PROGRESS */}
         <h2
           style={{
-            padding: "0 30px",
-            marginBottom: 20
+            padding:
+              "0 30px",
+            marginBottom:
+              20
           }}
         >
           Your Progress
@@ -240,31 +353,43 @@ export default function CandidateDashboard() {
         <div style={styles.progressGrid}>
 
           <SmallCard
-            icon={<FiFileText />}
+            icon={
+              <FiFileText />
+            }
             title="CV Review"
             button="Upload"
             onClick={() =>
-              navigate("/cv-review")
+              navigate(
+                "/cv-review"
+              )
             }
           />
 
           <SmallCard
-            icon={<FiMap />}
+            icon={
+              <FiMap />
+            }
             title="Career Plan"
             button="Create"
             onClick={() =>
-              navigate("/career-planner")
+              navigate(
+                "/career-planner"
+              )
             }
           />
 
           <SmallCard
-            icon={<FiMic />}
+            icon={
+              <FiMic />
+            }
             title="Interview Practice"
             button="View"
           />
 
           <SmallCard
-            icon={<FiBriefcase />}
+            icon={
+              <FiBriefcase />
+            }
             title="Applications"
             button="View"
           />
@@ -278,29 +403,56 @@ export default function CandidateDashboard() {
 }
 
 
+// ====================
+// FEATURE CARD
+// ====================
+
 function FeatureCard({
   icon,
   title,
   desc,
   onClick
 }) {
+
+  const iconStyles = {
+    "Upload Your CV":
+      uploadIcon,
+
+    "Practice Interview":
+      interviewIcon,
+
+    "Find Jobs":
+      jobsIcon
+  };
+
+  const selectedStyle =
+    iconStyles[
+    title
+    ];
+
   return (
     <div style={styles.featureCard}>
 
       <div
-        style={{
-          fontSize: 24,
-          marginBottom: 22
-        }}
+        style={
+          selectedStyle.wrapper
+        }
       >
-        {icon}
+        {React.cloneElement(
+          icon,
+          {
+            size: 22,
+            color:
+              selectedStyle.color
+          }
+        )}
       </div>
 
       <h3
         style={{
           margin: 0,
-          marginBottom: 14,
-          lineHeight: 1.4
+          marginBottom:
+            14
         }}
       >
         {title}
@@ -309,9 +461,10 @@ function FeatureCard({
       <p
         style={{
           margin: 0,
-          marginBottom: 22,
-          color: "#666",
-          lineHeight: 1.6
+          marginBottom:
+            22,
+          color:
+            "#666"
         }}
       >
         {desc}
@@ -319,7 +472,9 @@ function FeatureCard({
 
       <p
         onClick={onClick}
-        style={styles.link}
+        style={
+          styles.link
+        }
       >
         Get Started →
       </p>
@@ -328,6 +483,10 @@ function FeatureCard({
   );
 }
 
+
+// ====================
+// SMALL CARD
+// ====================
 
 function SmallCard({
   icon,
@@ -340,18 +499,46 @@ function SmallCard({
 
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
           gap: 12,
-          alignItems: "center"
+          alignItems:
+            "center"
         }}
       >
-        {icon}
-        <strong>{title}</strong>
+
+        <div
+          style={{
+            width: "38px",
+            height: "38px",
+            borderRadius:
+              "50%",
+            background:
+              "rgba(15,124,130,0.08)",
+            display:
+              "flex",
+            alignItems:
+              "center",
+            justifyContent:
+              "center",
+            color:
+              "#0f7c82"
+          }}
+        >
+          {icon}
+        </div>
+
+        <strong>
+          {title}
+        </strong>
+
       </div>
 
       <button
         onClick={onClick}
-        style={styles.smallButton}
+        style={
+          styles.smallButton
+        }
       >
         {button}
       </button>
@@ -361,46 +548,20 @@ function SmallCard({
 }
 
 
+// ====================
+// STYLES
+// ====================
+
 const styles = {
   container: {
     display: "flex",
     minHeight: "100vh",
-    background: "#f5f7fa"
+    background: "#f5f7fa",
+    fontFamily: "Inter, sans-serif"
   },
 
   main: {
     flex: 1
-  },
-
-  header: {
-    background: "white",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "20px 35px",
-    borderBottom: "1px solid #eee"
-  },
-
-  userSection: {
-    display: "flex",
-    gap: 14,
-    alignItems: "center"
-  },
-
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: "50%",
-    background: "#0f7c82",
-    color: "white",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-
-  roleText: {
-    fontSize: 12,
-    color: "#666"
   },
 
   greetingCard: {
@@ -409,7 +570,8 @@ const styles = {
     borderRadius: 20,
     padding: 30,
     display: "flex",
-    justifyContent: "space-between"
+    justifyContent:
+      "space-between"
   },
 
   progressBar: {
@@ -417,36 +579,45 @@ const styles = {
     height: 8,
     background: "#eee",
     borderRadius: 10,
-    margin: "8px 0 15px"
+    margin:
+      "8px 0 15px"
   },
 
   progressFill: {
     height: "100%",
-    background: "#0f7c82",
+    background:
+      "#0f7c82",
     borderRadius: 10
   },
 
   outlineButton: {
-    border: "1px solid #0f7c82",
-    background: "white",
-    color: "#0f7c82",
-    padding: "8px 16px",
+    border:
+      "1px solid #0f7c82",
+    background:
+      "white",
+    color:
+      "#0f7c82",
+    padding:
+      "8px 16px",
     borderRadius: 10,
     cursor: "pointer"
   },
 
   featureGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3,1fr)",
+    gridTemplateColumns:
+      "repeat(3,1fr)",
     gap: 20,
-    padding: "0 30px",
+    padding:
+      "0 30px",
     marginBottom: 30
   },
 
   featureCard: {
     background: "white",
     borderRadius: 20,
-    padding: "32px 28px"
+    padding:
+      "32px 28px"
   },
 
   link: {
@@ -458,9 +629,11 @@ const styles = {
 
   progressGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2,1fr)",
+    gridTemplateColumns:
+      "repeat(2,1fr)",
     gap: 20,
-    padding: "0 30px 30px"
+    padding:
+      "0 30px 30px"
   },
 
   smallCard: {
@@ -468,15 +641,20 @@ const styles = {
     borderRadius: 16,
     padding: 20,
     display: "flex",
-    justifyContent: "space-between",
+    justifyContent:
+      "space-between",
     alignItems: "center"
   },
 
   smallButton: {
-    border: "1px solid #0f7c82",
-    background: "white",
-    color: "#0f7c82",
-    padding: "8px 14px",
+    border:
+      "1px solid #0f7c82",
+    background:
+      "white",
+    color:
+      "#0f7c82",
+    padding:
+      "8px 14px",
     borderRadius: 8,
     cursor: "pointer"
   }

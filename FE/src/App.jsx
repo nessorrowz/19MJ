@@ -2,15 +2,29 @@ import {
   BrowserRouter,
   Routes,
   Route,
-  Navigate
+  Navigate,
+  useLocation
 } from "react-router-dom";
 
-import { GoogleOAuthProvider } from "@react-oauth/google";
+import {
+  GoogleOAuthProvider
+} from "@react-oauth/google";
+
+import {
+  AnimatePresence
+} from "framer-motion";
+
+import "@fontsource/inter/300.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/inter/700.css";
 
 import Login from "./pages/Login";
 import RegisterCandidate from "./pages/RegisterCandidate";
 import RegisterCompany from "./pages/RegisterCompany";
 import LoginCompany from "./pages/LoginCompany";
+
 import AuthCallback from "./pages/AuthCallback";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyResetPin from "./pages/VerifyResetPin";
@@ -22,6 +36,7 @@ import CVReview from "./dashboard/CVReview";
 import CareerPlannerPage from "./dashboard/CareerPlannerPage";
 import InterviewPracticePage from "./dashboard/InterviewPracticePage";
 import FindJobsPage from "./dashboard/FindJobsPage";
+
 
 function PrivateRoute({
   children,
@@ -46,11 +61,15 @@ function PrivateRoute({
       ) || "{}"
     );
 
-    if (user.role !== allowedRole) {
+    if (
+      user.role !==
+      allowedRole
+    ) {
       return (
         <Navigate
           to={
-            user.role === "company"
+            user.role ===
+              "company"
               ? "/company/dashboard"
               : "/dashboard"
           }
@@ -62,6 +81,7 @@ function PrivateRoute({
 
   return children;
 }
+
 
 function Dashboard({
   role
@@ -76,9 +96,9 @@ function Dashboard({
     role === "company"
       ? user.company_name
       : (
-          user.username ||
-          user.email
-        );
+        user.username ||
+        user.email
+      );
 
   return (
     <div
@@ -93,6 +113,7 @@ function Dashboard({
       <button
         onClick={() => {
           localStorage.clear();
+
           window.location.href =
             "/login";
         }}
@@ -102,6 +123,7 @@ function Dashboard({
     </div>
   );
 }
+
 
 function RootRedirect() {
   const isLogin =
@@ -125,7 +147,8 @@ function RootRedirect() {
   return (
     <Navigate
       to={
-        user.role === "company"
+        user.role ===
+          "company"
           ? "/company/dashboard"
           : "/dashboard"
       }
@@ -134,176 +157,175 @@ function RootRedirect() {
   );
 }
 
+
+function AppRoutes() {
+  const location =
+    useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+
+      <Routes
+        location={location}
+        key={
+          location.pathname
+        }
+      >
+
+        {/* Candidate */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={
+            <RegisterCandidate />
+          }
+        />
+
+        {/* Company */}
+        <Route
+          path="/company/login"
+          element={
+            <LoginCompany />
+          }
+        />
+
+        <Route
+          path="/company/register"
+          element={
+            <RegisterCompany />
+          }
+        />
+
+        {/* Recovery */}
+        <Route
+          path="/forgot-password"
+          element={
+            <ForgotPassword />
+          }
+        />
+
+        <Route
+          path="/verify-reset-pin"
+          element={
+            <VerifyResetPin />
+          }
+        />
+
+        <Route
+          path="/reset-password"
+          element={
+            <ResetPassword />
+          }
+        />
+
+        {/* OAuth */}
+        <Route
+          path="/auth/callback"
+          element={
+            <AuthCallback />
+          }
+        />
+
+        {/* Dashboard */}
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <CandidateDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company/dashboard"
+          element={
+            <PrivateRoute allowedRole="company">
+              <Dashboard role="company" />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/my-profile"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <CandidateProfile />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/cv-review"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <CVReview />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/career-planner"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <CareerPlannerPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/interview-practice"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <InterviewPracticePage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/find-jobs"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <FindJobsPage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Root */}
+        <Route
+          path="/"
+          element={
+            <RootRedirect />
+          }
+        />
+
+        {/* 404 */}
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
+      </Routes>
+
+    </AnimatePresence>
+  );
+}
+
+
 export default function App() {
   return (
     <GoogleOAuthProvider clientId="GOOGLE_CLIENT_ID_KAMU">
 
       <BrowserRouter>
-
-        <Routes>
-
-          {/* Candidate */}
-          <Route
-            path="/login"
-            element={<Login />}
-          />
-
-          <Route
-            path="/register"
-            element={
-              <RegisterCandidate />
-            }
-          />
-
-          <Route
-            path="/forgot-password"
-            element={
-              <ForgotPassword />
-            }
-          />
-
-          <Route
-            path="/verify-reset-pin"
-            element={
-              <VerifyResetPin />
-            }
-          />
-
-          <Route
-            path="/reset-password"
-            element={
-              <ResetPassword />
-            }
-          />
-
-          {/* Company */}
-          <Route
-            path="/company/login"
-            element={
-              <LoginCompany />
-            }
-          />
-
-          <Route
-            path="/company/register"
-            element={
-              <RegisterCompany />
-            }
-          />
-
-          <Route
-            path="/company/dashboard"
-            element={
-              <PrivateRoute allowedRole="company">
-                <Dashboard role="company" />
-              </PrivateRoute>
-            }
-          />
-
-          {/* OAuth */}
-          <Route
-            path="/auth/callback"
-            element={
-              <AuthCallback />
-            }
-          />
-
-          {/* Redirects */}
-          <Route
-            path="/register/candidate"
-            element={
-              <Navigate
-                to="/register"
-                replace
-              />
-            }
-          />
-
-          <Route
-            path="/register/company"
-            element={
-              <Navigate
-                to="/company/register"
-                replace
-              />
-            }
-          />
-
-          <Route
-            path="/"
-            element={
-              <RootRedirect />
-            }
-          />
-
-          {/* Candidate Dashboard */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <CandidateDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/my-profile"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <CandidateProfile />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/cv-review"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <CVReview />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/career-planner"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <CareerPlannerPage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/interview-practice"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <InterviewPracticePage />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/find-jobs"
-            element={
-              <PrivateRoute allowedRole="candidate">
-                <FindJobsPage />
-              </PrivateRoute>
-            }
-          />
-
-          {/* 404 */}
-          <Route
-            path="*"
-            element={
-              <Navigate
-                to="/"
-                replace
-              />
-            }
-          />
-
-        </Routes>
-
+        <AppRoutes />
       </BrowserRouter>
 
     </GoogleOAuthProvider>

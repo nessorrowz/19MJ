@@ -1,372 +1,593 @@
-import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import api from '../utils/api';
-import './Auth.css';
+import { useState } from "react";
+
+import {
+  Link,
+  useNavigate,
+  useLocation
+} from "react-router-dom";
+
+import api from "../utils/api";
+import "./Auth.css";
+
 import {
   FiUser,
   FiMail,
   FiLock,
-  FiGlobe,
   FiBriefcase,
   FiEye,
   FiEyeOff
 } from "react-icons/fi";
 
-export default function CompanyLogin() {
-  const navigate = useNavigate();
-  const location = useLocation();
+import {
+  GoogleLogin
+} from "@react-oauth/google";
 
-  const [form, setForm] = useState({
-    email: '',
-    password: ''
-  });
+import {
+  jwtDecode
+} from "jwt-decode";
 
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [shake, setShake] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+import PageTransition from "../components/PageTransition";
 
-  const success = location.state?.registered
-    ? 'Registrasi berhasil! Silakan login.'
-    : location.state?.resetSuccess
-    ? 'Password berhasil direset. Silakan login kembali.'
-    : '';
+export default function LoginCompany() {
+  const navigate =
+    useNavigate();
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
+  const location =
+    useLocation();
+
+  const [form, setForm] =
+    useState({
+      email: "",
+      password: ""
     });
 
-    setError('');
-  };
+  const [error, setError] =
+    useState("");
 
-  const triggerShake = () => {
-    setShake(true);
-    setTimeout(() => setShake(false), 400);
-  };
+  const [loading, setLoading] =
+    useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const [shake, setShake] =
+    useState(false);
 
-    if (!form.email || !form.password) {
-      triggerShake();
-      setError('Email dan password wajib diisi.');
-      return;
-    }
+  const [
+    showPassword,
+    setShowPassword
+  ] = useState(false);
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const success =
+    location.state?.registered
+      ? "Registrasi berhasil! Silakan login."
+      : "";
 
-    if (!emailRegex.test(form.email)) {
-      triggerShake();
-      setError('Format email tidak valid.');
-      return;
-    }
+  const handleChange =
+    (e) => {
+      setForm({
+        ...form,
+        [e.target.name]:
+          e.target.value
+      });
 
-    setLoading(true);
-    setError('');
+      setError("");
+    };
 
-    try {
-      const data = await api.post('/auth/login', form);
+  const triggerShake =
+    () => {
+      setShake(true);
 
-      if (data.user.role !== 'company') {
+      setTimeout(() => {
+        setShake(false);
+      }, 400);
+    };
+
+  const handleSubmit =
+    async (e) => {
+      e.preventDefault();
+
+      if (
+        !form.email ||
+        !form.password
+      ) {
         triggerShake();
-        setError('Akun ini bukan akun perusahaan. Gunakan login kandidat.');
+
+        setError(
+          "Email dan password wajib diisi."
+        );
+
         return;
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('currentUser', JSON.stringify(data.user));
-      localStorage.setItem('isLogin', 'true');
+      setLoading(true);
 
-      navigate('/company/dashboard');
+      try {
+        const data =
+          await api.post(
+            "/auth/login",
+            form
+          );
 
-    } catch (err) {
-      triggerShake();
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (
+          data.user.role !==
+          "company"
+        ) {
+          throw new Error(
+            "Akun ini bukan akun company."
+          );
+        }
+
+        localStorage.setItem(
+          "token",
+          data.token
+        );
+
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify(
+            data.user
+          )
+        );
+
+        localStorage.setItem(
+          "isLogin",
+          "true"
+        );
+
+        navigate(
+          "/company/dashboard"
+        );
+
+      } catch (err) {
+        triggerShake();
+
+        setError(
+          err.response
+            ?.data
+            ?.message ||
+          err.message ||
+          "Login gagal"
+        );
+
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  const handleGoogleLogin =
+    async (
+      credentialResponse
+    ) => {
+      try {
+        const userInfo =
+          jwtDecode(
+            credentialResponse.credential
+          );
+
+        const googleUser =
+        {
+          username:
+            userInfo.name,
+
+          email:
+            userInfo.email,
+
+          photo:
+            userInfo.picture,
+
+          role:
+            "company"
+        };
+
+        localStorage.setItem(
+          "currentUser",
+          JSON.stringify(
+            googleUser
+          )
+        );
+
+        localStorage.setItem(
+          "isLogin",
+          "true"
+        );
+
+        navigate(
+          "/company/dashboard"
+        );
+
+      } catch (err) {
+        triggerShake();
+
+        setError(
+          err.message ||
+          "Google login gagal"
+        );
+      }
+    };
 
   const inputStyle = {
     width: "100%",
-    height: "58px",
+    height: "52px",
     padding: "0 18px",
-    borderRadius: "14px",
-    border: "1px solid #E5E7EB",
+    borderRadius: "12px",
+    border:
+      "1.5px solid #D1D5DB",
     fontSize: "15px",
-    boxSizing: "border-box",
+    fontFamily:
+      "Inter, sans-serif",
+    boxSizing:
+      "border-box",
     outline: "none",
-    transition: "all 0.2s ease"
+    background:
+      "white"
   };
-  
+
   const inputWrapper = {
-    position: "relative",
-    marginBottom: "14px"
+    position:
+      "relative",
+    marginBottom:
+      "16px"
   };
 
   const leftIconStyle = {
-    position: "absolute",
-    left: "18px",
+    position:
+      "absolute",
+    left: "16px",
     top: "50%",
-    transform: "translateY(-50%)",
-    color: "#9CA3AF",
-    fontSize: "18px",
+    transform:
+      "translateY(-50%)",
+    color: "#94A3B8",
     zIndex: 2
   };
 
   const inputWithIcon = {
     ...inputStyle,
-    paddingLeft: "48px"
+    paddingLeft:
+      "48px"
   };
 
   return (
-    <div className="auth-layout">
+    <PageTransition>
+      <div className="auth-layout">
 
-      {/* LEFT SIDE */}
-     <div className="auth-left-panel">
-
-        {/* Logo */}
-        <img
-          src="/gambar/19mj.png"
-          alt="logo"
-          style={{
-            width: "150px",
-            marginBottom: "20px"
-          }}
-        />
-
-        {/* Illustration */}
-        <div
-          style={{
-            position: "relative",
-            background: "#8FA5B8",
-            borderRadius: "25px",
-            height: "500px",
-            overflow: "hidden"
-          }}
-        >
+        {/* LEFT */}
+        <div className="auth-left-panel">
 
           <img
-            src="/gambar/ceweray.png"
-            alt="character"
-            className="character-animation"
+            src="/gambar/19mj.png"
+            alt="logo"
             style={{
-              position: "absolute",
-              bottom: "0",
-              left: "50%",
-              width: "85%",
-              maxHeight: "95%",
-              objectFit: "contain"
+              width: "150px",
+              marginBottom:
+                "20px"
             }}
           />
 
-        </div>
-
-      </div>
-
-
-      {/* RIGHT SIDE */}
-      <div className="auth-right-panel">
-
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          className={shake ? "shake" : ""}
-          style={{
-            width: "100%",
-            maxWidth: "500px"
-          }}
-        >
-
-          {/* HEADER */}
-          <div style={{ marginBottom: "45px" }}>
-            <h1
+          <div
+            style={{
+              background:
+                "#8FA5B8",
+              borderRadius:
+                "25px",
+              height:
+                "500px",
+              position:
+                "relative",
+              overflow:
+                "hidden"
+            }}
+          >
+            <img
+              className="character-animation"
+              src="/gambar/ceweray.png"
+              alt="character"
               style={{
-                textAlign: "center",
-                fontSize: "42px",
-                marginBottom: "12px"
+                position:
+                  "absolute",
+                bottom: 0,
+                left: "50%",
+                width:
+                  "85%",
+                transform:
+                  "translateX(-50%)"
               }}
-            >
-              Welcome Back
-            </h1>
-
-            <p
-              style={{
-                textAlign: "center",
-                color: "#777"
-              }}
-            >
-              Sign in to your account
-            </p>
+            />
           </div>
 
+        </div>
 
-          {/* ROLE SWITCH */}
-          <div
+        {/* RIGHT */}
+        <div
+          className="auth-right-panel"
           style={{
-            display: "flex",
-            background: "#f5f5f5",
-            borderRadius: "14px",
-            padding: "4px",
-            gap: "4px",
-            marginBottom: "40px"
+            flex: 1,
+            background:
+              "white",
+            borderRadius:
+              "32px",
+            display:
+              "flex",
+            justifyContent:
+              "center",
+            alignItems:
+              "center",
+            padding:
+              "40px"
           }}
         >
 
-          {/* Candidate */}
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
+          <form
+            onSubmit={
+              handleSubmit
+            }
+            className={
+              shake
+                ? "shake"
+                : ""
+            }
             style={{
-              flex: 1,
-              height: "52px",
-              border: "none",
-              borderRadius: "12px",
-              background: "white",
-              color: "#475467",
-              cursor: "pointer",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px"
+              width: "100%",
+              maxWidth:
+                "420px",
+              fontFamily:
+                "Inter, sans-serif"
             }}
           >
-            <FiUser size={18} />
-            Candidate
-          </button>
 
+            {/* HEADER */}
+            <div
+              style={{
+                marginBottom:
+                  "28px"
+              }}
+            >
+              <h1
+                style={{
+                  textAlign:
+                    "center",
+                  fontSize:
+                    "28px",
+                  fontWeight:
+                    700,
+                  color:
+                    "#0F172A",
+                  marginBottom:
+                    "8px"
+                }}
+              >
+                Welcome back
+              </h1>
 
-          {/* Company */}
-          <button
-            type="button"
-            style={{
-              flex: 1,
-              height: "52px",
-              border: "none",
-              borderRadius: "12px",
-              background: "#0f7c82",
-              color: "white",
-              cursor: "pointer",
-              fontWeight: "600",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px"
-            }}
-          >
-            <FiBriefcase size={18} />
-            Company
-          </button>
+              <p
+                style={{
+                  textAlign:
+                    "center",
+                  color:
+                    "#64748B",
+                  fontSize:
+                    "15px"
+                }}
+              >
+                Sign in to your 19 MJ account
+              </p>
+            </div>
 
-        </div>
+            {/* ROLE SWITCH */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginBottom: "24px"
+              }}
+            >
 
+              {/* INACTIVE */}
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/login")
+                }
+                style={{
+                  flex: 1,
+                  height: "48px",
+                  border:
+                    "1px solid #0f7c82",
+                  borderRadius: "12px",
+                  background: "white",
+                  color: "#0f7c82",
+                  fontWeight: 600,
+                  cursor: "pointer"
+                }}
+              >
+                <FiUser /> Job Seeker
+              </button>
 
-          {success && <div className="success-banner">{success}</div>}
-          {error && <div className="error-banner">{error}</div>}
+              {/* ACTIVE */}
+              <button
+                type="button"
+                style={{
+                  flex: 1,
+                  height: "48px",
+                  border: "none",
+                  borderRadius: "12px",
+                  background: "#0f7c82",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow:
+                    "0 2px 8px rgba(0,0,0,0.06)"
+                }}
+              >
+                <FiBriefcase /> Company
+              </button>
 
+            </div>
 
-          {/* INPUT SECTION */}
-          <div style={{ marginBottom: "30px" }}>
+            {success && (
+              <div className="success-banner">
+                {success}
+              </div>
+            )}
+
+            {error && (
+              <div className="error-banner">
+                {error}
+              </div>
+            )}
 
             {/* EMAIL */}
             <div style={inputWrapper}>
-
               <FiMail style={leftIconStyle} />
 
               <input
                 name="email"
                 type="email"
-                placeholder="Company Email"
+                placeholder="Email address"
                 value={form.email}
                 onChange={handleChange}
                 style={inputWithIcon}
               />
-
             </div>
-
 
             {/* PASSWORD */}
             <div style={inputWrapper}>
-
               <FiLock style={leftIconStyle} />
 
               <input
                 name="password"
-                type={showPassword ? "text" : "password"}
+                type={
+                  showPassword
+                    ? "text"
+                    : "password"
+                }
                 placeholder="Password"
                 value={form.password}
                 onChange={handleChange}
                 style={{
                   ...inputWithIcon,
-                  paddingRight: "50px"
+                  paddingRight:
+                    "50px"
                 }}
               />
 
               <div
                 className="eye-icon"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() =>
+                  setShowPassword(
+                    !showPassword
+                  )
+                }
               >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
+                {showPassword
+                  ? <FiEyeOff />
+                  : <FiEye />}
               </div>
-
             </div>
 
-          </div>
+            {/* FORGOT */}
+            <div
+              style={{
+                textAlign:
+                  "right",
+                marginBottom:
+                  "24px"
+              }}
+            >
+              <Link to="/forgot-password">
+                Forgot your password?
+              </Link>
+            </div>
 
+            {/* LOGIN */}
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: "100%",
+                height: "52px",
+                border: "none",
+                borderRadius: "12px",
+                background: "#0f7c82",
+                color: "white",
+                fontWeight: 600,
+                fontSize: "16px",
+                cursor: "pointer"
+              }}
+            >
+              {loading
+                ? "Loading..."
+                : "Sign In"}
+            </button>
 
-          {/* FORGOT */}
-          <div
-            style={{
-              textAlign: "right",
-              marginBottom: "35px"
-            }}
-          >
-            <Link to="/forgot-password?role=company">
-              Forgot Password?
-            </Link>
-          </div>
+            {/* DIVIDER */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                margin: "24px 0"
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "#D1D5DB"
+                }}
+              />
 
+              <span>
+                Or With
+              </span>
 
-          {/* BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "16px",
-              background: "#0f7c82",
-              color: "white",
-              border: "none",
-              borderRadius: "12px",
-              cursor: "pointer",
-              fontSize: "16px"
-            }}
-          >
-            {loading ? "Loading..." : "Sign In"}
-          </button>
+              <div
+                style={{
+                  flex: 1,
+                  height: "1px",
+                  background: "#D1D5DB"
+                }}
+              />
+            </div>
 
+            {/* GOOGLE */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center"
+              }}
+            >
+              <GoogleLogin
+                onSuccess={
+                  handleGoogleLogin
+                }
+                onError={() =>
+                  setError(
+                    "Google login gagal"
+                  )
+                }
+                theme="outline"
+                size="large"
+                width="400"
+              />
+            </div>
 
-          {/* FOOTER */}
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "35px",
-              color: "#666"
-            }}
-          >
-            Don’t have an account?{" "}
-            <Link to="/company/register">
-              Create one
-            </Link>
-          </div>
+            {/* FOOTER */}
+            <div
+              style={{
+                textAlign: "center",
+                marginTop: "24px",
+                color: "#64748B"
+              }}
+            >
+              Don’t have an account?{" "}
+              <Link to="/company/register">
+                Create one
+              </Link>
+            </div>
 
-        </form>
+          </form>
+
+        </div>
 
       </div>
-
-    </div>
+    </PageTransition>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FiBell,
   FiCamera,
@@ -12,8 +12,15 @@ import CandidateSidebar from "./CandidateSidebar";
 
 export default function CandidateProfile() {
 
+  const currentUser = JSON.parse(
+    localStorage.getItem("currentUser") || "{}"
+  );
+
+  const profileStorageKey =
+    `candidateProfile_${currentUser.email}`;
+
   const savedProfile = JSON.parse(
-    localStorage.getItem("candidateProfile") || "{}"
+    localStorage.getItem(profileStorageKey) || "{}"
   );
 
   const [profile, setProfile] = useState({
@@ -24,9 +31,19 @@ export default function CandidateProfile() {
     about: savedProfile.about || "",
     education: savedProfile.education || "",
     experiences: savedProfile.experiences || [],
-    educationList:savedProfile.educationList || [],
+    educationList: savedProfile.educationList || [],
     skills: savedProfile.skills || []
   });
+
+  useEffect(() => {
+    localStorage.setItem(
+      profileStorageKey,
+      JSON.stringify(profile)
+    );
+  }, [
+    profile,
+    profileStorageKey
+  ]);
 
   const [newSkill, setNewSkill] = useState("");
 
@@ -41,18 +58,18 @@ export default function CandidateProfile() {
       endDate: "",
       description: ""
     });
-    const [showEducationForm, setShowEducationForm] =
+  const [showEducationForm, setShowEducationForm] =
     useState(false);
 
-    const [educationForm, setEducationForm] =
+  const [educationForm, setEducationForm] =
     useState({
-        degree: "",
-        school: "",
-        startYear: "",
-        endYear: ""
+      degree: "",
+      school: "",
+      startYear: "",
+      endYear: ""
     });
 
-    const [editingEduIndex, setEditingEduIndex] =
+  const [editingEduIndex, setEditingEduIndex] =
     useState(null);
   const [editingExpIndex, setEditingExpIndex] =
     useState(null);
@@ -139,7 +156,7 @@ export default function CandidateProfile() {
   const saveProfile = () => {
 
     localStorage.setItem(
-      "candidateProfile",
+      profileStorageKey,
       JSON.stringify(profile)
     );
 
@@ -273,86 +290,86 @@ export default function CandidateProfile() {
   // =========================
   const handleEducationChange = (e) => {
 
-  setEducationForm({
-    ...educationForm,
-    [e.target.name]: e.target.value
-  });
+    setEducationForm({
+      ...educationForm,
+      [e.target.name]: e.target.value
+    });
 
-};
+  };
 
 
-const saveEducation = () => {
+  const saveEducation = () => {
 
-  if (
-    !educationForm.degree ||
-    !educationForm.school
-  ) return;
+    if (
+      !educationForm.degree ||
+      !educationForm.school
+    ) return;
 
-  let updated = [
-    ...profile.educationList
-  ];
+    let updated = [
+      ...profile.educationList
+    ];
 
-  if (
-    editingEduIndex !== null
-  ) {
+    if (
+      editingEduIndex !== null
+    ) {
 
-    updated[
-      editingEduIndex
-    ] = educationForm;
+      updated[
+        editingEduIndex
+      ] = educationForm;
 
-  } else {
+    } else {
 
-    updated.push(
-      educationForm
+      updated.push(
+        educationForm
+      );
+
+    }
+
+    setProfile({
+      ...profile,
+      educationList: updated
+    });
+
+    setEducationForm({
+      degree: "",
+      school: "",
+      startYear: "",
+      endYear: ""
+    });
+
+    setEditingEduIndex(null);
+
+    setShowEducationForm(false);
+
+  };
+
+
+  const editEducation = (index) => {
+
+    setEducationForm(
+      profile.educationList[index]
     );
 
-  }
+    setEditingEduIndex(index);
 
-  setProfile({
-    ...profile,
-    educationList: updated
-  });
+    setShowEducationForm(true);
 
-  setEducationForm({
-    degree: "",
-    school: "",
-    startYear: "",
-    endYear: ""
-  });
-
-  setEditingEduIndex(null);
-
-  setShowEducationForm(false);
-
-};
+  };
 
 
-const editEducation = (index) => {
+  const removeEducation = (index) => {
 
-  setEducationForm(
-    profile.educationList[index]
-  );
+    setProfile({
+      ...profile,
 
-  setEditingEduIndex(index);
+      educationList:
+        profile.educationList.filter(
+          (_, i) =>
+            i !== index
+        )
+    });
 
-  setShowEducationForm(true);
-
-};
-
-
-const removeEducation = (index) => {
-
-  setProfile({
-    ...profile,
-
-    educationList:
-      profile.educationList.filter(
-        (_, i) =>
-          i !== index
-      )
-  });
-
-};
+  };
 
 
   return (
@@ -399,7 +416,7 @@ const removeEducation = (index) => {
                   color: "#666"
                 }}
               >
-                Candidate
+                Job Seeker
               </div>
             </div>
 
@@ -410,43 +427,43 @@ const removeEducation = (index) => {
 
 
         {/* CONTENT */}
-                {/* PAGE TOP */}
+        {/* PAGE TOP */}
         <div
-        style={{
+          style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             padding: "30px 30px 0"
-        }}
+          }}
         >
 
-        <div>
+          <div>
 
             <h1
-            style={{
+              style={{
                 marginBottom: 8
-            }}
+              }}
             >
-            My Profile
+              My Profile
             </h1>
 
             <p
-            style={{
+              style={{
                 color: "#666"
-            }}
+              }}
             >
-            Manage your professional identity.
+              Complete your profile to showcase your skills and experience to potential employers.
             </p>
 
-        </div>
+          </div>
 
 
-        <button
+          <button
             onClick={saveProfile}
             style={styles.saveButton}
-        >
+          >
             Save Changes
-        </button>
+          </button>
 
         </div>
 
@@ -463,68 +480,169 @@ const removeEducation = (index) => {
             {/* BASIC */}
             <div style={styles.card}>
 
-              <h3>Basic Information</h3>
+              <h3
+                style={{
+                  fontSize: "30px",
+                  marginBottom: "30px"
+                }}
+              >
+                Basic Information
+              </h3>
 
-              <div style={styles.basicSection}>
 
-                <label style={styles.photoBox}>
+              {/* TOP */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "30px",
+                  marginBottom: "30px"
+                }}
+              >
 
-                  {profile.photo ? (
+                {/* PHOTO */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: "120px"
+                  }}
+                >
 
-                    <img
-                      src={profile.photo}
-                      alt=""
+                  <label
+                    style={{
+                      width: "90px",
+                      height: "90px",
+                      borderRadius: "50%",
+                      border:
+                        "2px dashed #14b8a6",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      cursor: "pointer",
+                      overflow: "hidden",
+                      color: "#94a3b8"
+                    }}
+                  >
+
+                    {profile.photo ? (
+
+                      <img
+                        src={profile.photo}
+                        alt=""
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit:
+                            "cover"
+                        }}
+                      />
+
+                    ) : (
+
+                      <FiCamera
+                        size={28}
+                      />
+
+                    )}
+
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={
+                        handlePhotoUpload
+                      }
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        borderRadius: "50%",
-                        objectFit: "cover"
+                        display:
+                          "none"
                       }}
                     />
 
-                  ) : (
+                  </label>
 
-                    <FiCamera />
-                  )}
+                  <p
+                    style={{
+                      fontSize:
+                        "14px",
+                      marginTop:
+                        "12px",
+                      color:
+                        "#64748b"
+                    }}
+                  >
+                    Change Photo
+                  </p>
 
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    style={{ display: "none" }}
-                  />
-
-                </label>
+                </div>
 
 
-                <div style={{ flex: 1 }}>
+                {/* INPUTS */}
+                <div
+                  style={{
+                    flex: 1
+                  }}
+                >
 
-                  <input
-                    name="fullName"
-                    placeholder="Full Name"
-                    value={profile.fullName}
-                    onChange={handleChange}
-                    style={styles.input}
-                  />
+                  {/* FULLNAME */}
+                  <div
+                    style={{
+                      marginBottom:
+                        "20px"
+                    }}
+                  >
 
-                  <input
-                    name="headline"
-                    placeholder="Headline"
-                    value={profile.headline}
-                    onChange={handleChange}
-                    style={styles.input}
-                  />
-
-                  <div style={styles.inputIcon}>
-
-                    <FiMapPin />
+                    <p
+                      style={{
+                        fontWeight:
+                          500,
+                        marginBottom:
+                          "8px"
+                      }}
+                    >
+                      Full Name
+                    </p>
 
                     <input
-                      name="location"
-                      placeholder="Location"
-                      value={profile.location}
-                      onChange={handleChange}
-                      style={styles.cleanInput}
+                      name="fullName"
+                      value={
+                        profile.fullName
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      style={
+                        styles.profileInput
+                      }
+                    />
+
+                  </div>
+
+
+                  {/* HEADLINE */}
+                  <div>
+
+                    <p
+                      style={{
+                        fontWeight:
+                          500,
+                        marginBottom:
+                          "8px"
+                      }}
+                    >
+                      Professional Headline
+                    </p>
+
+                    <input
+                      name="headline"
+                      value={
+                        profile.headline
+                      }
+                      onChange={
+                        handleChange
+                      }
+                      style={
+                        styles.profileInput
+                      }
                     />
 
                   </div>
@@ -534,13 +652,81 @@ const removeEducation = (index) => {
               </div>
 
 
-              <textarea
-                name="about"
-                placeholder="About me..."
-                value={profile.about}
-                onChange={handleChange}
-                style={styles.textarea}
-              />
+              {/* LOCATION */}
+              <div
+                style={{
+                  marginBottom:
+                    "24px"
+                }}
+              >
+
+                <p
+                  style={{
+                    fontWeight:
+                      500,
+                    marginBottom:
+                      "8px"
+                  }}
+                >
+                  Location
+                </p>
+
+                <div
+                  style={
+                    styles.locationInput
+                  }
+                >
+
+                  <FiMapPin />
+
+                  <input
+                    name="location"
+                    value={
+                      profile.location
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    placeholder="Location"
+                    style={
+                      styles.cleanInput
+                    }
+                  />
+
+                </div>
+
+              </div>
+
+
+              {/* ABOUT */}
+              <div>
+
+                <p
+                  style={{
+                    fontWeight:
+                      500,
+                    marginBottom:
+                      "8px"
+                  }}
+                >
+                  About Me
+                </p>
+
+                <textarea
+                  name="about"
+                  placeholder="Describe your background, what you're looking for, and what makes you unique..."
+                  value={
+                    profile.about
+                  }
+                  onChange={
+                    handleChange
+                  }
+                  style={
+                    styles.profileTextarea
+                  }
+                />
+
+              </div>
 
             </div>
 
@@ -564,39 +750,39 @@ const removeEducation = (index) => {
                 </h3>
 
 
-               <p
-                onClick={() => {
+                <p
+                  onClick={() => {
 
                     if (showExperienceForm) {
 
-                    setShowExperienceForm(false);
+                      setShowExperienceForm(false);
 
-                    setEditingExpIndex(null);
+                      setEditingExpIndex(null);
 
                     } else {
 
-                    setShowExperienceForm(true);
+                      setShowExperienceForm(true);
 
-                    setEditingExpIndex(null);
+                      setEditingExpIndex(null);
 
-                    setExperienceForm({
+                      setExperienceForm({
                         position: "",
                         company: "",
                         startDate: "",
                         endDate: "",
                         description: ""
-                    });
+                      });
 
                     }
 
-                }}
-                style={{
+                  }}
+                  style={{
                     color: "#0f7c82",
                     cursor: "pointer",
                     fontWeight: 600
-                }}
+                  }}
                 >
-                {showExperienceForm
+                  {showExperienceForm
                     ? "Cancel"
                     : "+ Add Experience"}
                 </p>
@@ -701,81 +887,81 @@ const removeEducation = (index) => {
                   >
 
                     <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "start",
-    marginBottom: 16
-  }}
->
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "start",
+                        marginBottom: 16
+                      }}
+                    >
 
-  {/* LEFT */}
-  <div
-    style={{
-      display: "flex",
-      gap: 14,
-      alignItems: "center"
-    }}
-  >
+                      {/* LEFT */}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 14,
+                          alignItems: "center"
+                        }}
+                      >
 
-    <div
-      style={{
-        width: 52,
-        height: 52,
-        borderRadius: "50%",
-        background: "#eef2ff",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        color: "#4f46e5"
-      }}
-    >
-      <FiBriefcase size={22} />
-    </div>
-
-
-    <div>
-
-      <h4
-        style={{
-          margin: 0,
-          fontSize: 22
-        }}
-      >
-        {exp.position}
-      </h4>
-
-      <p
-        style={{
-          marginTop: 6,
-          color: "#666"
-        }}
-      >
-        {exp.company}
-      </p>
-
-    </div>
-
-  </div>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: "50%",
+                            background: "#eef2ff",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            color: "#4f46e5"
+                          }}
+                        >
+                          <FiBriefcase size={22} />
+                        </div>
 
 
+                        <div>
 
-  {/* RIGHT DATE */}
-  <div
-    style={{
-      border: "1px solid #ddd",
-      borderRadius: 20,
-      padding: "8px 16px",
-      fontSize: 14,
-      color: "#666"
-    }}
-  >
-    {exp.startDate}
-    {" - "}
-    {exp.endDate}
-  </div>
+                          <h4
+                            style={{
+                              margin: 0,
+                              fontSize: 22
+                            }}
+                          >
+                            {exp.position}
+                          </h4>
 
-</div>
+                          <p
+                            style={{
+                              marginTop: 6,
+                              color: "#666"
+                            }}
+                          >
+                            {exp.company}
+                          </p>
+
+                        </div>
+
+                      </div>
+
+
+
+                      {/* RIGHT DATE */}
+                      <div
+                        style={{
+                          border: "1px solid #ddd",
+                          borderRadius: 20,
+                          padding: "8px 16px",
+                          fontSize: 14,
+                          color: "#666"
+                        }}
+                      >
+                        {exp.startDate}
+                        {" - "}
+                        {exp.endDate}
+                      </div>
+
+                    </div>
 
 
                     <p>
@@ -930,264 +1116,264 @@ const removeEducation = (index) => {
 
           </div>
 
-        <div style={styles.card}>
+          <div style={styles.card}>
 
 
-        {/* HEADER */}
-        <div
-            style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 20
-            }}
-        >
-
-            <h3>
-            Education
-            </h3>
-
-
-            <p
-            onClick={() => {
-
-                if (showEducationForm) {
-
-                setShowEducationForm(false);
-
-                setEditingEduIndex(null);
-
-                } else {
-
-                setShowEducationForm(true);
-
-                setEditingEduIndex(null);
-
-                setEducationForm({
-                    degree: "",
-                    school: "",
-                    startYear: "",
-                    endYear: ""
-                });
-
-                }
-
-            }}
-            style={{
-                color: "#0f7c82",
-                cursor: "pointer",
-                fontWeight: 600
-            }}
-            >
-            {showEducationForm
-                ? "Cancel"
-                : "+ Add Education"}
-            </p>
-
-        </div>
-
-
-
-        {/* FORM */}
-        {showEducationForm && (
-
-            <div>
-
-            <input
-                name="degree"
-                placeholder="Degree / Major"
-                value={educationForm.degree}
-                onChange={handleEducationChange}
-                style={styles.input}
-            />
-
-            <input
-                name="school"
-                placeholder="University / School"
-                value={educationForm.school}
-                onChange={handleEducationChange}
-                style={styles.input}
-            />
-
-
+            {/* HEADER */}
             <div
-                style={{
-                display: "flex",
-                gap: 10
-                }}
-            >
-
-                <input
-                name="startYear"
-                placeholder="Start Year"
-                value={educationForm.startYear}
-                onChange={handleEducationChange}
-                style={styles.input}
-                />
-
-                <input
-                name="endYear"
-                placeholder="End Year"
-                value={educationForm.endYear}
-                onChange={handleEducationChange}
-                style={styles.input}
-                />
-
-            </div>
-
-
-            <button
-                onClick={saveEducation}
-                style={styles.saveButton}
-            >
-                Save
-            </button>
-
-            </div>
-
-        )}
-
-
-
-        {/* LIST */}
-        {profile.educationList.map(
-        (edu, index) => (
-
-            <div
-            key={index}
-            style={styles.expCard}
-            >
-
-            {/* TOP */}
-            <div
-                style={{
+              style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "start",
-                marginBottom: 16
-                }}
+                marginBottom: 20
+              }}
             >
 
-                <div
-                style={{
-                    display: "flex",
-                    gap: 14,
-                    alignItems: "center"
+              <h3>
+                Education
+              </h3>
+
+
+              <p
+                onClick={() => {
+
+                  if (showEducationForm) {
+
+                    setShowEducationForm(false);
+
+                    setEditingEduIndex(null);
+
+                  } else {
+
+                    setShowEducationForm(true);
+
+                    setEditingEduIndex(null);
+
+                    setEducationForm({
+                      degree: "",
+                      school: "",
+                      startYear: "",
+                      endYear: ""
+                    });
+
+                  }
+
                 }}
-                >
+                style={{
+                  color: "#0f7c82",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
+              >
+                {showEducationForm
+                  ? "Cancel"
+                  : "+ Add Education"}
+              </p>
 
-                {/* ICON */}
+            </div>
+
+
+
+            {/* FORM */}
+            {showEducationForm && (
+
+              <div>
+
+                <input
+                  name="degree"
+                  placeholder="Degree / Major"
+                  value={educationForm.degree}
+                  onChange={handleEducationChange}
+                  style={styles.input}
+                />
+
+                <input
+                  name="school"
+                  placeholder="University / School"
+                  value={educationForm.school}
+                  onChange={handleEducationChange}
+                  style={styles.input}
+                />
+
+
                 <div
-                    style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: "50%",
-                    background: "#ecfdf5",
+                  style={{
                     display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: "#0f766e"
-                    }}
+                    gap: 10
+                  }}
                 >
 
-                    <FiBookOpen size={22} />
+                  <input
+                    name="startYear"
+                    placeholder="Start Year"
+                    value={educationForm.startYear}
+                    onChange={handleEducationChange}
+                    style={styles.input}
+                  />
+
+                  <input
+                    name="endYear"
+                    placeholder="End Year"
+                    value={educationForm.endYear}
+                    onChange={handleEducationChange}
+                    style={styles.input}
+                  />
 
                 </div>
 
 
-                {/* TEXT */}
-                <div>
+                <button
+                  onClick={saveEducation}
+                  style={styles.saveButton}
+                >
+                  Save
+                </button>
 
-                    <h4
+              </div>
+
+            )}
+
+
+
+            {/* LIST */}
+            {profile.educationList.map(
+              (edu, index) => (
+
+                <div
+                  key={index}
+                  style={styles.expCard}
+                >
+
+                  {/* TOP */}
+                  <div
                     style={{
-                        margin: 0,
-                        fontSize: 22
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "start",
+                      marginBottom: 16
                     }}
+                  >
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 14,
+                        alignItems: "center"
+                      }}
                     >
-                    {edu.degree}
-                    </h4>
+
+                      {/* ICON */}
+                      <div
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: "50%",
+                          background: "#ecfdf5",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          color: "#0f766e"
+                        }}
+                      >
+
+                        <FiBookOpen size={22} />
+
+                      </div>
+
+
+                      {/* TEXT */}
+                      <div>
+
+                        <h4
+                          style={{
+                            margin: 0,
+                            fontSize: 22
+                          }}
+                        >
+                          {edu.degree}
+                        </h4>
+
+                        <p
+                          style={{
+                            marginTop: 6,
+                            color: "#666"
+                          }}
+                        >
+                          {edu.school}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+
+
+                    {/* YEAR BADGE */}
+                    <div
+                      style={{
+                        border: "1px solid #ddd",
+                        borderRadius: 20,
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#666"
+                      }}
+                    >
+                      {edu.startYear}
+                      {" - "}
+                      {edu.endYear}
+                    </div>
+
+                  </div>
+
+
+
+                  {/* ACTION */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 20,
+                      marginTop: 16
+                    }}
+                  >
 
                     <p
-                    style={{
-                        marginTop: 6,
-                        color: "#666"
-                    }}
+                      onClick={() =>
+                        editEducation(index)
+                      }
+                      style={{
+                        color: "#0f7c82",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                      }}
                     >
-                    {edu.school}
+                      Edit
                     </p>
 
-                </div>
+
+                    <p
+                      onClick={() =>
+                        removeEducation(index)
+                      }
+                      style={{
+                        color: "red",
+                        fontWeight: 600,
+                        cursor: "pointer"
+                      }}
+                    >
+                      Remove
+                    </p>
+
+                  </div>
 
                 </div>
 
+              )
+            )}
 
-
-                {/* YEAR BADGE */}
-                <div
-                style={{
-                    border: "1px solid #ddd",
-                    borderRadius: 20,
-                    padding: "8px 16px",
-                    fontSize: 14,
-                    color: "#666"
-                }}
-                >
-                {edu.startYear}
-                {" - "}
-                {edu.endYear}
-                </div>
-
-            </div>
-
-
-
-            {/* ACTION */}
-            <div
-                style={{
-                display: "flex",
-                gap: 20,
-                marginTop: 16
-                }}
-            >
-
-                <p
-                onClick={() =>
-                    editEducation(index)
-                }
-                style={{
-                    color: "#0f7c82",
-                    fontWeight: 600,
-                    cursor: "pointer"
-                }}
-                >
-                Edit
-                </p>
-
-
-                <p
-                onClick={() =>
-                    removeEducation(index)
-                }
-                style={{
-                    color: "red",
-                    fontWeight: 600,
-                    cursor: "pointer"
-                }}
-                >
-                Remove
-                </p>
-
-            </div>
-
-            </div>
-
-        )
-        )}
-
+          </div>
         </div>
-      </div>
 
+      </div>
     </div>
-</div>
   );
 }
 
@@ -1309,14 +1495,14 @@ const styles = {
     cursor: "pointer"
   },
 
-    expCard: {
+  expCard: {
     background: "#f8fafc",
     border: "1px solid #e5e7eb",
     borderRadius: 20,
     padding: 24,
     marginTop: 20,
     minHeight: 235
-    },
+  },
 
   skillWrap: {
     display: "flex",
@@ -1345,5 +1531,39 @@ const styles = {
     height: "100%",
     background: "#4f46e5",
     borderRadius: 10
-  }
+  },
+
+  profileInput: {
+    width: "100%",
+    height: "54px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "0 18px",
+    fontSize: "15px",
+    boxSizing: "border-box",
+    outline: "none"
+  },
+
+  locationInput: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "0 18px",
+    height: "54px",
+    color: "#64748b"
+  },
+
+  profileTextarea: {
+    width: "100%",
+    minHeight: "120px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "12px",
+    padding: "16px 18px",
+    fontSize: "15px",
+    resize: "none",
+    boxSizing: "border-box",
+    outline: "none"
+  },
 };

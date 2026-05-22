@@ -2,6 +2,14 @@
 
 Service Python ini menjalankan transkripsi lokal untuk backend 19MJ. Runtime Python project ini wajib memakai `uv`.
 
+Swagger untuk testing endpoint AI publik tidak berada di service Python ini. Swagger ada di backend Express:
+
+```text
+http://localhost:3000/api/ai/docs
+```
+
+Gunakan Swagger BE untuk test fitur CV review, career roadmap, interview orchestration, dan screening. Service Python ini tetap internal untuk STT dan hanya dipanggil oleh BE lewat `AI_STT_SERVICE_URL`.
+
 Prioritas konfigurasi:
 
 ```text

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const Groq = require('groq-sdk');
 
 // Lazy init: baru dibuat saat ada request, agar tidak crash saat startup
