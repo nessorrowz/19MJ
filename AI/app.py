@@ -1,12 +1,21 @@
 #FastAPI service untuk STT lokal.
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 
-from services.transcription_service import TranscriptionEngineError, TranscriptionRequest, transcribe_audio
+from services.transcription_service import TranscriptionEngineError, TranscriptionRequest, preload_stt_model, transcribe_audio
 from models.model_loader import get_model_config
 
-app = FastAPI(title="19MJ Local STT Service")
+
+#Preload STT agar request pertama tidak kena cold-start model.
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    preload_stt_model()
+    yield
+
+
+app = FastAPI(title="19MJ Local STT Service", lifespan=lifespan)
 
 
 #Validasi token internal hanya jika env token diset.

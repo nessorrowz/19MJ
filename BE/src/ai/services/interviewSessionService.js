@@ -1,5 +1,6 @@
 //Service orchestration sesi interview dan transkripsi.
 const interviewRepository = require('../repositories/interviewRepository');
+const { logAiEvent } = require('../utils/aiLogger');
 const { AiServiceError } = require('./cvReviewService');
 
 const defaultDependencies = {
@@ -14,10 +15,98 @@ const getSttRequestHeaders = () => ({
   ...(process.env.AI_SERVICE_TOKEN ? { 'X-19MJ-AI-Token': process.env.AI_SERVICE_TOKEN } : {}),
 });
 
+const normalizeOptionalText = (value) => {
+  if (!value || typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = value.trim().replace(/\s+/g, ' ');
+  return normalized || null;
+};
+
+const normalizeSttLanguage = (language) => {
+  const normalized = normalizeOptionalText(language)?.toLowerCase() || process.env.AI_STT_LANGUAGE || 'auto';
+  return ['auto', 'id', 'en'].includes(normalized) ? normalized : 'auto';
+};
+
+//Buat konteks decoding dari data sesi, bukan kamus statis.
+const buildSttContext = ({ questionText, transcriptionContext = null }) => {
+  const contextParts = [
+    normalizeOptionalText(transcriptionContext),
+    questionText ? `Interview question: ${normalizeOptionalText(questionText)}` : null,
+  ].filter(Boolean);
+
+  if (!contextParts.length) {
+    return null;
+  }
+
+  return [
+    'Transcribe the interview answer accurately.',
+    'Preserve Indonesian and English words as spoken.',
+    ...contextParts,
+  ].join(' ');
+};
+
+//Normalisasi payload STT agar aman disimpan.
+const normalizeSttPayload = (payload) => {
+  if (!payload || payload.status !== 'completed') {
+    throw new Error('Response STT tidak valid.');
+  }
+
+  if (typeof payload.transcript !== 'string') {
+    throw new Error('Transcript STT tidak valid.');
+  }
+
+  return {
+    transcript: payload.transcript,
+    segments: Array.isArray(payload.segments) ? payload.segments : [],
+    metadata: {
+      sttStatus: payload.status,
+      model: payload.model || null,
+      latencyMs: Number.isFinite(payload.latency_ms) ? payload.latency_ms : null,
+    },
+  };
+};
+
+//Panggil service STT internal.
+const requestSttTranscription = async ({
+  mediaPath,
+  language = 'auto',
+  contextPrompt = null,
+  dependencies,
+}) => {
+  let response;
+  const requestBody = {
+    audio_path: mediaPath,
+    language,
+    ...(contextPrompt ? { context_prompt: contextPrompt, hotwords: contextPrompt } : {}),
+  };
+
+  try {
+    response = await dependencies.fetch(`${getSttServiceUrl()}/transcribe`, {
+      method: 'POST',
+      headers: getSttRequestHeaders(),
+      body: JSON.stringify(requestBody),
+    });
+  } catch (error) {
+    throw new AiServiceError(503, 'Service transkripsi sedang tidak tersedia.', { cause: error.message });
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new AiServiceError(503, payload?.detail?.message || 'Service STT gagal memproses media.');
+  }
+
+  return normalizeSttPayload(payload);
+};
+
 //Buat sesi interview baru.
 const createInterviewSession = async ({
   userId,
   questionText,
+  transcriptionLanguage = 'auto',
+  transcriptionContext = null,
   dependencies = defaultDependencies,
 }) => {
   if (!userId) {
@@ -27,7 +116,11 @@ const createInterviewSession = async ({
   return dependencies.interviewRepository.createSession({
     userId,
     questionText,
-    metadata: { source: 'candidate_practice' },
+    metadata: {
+      source: 'candidate_practice',
+      transcriptionLanguage: normalizeSttLanguage(transcriptionLanguage),
+      transcriptionContext: normalizeOptionalText(transcriptionContext),
+    },
   });
 };
 
@@ -125,22 +218,21 @@ const transcribeInterviewSession = async ({
   await dependencies.interviewRepository.updateSessionStatus(sessionId, userId, { status: 'transcribing' });
 
   try {
-    const response = await dependencies.fetch(`${getSttServiceUrl()}/transcribe`, {
-      method: 'POST',
-      headers: getSttRequestHeaders(),
-      body: JSON.stringify({ audio_path: session.media_path }),
+    const sttResult = await requestSttTranscription({
+      mediaPath: session.media_path,
+      language: normalizeSttLanguage(session.metadata_json?.transcriptionLanguage),
+      contextPrompt: buildSttContext({
+        questionText: session.question_text,
+        transcriptionContext: session.metadata_json?.transcriptionContext,
+      }),
+      dependencies,
     });
-    const payload = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      throw new Error(payload?.detail?.message || 'Service STT gagal memproses media.');
-    }
-
-    const transcript = await dependencies.interviewRepository.createTranscript({
+    const transcript = await dependencies.interviewRepository.saveTranscript({
       interviewSessionId: session.id,
-      rawTranscript: payload.transcript || '',
-      segments: payload.segments || [],
-      metadata: { sttStatus: payload.status, model: payload.model || null },
+      rawTranscript: sttResult.transcript,
+      segments: sttResult.segments,
+      metadata: sttResult.metadata,
     });
     const updatedSession = await dependencies.interviewRepository.updateSessionStatus(sessionId, userId, {
       status: 'transcribed',
@@ -153,7 +245,18 @@ const transcribeInterviewSession = async ({
       status: 'failed',
       errorMessage: error.message,
     });
-    throw new AiServiceError(503, 'Service transkripsi sedang tidak tersedia.', { cause: error.message });
+
+    logAiEvent('interview_transcription_failed', {
+      feature: 'interview_transcription',
+      status: 'failed',
+      errorCategory: error instanceof AiServiceError ? 'stt_service' : 'stt_persistence',
+    });
+
+    if (error instanceof AiServiceError) {
+      throw error;
+    }
+
+    throw new AiServiceError(500, 'Transkripsi berhasil, tetapi gagal disimpan.', { cause: error.message });
   }
 };
 
@@ -164,4 +267,7 @@ module.exports = {
   updateInterviewTranscript,
   transcribeInterviewSession,
   getSttRequestHeaders,
+  buildSttContext,
+  normalizeSttPayload,
+  requestSttTranscription,
 };

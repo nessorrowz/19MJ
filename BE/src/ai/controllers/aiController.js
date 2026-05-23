@@ -197,6 +197,8 @@ const requestInterviewSession = async (req, res) => {
     const session = await createInterviewSession({
       userId: req.user.id,
       questionText: value.questionText,
+      transcriptionLanguage: value.transcriptionLanguage,
+      transcriptionContext: value.transcriptionContext,
     });
 
     return res.status(201).json({

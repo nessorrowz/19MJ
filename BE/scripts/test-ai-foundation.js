@@ -16,7 +16,12 @@ const { assertPathInside } = require('../src/ai/storage/mediaStorage');
 const { logAiEvent } = require('../src/ai/utils/aiLogger');
 const { verifyInterviewSessionOwnership } = require('../src/ai/middleware/interviewUpload');
 const { FEATURE_CACHE_SOURCES } = require('../src/ai/services/aiCacheService');
-const { getSttRequestHeaders } = require('../src/ai/services/interviewSessionService');
+const {
+  buildSttContext,
+  getSttRequestHeaders,
+  normalizeSttPayload,
+  transcribeInterviewSession,
+} = require('../src/ai/services/interviewSessionService');
 
 const validCvReview = {
   overallScore: 80,
@@ -197,6 +202,93 @@ const testSttServiceHeaders = () => {
   delete process.env.AI_SERVICE_TOKEN;
 };
 
+const testSttPayloadNormalization = () => {
+  const result = normalizeSttPayload({
+    status: 'completed',
+    transcript: 'Jawaban kandidat.',
+    segments: [{ start_seconds: 0, end_seconds: 1, text: 'Jawaban kandidat.' }],
+    latency_ms: 700,
+    model: { engine: 'faster-whisper' },
+  });
+
+  assert.strictEqual(result.transcript, 'Jawaban kandidat.');
+  assert.strictEqual(result.segments.length, 1);
+  assert.strictEqual(result.metadata.latencyMs, 700);
+  assert.strictEqual(result.metadata.model.engine, 'faster-whisper');
+  assert.throws(() => normalizeSttPayload({ status: 'failed', transcript: 'x' }));
+};
+
+const testSttDynamicContext = () => {
+  const context = buildSttContext({
+    questionText: 'Ceritakan pengalaman Anda menangani pelanggan marah.',
+    transcriptionContext: 'Customer service interview',
+  });
+
+  assert(context.includes('Preserve Indonesian and English words as spoken.'));
+  assert(context.includes('Customer service interview'));
+  assert(context.includes('Ceritakan pengalaman Anda menangani pelanggan marah.'));
+  assert(!context.includes('PostgreSQL'));
+};
+
+const testTranscribeInterviewSessionStoresSuccessfulStt = async () => {
+  const calls = [];
+  const dependencies = {
+    fetch: async (_url, options) => {
+      const body = JSON.parse(options.body);
+      assert.strictEqual(body.language, 'en');
+      assert(body.context_prompt.includes('General interview'));
+      assert(body.hotwords.includes('Interview question'));
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: 'completed',
+            transcript: 'Candidate answer.',
+            segments: [],
+            latency_ms: 650,
+            model: { engine: 'faster-whisper' },
+          };
+        },
+      };
+    },
+    interviewRepository: {
+      async getSessionByIdForUser(id, userId) {
+        assert.strictEqual(id, 10);
+        assert.strictEqual(userId, 20);
+        return {
+          id: 10,
+          user_id: 20,
+          media_path: 'storage/interviews/10/audio.mp3',
+          question_text: 'Tell me about a difficult customer interaction.',
+          metadata_json: {
+            transcriptionLanguage: 'en',
+            transcriptionContext: 'General interview',
+          },
+        };
+      },
+      async updateSessionStatus(id, userId, patch) {
+        calls.push({ type: 'status', id, userId, patch });
+        return { id, user_id: userId, status: patch.status };
+      },
+      async saveTranscript(input) {
+        calls.push({ type: 'saveTranscript', input });
+        return { id: 30, ...input };
+      },
+    },
+  };
+
+  const result = await transcribeInterviewSession({
+    userId: 20,
+    sessionId: 10,
+    dependencies,
+  });
+
+  assert.strictEqual(result.transcript.rawTranscript, 'Candidate answer.');
+  assert(calls.some((call) => call.type === 'saveTranscript'));
+  assert(calls.some((call) => call.type === 'status' && call.patch.status === 'transcribed'));
+};
+
 (async () => {
   await testLlmFallback();
   testJsonValidation();
@@ -208,6 +300,9 @@ const testSttServiceHeaders = () => {
   testSafeLogging();
   await testInterviewUploadOwnershipMiddleware();
   testSttServiceHeaders();
+  testSttPayloadNormalization();
+  testSttDynamicContext();
+  await testTranscribeInterviewSessionStoresSuccessfulStt();
   console.log('AI foundation hardening checks passed');
 })().catch((error) => {
   console.error(error);

@@ -97,10 +97,63 @@ const createTranscript = async ({
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `,
-    [interviewSessionId, rawTranscript, editedTranscript, segments, metadata]
+    [interviewSessionId, rawTranscript, editedTranscript, JSON.stringify(segments), JSON.stringify(metadata)]
   );
 
   return result.rows[0];
+};
+
+//Ganti hasil STT terbaru untuk retry transkripsi sesi yang sama.
+const replaceTranscript = async ({
+  interviewSessionId,
+  rawTranscript,
+  editedTranscript = null,
+  segments = [],
+  metadata = {},
+}) => {
+  const result = await pool.query(
+    `
+      UPDATE interview_transcripts
+      SET raw_transcript = $2,
+          edited_transcript = $3,
+          segments_json = $4,
+          metadata_json = $5
+      WHERE interview_session_id = $1
+      RETURNING *
+    `,
+    [interviewSessionId, rawTranscript, editedTranscript, JSON.stringify(segments), JSON.stringify(metadata)]
+  );
+
+  return result.rows[0] || null;
+};
+
+//Simpan hasil STT tanpa duplikasi saat endpoint diulang.
+const saveTranscript = async ({
+  interviewSessionId,
+  rawTranscript,
+  editedTranscript = null,
+  segments = [],
+  metadata = {},
+}) => {
+  const existingTranscript = await getTranscriptBySessionId(interviewSessionId);
+
+  if (existingTranscript) {
+    return replaceTranscript({
+      interviewSessionId,
+      rawTranscript,
+      editedTranscript,
+      segments,
+      metadata,
+    });
+  }
+
+  return createTranscript({
+    interviewSessionId,
+    rawTranscript,
+    editedTranscript,
+    segments,
+    metadata,
+  });
 };
 
 //Ambil transkrip terbaru untuk sesi interview.
@@ -190,6 +243,8 @@ module.exports = {
   updateSessionStatus,
   saveMedia,
   createTranscript,
+  replaceTranscript,
+  saveTranscript,
   getTranscriptBySessionId,
   updateTranscript,
   createEvaluation,

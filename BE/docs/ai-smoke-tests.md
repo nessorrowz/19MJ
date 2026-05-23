@@ -34,7 +34,10 @@ Expected:
 
 ```json
 {
+  "engine": "faster-whisper",
+  "model_id": "large-v3-turbo",
   "model_exists": true,
+  "dependency_exists": true,
   "command_exists": true
 }
 ```
