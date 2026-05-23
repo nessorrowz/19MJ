@@ -26,6 +26,7 @@ import {
 } from "jwt-decode";
 
 import PageTransition from "../components/PageTransition";
+import AuthLeftPanel from "../components/AuthLeftPanel";
 
 export default function Login() {
   const navigate =
@@ -158,30 +159,26 @@ export default function Login() {
       credentialResponse
     ) => {
       try {
-        const userInfo =
-          jwtDecode(
-            credentialResponse.credential
+        setLoading(true);
+
+        const data =
+          await api.post(
+            "/auth/google/token",
+            {
+              credential:
+                credentialResponse.credential
+            }
           );
 
-        const googleUser =
-        {
-          username:
-            userInfo.name,
-
-          email:
-            userInfo.email,
-
-          photo:
-            userInfo.picture,
-
-          role:
-            "candidate"
-        };
+        localStorage.setItem(
+          "token",
+          data.token
+        );
 
         localStorage.setItem(
           "currentUser",
           JSON.stringify(
-            googleUser
+            data.user
           )
         );
 
@@ -191,7 +188,10 @@ export default function Login() {
         );
 
         navigate(
-          "/dashboard"
+          data.user.role ===
+            "company"
+            ? "/company/dashboard"
+            : "/dashboard"
         );
 
       } catch (err) {
@@ -201,6 +201,8 @@ export default function Login() {
           err.message ||
           "Google login gagal"
         );
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -250,50 +252,7 @@ export default function Login() {
       <div className="auth-layout">
 
         {/* LEFT */}
-        <div className="auth-left-panel">
-
-          <img
-            src="/gambar/19mj.png"
-            alt="logo"
-            style={{
-              width: "150px",
-              marginBottom:
-                "20px"
-            }}
-          />
-
-          <div
-            style={{
-              background:
-                "#8FA5B8",
-              borderRadius:
-                "25px",
-              height:
-                "500px",
-              position:
-                "relative",
-              overflow:
-                "hidden"
-            }}
-          >
-            <img
-              className="character-animation"
-              src="/gambar/ceweray.png"
-              alt="character"
-              style={{
-                position:
-                  "absolute",
-                bottom: 0,
-                left: "50%",
-                width:
-                  "85%",
-                transform:
-                  "translateX(-50%)"
-              }}
-            />
-          </div>
-
-        </div>
+        <AuthLeftPanel />
 
         {/* RIGHT */}
         <div

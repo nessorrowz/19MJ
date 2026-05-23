@@ -27,6 +27,7 @@ import {
 } from "jwt-decode";
 
 import PageTransition from "../components/PageTransition";
+import AuthLeftPanel from "../components/AuthLeftPanel";
 
 export default function LoginCompany() {
   const navigate =
@@ -249,50 +250,7 @@ export default function LoginCompany() {
       <div className="auth-layout">
 
         {/* LEFT */}
-        <div className="auth-left-panel">
-
-          <img
-            src="/gambar/19mj.png"
-            alt="logo"
-            style={{
-              width: "150px",
-              marginBottom:
-                "20px"
-            }}
-          />
-
-          <div
-            style={{
-              background:
-                "#8FA5B8",
-              borderRadius:
-                "25px",
-              height:
-                "500px",
-              position:
-                "relative",
-              overflow:
-                "hidden"
-            }}
-          >
-            <img
-              className="character-animation"
-              src="/gambar/ceweray.png"
-              alt="character"
-              style={{
-                position:
-                  "absolute",
-                bottom: 0,
-                left: "50%",
-                width:
-                  "85%",
-                transform:
-                  "translateX(-50%)"
-              }}
-            />
-          </div>
-
-        </div>
+        <AuthLeftPanel />
 
         {/* RIGHT */}
         <div
@@ -491,7 +449,7 @@ export default function LoginCompany() {
                   "24px"
               }}
             >
-              <Link to="/forgot-password">
+              <Link to="/forgot-password?role=company">
                 Forgot your password?
               </Link>
             </div>
