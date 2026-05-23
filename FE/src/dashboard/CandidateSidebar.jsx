@@ -59,7 +59,7 @@ export default function CandidateSidebar({
         <MenuItem
           active={active === "cv"}
           icon={<FiFileText />}
-          text="CV & AI Review"
+          text="CV Review"
           onClick={() => navigate("/cv-review")}
         />
 
@@ -129,7 +129,8 @@ function MenuItem({
 const styles = {
   sidebar: {
     width: 260,
-    background: "#d9edf8",
+    background:
+      "linear-gradient(180deg, #d9edf8 0%, #c8e6f0 100%)",
     padding: 20,
     display: "flex",
     flexDirection: "column",
@@ -143,5 +144,7 @@ const styles = {
     borderRadius: 12,
     marginTop: 10,
     cursor: "pointer",
+    fontSize: 14,
+    fontWeight: 500,
   },
 };

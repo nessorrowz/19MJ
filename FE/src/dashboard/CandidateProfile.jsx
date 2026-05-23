@@ -1459,13 +1459,17 @@ const styles = {
     border: "1px solid #ddd",
     borderRadius: 8,
     marginBottom: 12,
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    background: "white",
+    color: "#1e293b"
   },
 
   cleanInput: {
     border: "none",
     outline: "none",
-    width: "100%"
+    width: "100%",
+    background: "transparent",
+    color: "#1e293b"
   },
 
   inputIcon: {
@@ -1474,7 +1478,9 @@ const styles = {
     alignItems: "center",
     border: "1px solid #ddd",
     borderRadius: 8,
-    padding: 12
+    padding: 12,
+    background: "white",
+    color: "#1e293b"
   },
 
   textarea: {
@@ -1483,7 +1489,9 @@ const styles = {
     padding: 12,
     border: "1px solid #ddd",
     borderRadius: 8,
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    background: "white",
+    color: "#1e293b"
   },
 
   saveButton: {
@@ -1541,7 +1549,9 @@ const styles = {
     padding: "0 18px",
     fontSize: "15px",
     boxSizing: "border-box",
-    outline: "none"
+    outline: "none",
+    background: "white",
+    color: "#1e293b"
   },
 
   locationInput: {
@@ -1552,7 +1562,8 @@ const styles = {
     borderRadius: "12px",
     padding: "0 18px",
     height: "54px",
-    color: "#64748b"
+    color: "#64748b",
+    background: "white"
   },
 
   profileTextarea: {
@@ -1564,6 +1575,8 @@ const styles = {
     fontSize: "15px",
     resize: "none",
     boxSizing: "border-box",
-    outline: "none"
+    outline: "none",
+    background: "white",
+    color: "#1e293b"
   },
 };
