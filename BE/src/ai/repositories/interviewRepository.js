@@ -230,11 +230,47 @@ const createEvaluation = async ({
       communicationScore,
       relevanceScore,
       structureScore,
-      result,
+      JSON.stringify(result),
     ]
   );
 
   return queryResult.rows[0];
+};
+
+// Ambil semua sesi interview milik kandidat lengkap dengan skor evaluasi terakhirnya.
+const getAllSessionsForUser = async (userId) => {
+  const result = await pool.query(
+    `
+      SELECT s.*, e.overall_score
+      FROM interview_sessions s
+      LEFT JOIN (
+        SELECT DISTINCT ON (interview_session_id) interview_session_id, overall_score
+        FROM interview_evaluations
+        ORDER BY interview_session_id, created_at DESC, id DESC
+      ) e ON s.id = e.interview_session_id
+      WHERE s.user_id = $1
+      ORDER BY s.created_at DESC, s.id DESC
+    `,
+    [userId]
+  );
+
+  return result.rows;
+};
+
+// Ambil evaluasi interview terbaru berdasarkan session id.
+const getEvaluationBySessionId = async (interviewSessionId, userId) => {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM interview_evaluations
+      WHERE interview_session_id = $1 AND user_id = $2
+      ORDER BY created_at DESC, id DESC
+      LIMIT 1
+    `,
+    [interviewSessionId, userId]
+  );
+
+  return result.rows[0] || null;
 };
 
 module.exports = {
@@ -248,4 +284,7 @@ module.exports = {
   getTranscriptBySessionId,
   updateTranscript,
   createEvaluation,
+  getAllSessionsForUser,
+  getEvaluationBySessionId,
 };
+

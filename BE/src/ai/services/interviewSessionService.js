@@ -1,10 +1,12 @@
 //Service orchestration sesi interview dan transkripsi.
 const interviewRepository = require('../repositories/interviewRepository');
 const { logAiEvent } = require('../utils/aiLogger');
+const { createLlmGateway } = require('../llm/llmGateway');
 const { AiServiceError } = require('./cvReviewService');
 
 const defaultDependencies = {
   interviewRepository,
+  createLlmGateway,
   fetch: global.fetch,
 };
 
@@ -159,7 +161,27 @@ const getInterviewSession = async ({
   }
 
   const transcript = await dependencies.interviewRepository.getTranscriptBySessionId(session.id);
-  return { ...session, transcript };
+  const evaluation = await dependencies.interviewRepository.getEvaluationBySessionId(session.id, userId);
+
+  if (transcript && evaluation && evaluation.result_json) {
+    transcript.metadata_json = {
+      ...(transcript.metadata_json || {}),
+      strengths: evaluation.result_json.strengths || [],
+      improvements: evaluation.result_json.improvements || [],
+      suggestedAnswer: evaluation.result_json.suggestedAnswer || "",
+      overallScore: evaluation.overall_score,
+      communicationScore: evaluation.communication_score,
+      relevanceScore: evaluation.relevance_score,
+      structureScore: evaluation.structure_score,
+    };
+  }
+
+  return { 
+    ...session, 
+    overall_score: evaluation ? evaluation.overall_score : null,
+    transcript, 
+    evaluation 
+  };
 };
 
 //Update edited transcript dengan ownership sesi kandidat.
@@ -204,6 +226,7 @@ const updateInterviewTranscript = async ({
 const transcribeInterviewSession = async ({
   userId,
   sessionId,
+  language,
   dependencies = defaultDependencies,
 }) => {
   const session = await dependencies.interviewRepository.getSessionByIdForUser(sessionId, userId);
@@ -220,7 +243,7 @@ const transcribeInterviewSession = async ({
   try {
     const sttResult = await requestSttTranscription({
       mediaPath: session.media_path,
-      language: normalizeSttLanguage(session.metadata_json?.transcriptionLanguage),
+      language: normalizeSttLanguage(language || session.metadata_json?.transcriptionLanguage),
       contextPrompt: buildSttContext({
         questionText: session.question_text,
         transcriptionContext: session.metadata_json?.transcriptionContext,
@@ -260,14 +283,49 @@ const transcribeInterviewSession = async ({
   }
 };
 
+// Ambil daftar semua sesi interview milik kandidat.
+const getInterviewSessionsList = async ({ userId, dependencies = defaultDependencies }) => {
+  if (!userId) {
+    throw new AiServiceError(401, 'User belum terautentikasi.');
+  }
+
+  return dependencies.interviewRepository.getAllSessionsForUser(userId);
+};
+
+// Hasilkan satu pertanyaan interview dengan model AI berdasarkan target role dan level pengalaman.
+const generateInterviewQuestion = async ({ targetRole, level, dependencies = defaultDependencies }) => {
+  if (!targetRole || !level) {
+    throw new AiServiceError(400, 'Target role dan level pengalaman wajib diisi.');
+  }
+
+  const prompt = [
+    'Anda adalah interviewer profesional untuk platform 19MJ.',
+    `Hasilkan satu (1) pertanyaan interview teknis atau behavioral yang sangat relevan untuk target role: "${targetRole}" dengan level pengalaman: "${level}".`,
+    'Pertanyaan harus menantang, mendalam, dan relevan dengan industri modern.',
+    'Kembalikan Teks pertanyaan langsung tanpa markdown, penjelasan, atau label tambahan.',
+  ].join('\n');
+
+  try {
+    const gateway = dependencies.createLlmGateway();
+    const result = await gateway.generateText({ prompt });
+    return result.text ? result.text.trim() : 'Ceritakan tentang pengalaman proyek backend terbaik Anda.';
+  } catch (error) {
+    throw new AiServiceError(503, 'Gagal menjana pertanyaan interview dari model AI.', { cause: error.message });
+  }
+};
+
 module.exports = {
   createInterviewSession,
   getInterviewSession,
   saveInterviewMedia,
   updateInterviewTranscript,
   transcribeInterviewSession,
+  getInterviewSessionsList,
+  generateInterviewQuestion,
   getSttRequestHeaders,
   buildSttContext,
   normalizeSttPayload,
   requestSttTranscription,
 };
+
+
