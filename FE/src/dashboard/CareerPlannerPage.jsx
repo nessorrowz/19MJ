@@ -51,7 +51,7 @@ export default function CareerPlannerPage() {
       if (res.status === 404) {
         setRoadmap(null);
       } else if (!res.ok) {
-        throw new Error("Gagal memuat career roadmap terbaru.");
+        throw new Error("Gagal memuat peta jalan karier terbaru.");
       } else {
         const data = await res.json();
         setRoadmap(data.result?.result_json || data.result);
@@ -93,7 +93,7 @@ export default function CareerPlannerPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Gagal menghasilkan roadmap karier.");
+        throw new Error(errData.message || "Gagal menghasilkan peta jalan karier.");
       }
 
       const data = await res.json();
@@ -148,7 +148,7 @@ export default function CareerPlannerPage() {
       <div style={styles.main}>
         {/* HEADER */}
         <div style={styles.header}>
-          <h2 style={styles.pageTitle}>AI Career Planner</h2>
+          <h2 style={styles.pageTitle}>Perencana Karier</h2>
 
           <div style={styles.headerRight}>
             <FiBell size={18} style={styles.bellIcon} />
@@ -185,7 +185,7 @@ export default function CareerPlannerPage() {
                 <div style={styles.skeletonCircle}></div>
                 <h3 style={styles.skeletonTitle}>Memetakan Masa Depan Anda...</h3>
                 <p style={styles.skeletonDesc}>
-                  Model AI sedang memformulasikan roadmap pembelajaran bertahap, kesenjangan skill teknis, serta bukti deliverables terbaik untuk karir Anda.
+                  Sistem kami sedang memformulasikan peta jalan pembelajaran bertahap, kesenjangan skill teknis, serta bukti deliverables terbaik untuk karir Anda.
                 </p>
                 <div style={styles.pulseBar}></div>
               </div>
@@ -199,7 +199,7 @@ export default function CareerPlannerPage() {
 
               <h2 style={styles.cardTitle}>Ke mana karir impian Anda ingin melangkah?</h2>
               <p style={styles.cardDesc}>
-                Beritahu AI kami target role yang ingin Anda tuju. Kami akan menyusun peta jalan belajar yang dipersonalisasi lengkap dengan milestone konkret berdasarkan keahlian Anda saat ini.
+                Beritahu kami target role yang ingin Anda tuju. Kami akan menyusun peta jalan belajar yang dipersonalisasi lengkap dengan milestone konkret berdasarkan keahlian Anda saat ini.
               </p>
 
               <div style={styles.formGroup}>
@@ -249,7 +249,7 @@ export default function CareerPlannerPage() {
 
               <button style={styles.button} onClick={handleGenerate}>
                 <FiZap size={16} />
-                Hasilkan Roadmap Belajar AI Saya
+                Hasilkan Peta Jalan Belajar Saya
               </button>
 
               <p style={styles.footerText}>Rata-rata waktu pembuatan: di bawah 5 detik</p>
@@ -266,7 +266,7 @@ export default function CareerPlannerPage() {
               {/* Top Banner Card */}
               <div style={styles.roadmapHeaderCard}>
                 <div style={styles.headerLeftCol}>
-                  <span style={styles.roadmapBadge}>ROADMAP AKTIF</span>
+                  <span style={styles.roadmapBadge}>PETA JALAN AKTIF</span>
                   <h1 style={styles.roadmapTargetTitle}>{roadmap.targetRole}</h1>
                   <p style={styles.roadmapSummaryText}>{roadmap.summary}</p>
 
@@ -426,7 +426,7 @@ export default function CareerPlannerPage() {
 
               {/* Reset Roadmap Action Box */}
               <div style={styles.actionBox}>
-                <h3>Ingin menyusun roadmap dengan target baru?</h3>
+                <h3>Ingin menyusun peta jalan dengan target baru?</h3>
                 <p>Anda dapat mengatur ulang dan memasukkan target role serta keahlian Anda yang baru kapan saja.</p>
                 <button onClick={resetRoadmap} style={styles.resetBtn}>
                   Mulai Rencana Karir Baru
@@ -615,9 +615,17 @@ const styles = {
     borderRadius: "10px",
     padding: "0 16px",
     fontSize: "15px",
-    boxSizing: "border-box",
     background: "white",
+    boxSizing: "border-box",
     outline: "none",
+    cursor: "pointer",
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 16px center",
+    backgroundSize: "16px",
+    paddingRight: "40px",
+    appearance: "none",
+    WebkitAppearance: "none",
   },
   button: {
     width: "100%",

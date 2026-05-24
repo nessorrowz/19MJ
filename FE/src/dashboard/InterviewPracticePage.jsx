@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLeft, FiPlay, FiSquare, FiEdit3, FiAward } from "react-icons/fi";
+import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLeft, FiPlay, FiSquare, FiEdit3, FiAward, FiVideo } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
 
 const API_BASE = "http://localhost:3000/api/ai";
@@ -31,17 +31,29 @@ export default function InterviewPracticePage() {
   const [isEditingTranscript, setIsEditingTranscript] = useState(false);
   const [editedTranscript, setEditedTranscript] = useState("");
 
-  // MediaRecorder Refs & State
+  // MediaRecorder & Webcam Stream Refs & State
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
+  
+  const videoRef = useRef(null);
+  const [videoStream, setVideoStream] = useState(null);
 
   // Fetch past sessions on load
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  // Release camera resource if page transitions or unmounts
+  useEffect(() => {
+    return () => {
+      if (videoStream) {
+        videoStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [videoStream]);
 
   const fetchSessions = async () => {
     setLoading(true);
@@ -125,12 +137,19 @@ export default function InterviewPracticePage() {
     }
   };
 
-  // Recording Management
+  // Recording Management (Webcam + Audio)
   const startRecording = async () => {
     setError(null);
     audioChunksRef.current = [];
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setVideoStream(stream);
+      
+      // Bind to live video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
 
@@ -153,17 +172,21 @@ export default function InterviewPracticePage() {
       }, 1000);
     } catch (err) {
       console.error(err);
-      setError("Izin mikrofon ditolak atau mikrofon tidak ditemukan.");
+      setError("Izin kamera atau mikrofon ditolak / tidak ditemukan.");
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
-      // Stop all tracks in stream
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
       setIsRecording(false);
       clearInterval(timerRef.current);
+      
+      // Stop webcam preview and release streams
+      if (videoStream) {
+        videoStream.getTracks().forEach((track) => track.stop());
+        setVideoStream(null);
+      }
     }
   };
 
@@ -248,7 +271,7 @@ export default function InterviewPracticePage() {
       });
 
       if (!evalRes.ok) {
-        throw new Error("Gagal memicu evaluasi jawaban AI.");
+        throw new Error("Gagal memicu evaluasi jawaban Sistem.");
       }
 
       const evalData = await evalRes.json();
@@ -349,8 +372,8 @@ export default function InterviewPracticePage() {
             <div style={styles.skeletonContainer}>
               <div style={styles.skeletonLoader}>
                 <div style={styles.skeletonCircle}></div>
-                <h3>Sedang Berkomunikasi dengan AI...</h3>
-                <p>Memproses pembuatan sesi, evaluasi, atau transkripsi audio suara terbaik Anda.</p>
+                <h3>Sedang Berkomunikasi dengan Sistem...</h3>
+                <p>Memproses pembuatan sesi, evaluasi, atau transkripsi rekaman terbaik Anda.</p>
               </div>
             </div>
           )}
@@ -359,11 +382,11 @@ export default function InterviewPracticePage() {
             <>
               <div style={styles.titleRow}>
                 <FiMic size={30} style={{ color: "#0f7c82" }} />
-                <h1 style={styles.title}>Simulasi Interview AI</h1>
+                <h1 style={styles.title}>Simulasi Wawancara Kerja</h1>
               </div>
 
               <p style={styles.subtitle}>
-                Latih keahlian berbicara dan menjawab pertanyaan teknis & behavioral langsung bersama model AI penguji.
+                Latih keahlian berbicara dan menjawab pertanyaan teknis & behavioral langsung bersama sistem penguji kami.
               </p>
 
               {/* STATS */}
@@ -386,7 +409,7 @@ export default function InterviewPracticePage() {
               <div style={styles.practiceCard}>
                 <h3 style={{ marginTop: 0, color: "#1e293b" }}>Mulai Sesi Latihan Baru</h3>
                 <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>
-                  AI akan berperan sebagai pewawancara ahli yang menghasilkan pertanyaan tajam, relevan dengan target karir Anda.
+                  Sistem akan berperan sebagai pewawancara ahli yang menghasilkan pertanyaan tajam, relevan dengan target karir Anda.
                 </p>
                 <button style={styles.button} onClick={handleStartSetup}>
                   <FiZap size={16} />
@@ -475,7 +498,7 @@ export default function InterviewPracticePage() {
 
               <h2 style={{ marginTop: "16px", color: "#1e293b" }}>Sesuaikan Topik Wawancara</h2>
               <p style={{ color: "#64748b", marginBottom: "24px" }}>
-                AI akan merancang sebuah pertanyaan khusus sesuai dengan target role dan level pengalaman yang Anda tetapkan.
+                Sistem akan merancang sebuah pertanyaan khusus sesuai dengan target role dan level pengalaman yang Anda tetapkan.
               </p>
 
               <div style={styles.formGroup}>
@@ -515,7 +538,7 @@ export default function InterviewPracticePage() {
             <div style={styles.arenaCard}>
               <div style={styles.arenaHeader}>
                 <span style={styles.arenaBadge}>TIM SIMULASI INTERVIEW</span>
-                <h2>Pertanyaan Pewawancara AI:</h2>
+                <h2>Pertanyaan Pewawancara Sistem:</h2>
                 <div style={styles.questionBox}>
                   <p style={styles.questionContent}>"{questionText}"</p>
                 </div>
@@ -531,8 +554,8 @@ export default function InterviewPracticePage() {
                   }}
                   onClick={() => setAnsweringMode("voice")}
                 >
-                  <FiMic size={16} />
-                  Jawab dengan Suara
+                  <FiVideo size={16} />
+                  Simulasi Video Wawancara
                 </button>
                 <button
                   style={{
@@ -553,14 +576,24 @@ export default function InterviewPracticePage() {
                   <div style={styles.audioPracticeArena}>
                     {isRecording ? (
                       <div style={styles.recordingArea}>
-                        {/* Pulse animation waves */}
-                        <div style={styles.visualizerWave}>
-                          <div style={styles.waveBar}></div>
-                          <div style={styles.waveBar}></div>
-                          <div style={styles.waveBar}></div>
-                          <div style={styles.waveBar}></div>
+                        {/* Interactive Webcam Video Box */}
+                        <div style={styles.webcamContainer}>
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            style={styles.webcamVideo}
+                          />
+                          <div style={styles.recordingOverlay}>
+                            <div style={styles.recDot}></div>
+                            <span style={styles.recLabel}>REC</span>
+                          </div>
+                          <div style={styles.timerOverlay}>
+                            {formatTime(recordingSeconds)}
+                          </div>
                         </div>
-                        <div style={styles.timerVal}>{formatTime(recordingSeconds)}</div>
+
                         <button onClick={stopRecording} style={styles.stopBtn}>
                           <FiSquare size={16} />
                           Hentikan & Transkripsikan
@@ -569,7 +602,7 @@ export default function InterviewPracticePage() {
                     ) : transcript ? (
                       <div style={styles.transcriptArea}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                          <span style={styles.sectionMiniTitle}>Hasil Transkripsi Suara Anda</span>
+                          <span style={styles.sectionMiniTitle}>Hasil Transkripsi Jawaban Anda</span>
                           <button onClick={() => setIsEditingTranscript(!isEditingTranscript)} style={styles.editLink}>
                             {isEditingTranscript ? "Selesai Edit" : "Edit Teks"}
                           </button>
@@ -588,22 +621,28 @@ export default function InterviewPracticePage() {
 
                         <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
                           <button onClick={startRecording} style={styles.reRecordBtn}>
-                            <FiMic size={16} />
-                            Rekam Ulang
+                            <FiVideo size={16} />
+                            Rekam Ulang Video
                           </button>
                           <button onClick={handleSaveTextAnswer} style={styles.submitArenaBtn} disabled={loading}>
-                            {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi AI"}
+                            {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi Sistem"}
                           </button>
                         </div>
                       </div>
                     ) : (
                       <div style={styles.recordStartArea}>
+                        <div style={styles.webcamPlaceholder}>
+                          <FiVideo size={48} style={{ color: "#94a3b8", marginBottom: "16px" }} />
+                          <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>
+                            Kamera & Mikrofon siap digunakan untuk merekam simulasi video Anda.
+                          </p>
+                        </div>
                         <button onClick={startRecording} style={styles.recordStartBtn}>
-                          <FiMic size={24} />
-                          Mulai Rekam Suara
+                          <FiVideo size={24} />
+                          Mulai Rekam Video
                         </button>
                         <p style={{ color: "#64748b", marginTop: "16px", fontSize: "13px" }}>
-                          Gunakan mikrofon browser Anda untuk menjawab. Durasi optimal: 30 - 120 detik.
+                          Gunakan kamera dan mikrofon browser Anda untuk menjawab. Durasi optimal: 30 - 120 detik.
                         </p>
                       </div>
                     )}
@@ -618,7 +657,7 @@ export default function InterviewPracticePage() {
                       rows={8}
                     />
                     <button onClick={handleSaveTextAnswer} style={styles.submitArenaBtn} disabled={loading}>
-                      {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi AI"}
+                      {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi Sistem"}
                     </button>
                   </div>
                 )}
@@ -635,7 +674,7 @@ export default function InterviewPracticePage() {
               </button>
 
               <div style={styles.reviewHeader}>
-                <span style={styles.reviewBadge}>HASIL REVIEW EVALUASI AI</span>
+                <span style={styles.reviewBadge}>HASIL REVIEW EVALUASI SISTEM</span>
                 <h1 style={{ margin: "12px 0 6px", color: "#1e293b" }}>Simulasi #{selectedSession.id}</h1>
                 <p style={{ color: "#64748b", margin: 0 }}>
                   Pertanyaan: <span style={{ fontStyle: "italic" }}>"{selectedSession.question_text}"</span>
@@ -1032,6 +1071,8 @@ const styles = {
     padding: "0 16px",
     fontSize: "15px",
     boxSizing: "border-box",
+    outline: "none",
+    transition: "border-color 0.2s",
   },
   selectField: {
     width: "100%",
@@ -1042,6 +1083,26 @@ const styles = {
     fontSize: "15px",
     background: "white",
     boxSizing: "border-box",
+    outline: "none",
+    cursor: "pointer",
+    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat",
+    backgroundPosition: "right 16px center",
+    backgroundSize: "16px",
+    paddingRight: "40px",
+    appearance: "none",
+    WebkitAppearance: "none",
+  },
+  formGroup: {
+    textAlign: "left",
+    marginBottom: "24px",
+  },
+  label: {
+    display: "block",
+    marginBottom: "8px",
+    fontSize: "14px",
+    fontWeight: 600,
+    color: "#334155",
   },
   arenaCard: {
     background: "white",
@@ -1101,51 +1162,96 @@ const styles = {
   audioPracticeArena: {
     textAlign: "center",
   },
-  recordStartArea: {
-    padding: "40px 0",
+  webcamContainer: {
+    width: "100%",
+    maxWidth: "540px",
+    height: "auto",
+    aspectRatio: "16/9",
+    background: "#1e293b",
+    borderRadius: "16px",
+    border: "4px solid #cbd5e1",
+    boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
+    position: "relative",
+    margin: "0 auto 24px",
+    overflow: "hidden",
   },
-  recordStartBtn: {
-    width: "160px",
-    height: "160px",
-    borderRadius: "50%",
-    border: "none",
-    background: "linear-gradient(135deg, #ef4444, #dc2626)",
-    color: "white",
-    fontSize: "16px",
-    fontWeight: 700,
-    cursor: "pointer",
+  webcamVideo: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+  webcamPlaceholder: {
+    width: "100%",
+    maxWidth: "540px",
+    aspectRatio: "16/9",
+    background: "#f8fafc",
+    border: "2px dashed #cbd5e1",
+    borderRadius: "16px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
+    margin: "0 auto 24px",
+    padding: "24px",
+    boxSizing: "border-box",
+  },
+  recordingOverlay: {
+    position: "absolute",
+    top: "16px",
+    left: "16px",
+    background: "rgba(15, 23, 42, 0.6)",
+    padding: "6px 12px",
+    borderRadius: "20px",
+    display: "flex",
+    alignItems: "center",
     gap: "8px",
+  },
+  recDot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    background: "#ef4444",
+    animation: "pulseWave 0.6s infinite alternate",
+  },
+  recLabel: {
+    color: "white",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "0.5px",
+  },
+  timerOverlay: {
+    position: "absolute",
+    bottom: "16px",
+    right: "16px",
+    background: "rgba(15, 23, 42, 0.6)",
+    color: "white",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  recordStartArea: {
+    padding: "20px 0",
+  },
+  recordStartBtn: {
+    height: "54px",
+    borderRadius: "12px",
+    border: "none",
+    background: "linear-gradient(135deg, #ef4444, #dc2626)",
+    color: "white",
+    fontSize: "15px",
+    fontWeight: 700,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
     margin: "0 auto",
-    boxShadow: "0 10px 25px -5px rgba(239, 68, 68, 0.4)",
-    transition: "transform 0.2s",
+    padding: "0 32px",
+    boxShadow: "0 10px 25px -5px rgba(239, 68, 68, 0.3)",
   },
   recordingArea: {
-    padding: "40px 0",
-  },
-  visualizerWave: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "6px",
-    height: "40px",
-    marginBottom: "16px",
-  },
-  waveBar: {
-    width: "4px",
-    height: "20px",
-    background: "#ef4444",
-    borderRadius: "2px",
-    animation: "pulseWave 0.5s ease infinite alternate",
-  },
-  timerVal: {
-    fontSize: "24px",
-    fontWeight: 700,
-    color: "#1e293b",
-    marginBottom: "24px",
+    padding: "20px 0",
   },
   stopBtn: {
     border: "none",
