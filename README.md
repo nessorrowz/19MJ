@@ -4,7 +4,7 @@
 | ------------------------- | ---------- | ---------- | ---------------------------------------- |
 | Muhamad Arrayyan	        | 5027231014 | Frontend   | UI Designer                              |
 | Kevin Anugerah Faza       | 5027231027 | Backend    | AI Engineer                              |
-| RM. Novian Malcolm B      | 5027231035 | Full-Stack | DevOps / QA                              |
+| RM. Novian Malcolm B      | 5027231035 | Full-Stack | DevOps / QA / Backend / Frontend Developer                              |
 | Dzaky Faiq                | 5027231047 | Full-stack | Backend / Frontend Developer             |
 | Johanes Edward Nathanael  | 5027231067 | Full-stack | Project Manager / Security Assessor      |
 
