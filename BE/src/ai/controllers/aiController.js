@@ -11,6 +11,8 @@ const {
   saveInterviewMedia,
   updateInterviewTranscript,
   transcribeInterviewSession,
+  getInterviewSessionsList,
+  generateInterviewQuestion,
 } = require('../services/interviewSessionService');
 const { evaluateInterviewSession } = require('../services/interviewEvaluationService');
 const {
@@ -180,6 +182,32 @@ const getCareerRoadmapResultById = async (req, res) => {
     }
 
     return res.json({ result: roadmap });
+  } catch (serviceError) {
+    return sendError(res, serviceError);
+  }
+};
+
+// Endpoint untuk mengambil daftar semua sesi interview milik kandidat.
+const getInterviewSessions = async (req, res) => {
+  try {
+    const sessions = await getInterviewSessionsList({ userId: req.user.id });
+    return res.json({ result: sessions });
+  } catch (serviceError) {
+    return sendError(res, serviceError);
+  }
+};
+
+// Endpoint untuk otomatis menghasilkan pertanyaan interview berdasarkan target role dan level pengalaman.
+const generateInterviewQuestionResult = async (req, res) => {
+  const { targetRole, level } = req.body;
+
+  if (!targetRole || !level) {
+    return res.status(400).json({ message: 'Target role dan level pengalaman wajib diisi.' });
+  }
+
+  try {
+    const questionText = await generateInterviewQuestion({ targetRole, level });
+    return res.json({ questionText });
   } catch (serviceError) {
     return sendError(res, serviceError);
   }
@@ -449,6 +477,8 @@ module.exports = {
   getLatestCareerRoadmapResult,
   getCareerRoadmapResultById,
   requestInterviewSession,
+  getInterviewSessions,
+  generateInterviewQuestionResult,
   uploadInterviewSessionMedia,
   transcribeInterviewSessionMedia,
   getInterviewSessionResult,

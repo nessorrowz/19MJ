@@ -184,6 +184,26 @@ const createEvaluation = async ({
   return queryResult.rows[0];
 };
 
+// Ambil semua sesi interview milik kandidat lengkap dengan skor evaluasi terakhirnya.
+const getAllSessionsForUser = async (userId) => {
+  const result = await pool.query(
+    `
+      SELECT s.*, e.overall_score
+      FROM interview_sessions s
+      LEFT JOIN (
+        SELECT DISTINCT ON (interview_session_id) interview_session_id, overall_score
+        FROM interview_evaluations
+        ORDER BY interview_session_id, created_at DESC, id DESC
+      ) e ON s.id = e.interview_session_id
+      WHERE s.user_id = $1
+      ORDER BY s.created_at DESC, s.id DESC
+    `,
+    [userId]
+  );
+
+  return result.rows;
+};
+
 module.exports = {
   createSession,
   getSessionByIdForUser,
@@ -193,4 +213,6 @@ module.exports = {
   getTranscriptBySessionId,
   updateTranscript,
   createEvaluation,
+  getAllSessionsForUser,
 };
+
