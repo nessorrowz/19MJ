@@ -233,10 +233,9 @@ export default function CVReview() {
                       strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference}
                       strokeDashoffset={offset}
                       style={{ transform: "rotate(-90deg)", transformOrigin: "center", transition: "stroke-dashoffset 1s ease" }} />
-                    <text x="60" y="55" textAnchor="middle" fontSize="32" fontWeight="700" fill="#1e293b">{score}</text>
-                    <text x="60" y="72" textAnchor="middle" fontSize="12" fill="#94a3b8">/ 100</text>
+                    <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fontSize="38" fontWeight="700" fill="#1e293b" style={{ alignmentBaseline: "middle" }}>{score}</text>
                   </svg>
-                  <p style={{ color: getScoreColor(score), fontWeight: 600, fontSize: 13, marginTop: 8 }}>{getScoreLabel(score)}</p>
+                  <p style={{ color: getScoreColor(score), fontWeight: 600, fontSize: 13, marginTop: 12 }}>{getScoreLabel(score)}</p>
                 </div>
 
                 {/* Sub-scores */}
@@ -439,7 +438,16 @@ const S = {
   analyzingText: { color: "#0d9488", fontWeight: 600, fontSize: 13, animation: "pulse 1.5s infinite" },
   scoreCard: { background: "white", borderRadius: 16, padding: 32, marginTop: 24, border: "1px solid #e2e8f0" },
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20, marginTop: 24 },
-  feedbackCard: { background: "white", borderRadius: 14, padding: "20px 24px", borderLeft: "4px solid #e2e8f0", border: "1px solid #f1f5f9" },
+  feedbackCard: { 
+    background: "white", 
+    borderRadius: 14, 
+    padding: "24px 28px", 
+    border: "1px solid #e2e8f0", 
+    borderLeftWidth: "6px",
+    borderLeftStyle: "solid",
+    borderLeftColor: "#e2e8f0",
+    boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+  },
   chip: { background: "#fef3c7", color: "#92400e", fontSize: 12, fontWeight: 500, padding: "4px 12px", borderRadius: 16, border: "1px solid #fde68a" },
   backBtn: { display: "inline-flex", alignItems: "center", gap: 8, marginTop: 32, padding: "10px 24px", border: "1.5px solid #e2e8f0", borderRadius: 10, background: "white", color: "#475569", fontWeight: 600, fontSize: 14, cursor: "pointer" },
   errorBanner: { background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", padding: "10px 16px", borderRadius: 10, fontSize: 13, marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" },

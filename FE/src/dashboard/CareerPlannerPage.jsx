@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FiBell, FiZap, FiCheckCircle, FiBookOpen, FiClock, FiPlus, FiX, FiAward, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
+import { FiBell, FiCompass, FiCheckCircle, FiBookOpen, FiClock, FiPlus, FiX, FiAward, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
 
 const API_BASE = "http://localhost:3000/api/ai";
@@ -51,7 +51,7 @@ export default function CareerPlannerPage() {
       if (res.status === 404) {
         setRoadmap(null);
       } else if (!res.ok) {
-        throw new Error("Gagal memuat peta jalan karier terbaru.");
+        throw new Error("Failed to load latest career roadmap.");
       } else {
         const data = await res.json();
         setRoadmap(data.result?.result_json || data.result);
@@ -66,11 +66,11 @@ export default function CareerPlannerPage() {
 
   const handleGenerate = async () => {
     if (!targetRole.trim()) {
-      setError("Silakan masukkan target role tujuan Anda.");
+      setError("Please enter your target role.");
       return;
     }
     if (currentSkills.length === 0) {
-      setError("Silakan tambahkan minimal satu keahlian Anda saat ini.");
+      setError("Please add at least one current skill.");
       return;
     }
 
@@ -93,7 +93,7 @@ export default function CareerPlannerPage() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || "Gagal menghasilkan peta jalan karier.");
+        throw new Error(errData.message || "Failed to generate career roadmap.");
       }
 
       const data = await res.json();
@@ -148,7 +148,7 @@ export default function CareerPlannerPage() {
       <div style={styles.main}>
         {/* HEADER */}
         <div style={styles.header}>
-          <h2 style={styles.pageTitle}>Perencana Karier</h2>
+          <h2 style={styles.pageTitle}>Career Planner</h2>
 
           <div style={styles.headerRight}>
             <FiBell size={18} style={styles.bellIcon} />
@@ -183,9 +183,9 @@ export default function CareerPlannerPage() {
             <div style={styles.skeletonContainer}>
               <div style={styles.skeletonLoader}>
                 <div style={styles.skeletonCircle}></div>
-                <h3 style={styles.skeletonTitle}>Memetakan Masa Depan Anda...</h3>
+                <h3 style={styles.skeletonTitle}>Mapping Your Future...</h3>
                 <p style={styles.skeletonDesc}>
-                  Sistem kami sedang memformulasikan peta jalan pembelajaran bertahap, kesenjangan skill teknis, serta bukti deliverables terbaik untuk karir Anda.
+                  Our system is formulating a step-by-step learning roadmap, technical skill gaps, and best deliverables for your career.
                 </p>
                 <div style={styles.pulseBar}></div>
               </div>
@@ -194,27 +194,27 @@ export default function CareerPlannerPage() {
             /* WIZARD FORM */
             <div style={styles.card}>
               <div style={styles.iconWrapper}>
-                <FiZap size={26} />
+                <FiCompass size={26} style={{ color: "#0d9488" }} />
               </div>
 
-              <h2 style={styles.cardTitle}>Ke mana karir impian Anda ingin melangkah?</h2>
+              <h2 style={styles.cardTitle}>Where do you want your career to go?</h2>
               <p style={styles.cardDesc}>
-                Beritahu kami target role yang ingin Anda tuju. Kami akan menyusun peta jalan belajar yang dipersonalisasi lengkap dengan milestone konkret berdasarkan keahlian Anda saat ini.
+                Define your target role and outline a structured career path with clear learning milestones adapted to your current skillset.
               </p>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Target Role Tujuan</label>
+                <label style={styles.label}>Target Role</label>
                 <input
                   type="text"
                   value={targetRole}
                   onChange={(e) => setTargetRole(e.target.value)}
-                  placeholder="Contoh: Senior Backend Developer, Product Manager, DevOps Engineer"
+                  placeholder="e.g. Senior Backend Developer, Product Manager, DevOps Engineer"
                   style={styles.input}
                 />
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Keahlian Anda Saat Ini (Tekan Enter/Koma)</label>
+                <label style={styles.label}>Your Current Skills (Press Enter/Comma)</label>
                 <div style={styles.tagInputContainer}>
                   {currentSkills.map((skill, idx) => (
                     <span key={idx} style={styles.tagChip}>
@@ -227,32 +227,30 @@ export default function CareerPlannerPage() {
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
                     onKeyDown={handleAddSkill}
-                    placeholder={currentSkills.length === 0 ? "Contoh: Node.js, SQL, Git" : "Tambahkan keahlian lainnya..."}
+                    placeholder={currentSkills.length === 0 ? "e.g. Node.js, SQL, Git" : "Add more skills..."}
                     style={styles.tagInput}
                   />
                 </div>
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Estimasi Durasi Roadmap</label>
+                <label style={styles.label}>Estimated Roadmap Duration</label>
                 <select
                   value={timelineWeeks}
                   onChange={(e) => setTimelineWeeks(e.target.value)}
                   style={styles.selectInput}
                 >
-                  <option value={4}>1 Bulan (4 Minggu)</option>
-                  <option value={12}>3 Bulan (12 Minggu)</option>
-                  <option value={24}>6 Bulan (24 Minggu)</option>
-                  <option value={48}>1 Tahun (48 Minggu)</option>
+                  <option value={4}>1 Month (4 Weeks)</option>
+                  <option value={12}>3 Months (12 Weeks)</option>
+                  <option value={24}>6 Months (24 Weeks)</option>
+                  <option value={48}>1 Year (48 Weeks)</option>
                 </select>
               </div>
 
               <button style={styles.button} onClick={handleGenerate}>
-                <FiZap size={16} />
-                Hasilkan Peta Jalan Belajar Saya
+                <FiCompass size={16} />
+                Create My Learning Roadmap
               </button>
-
-              <p style={styles.footerText}>Rata-rata waktu pembuatan: di bawah 5 detik</p>
             </div>
           ) : (
             /* ROADMAP VIEW */
@@ -260,18 +258,18 @@ export default function CareerPlannerPage() {
               {/* Back Button */}
               <button onClick={resetRoadmap} style={styles.backButton}>
                 <FiArrowLeft size={16} />
-                Kembali ke Formulir
+                Back to Form
               </button>
 
               {/* Top Banner Card */}
               <div style={styles.roadmapHeaderCard}>
                 <div style={styles.headerLeftCol}>
-                  <span style={styles.roadmapBadge}>PETA JALAN AKTIF</span>
+                  <span style={styles.roadmapBadge}>ACTIVE ROADMAP</span>
                   <h1 style={styles.roadmapTargetTitle}>{roadmap.targetRole}</h1>
                   <p style={styles.roadmapSummaryText}>{roadmap.summary}</p>
 
                   <div style={styles.skillGapBox}>
-                    <h4 style={styles.sectionMiniTitle}>Kesenjangan Keahlian Utama (Skill Gaps)</h4>
+                    <h4 style={styles.sectionMiniTitle}>Key Skill Gaps</h4>
                     <div style={styles.tagInputContainer}>
                       {roadmap.skillGaps?.map((gap, idx) => (
                         <span key={idx} style={styles.gapChip}>
@@ -300,17 +298,17 @@ export default function CareerPlannerPage() {
                     </svg>
                     <div style={styles.circularText}>
                       <span style={styles.circularVal}>{roadmap.readinessScore}%</span>
-                      <span style={styles.circularSubText}>Kesiapan</span>
+                      <span style={styles.circularSubText}>Readiness</span>
                     </div>
                   </div>
                   <div style={{ textAlign: "center", marginTop: 8, fontSize: 13, color: "#64748b", fontWeight: 600 }}>
-                    Skor Kesiapan Karir
+                    Career Readiness Score
                   </div>
                 </div>
               </div>
 
               {/* TIMELINE SECTION */}
-              <h2 style={styles.timelineLabel}>Peta Jalan Fase Belajar Anda</h2>
+              <h2 style={styles.timelineLabel}>Your Learning Phase Roadmap</h2>
               <div style={styles.timelineWrapper}>
                 {roadmap.phases?.map((phase, pIdx) => {
                   const isActive = activePhaseIdx === pIdx;
@@ -349,10 +347,10 @@ export default function CareerPlannerPage() {
                             <div style={styles.phaseMetaRow}>
                               <span style={styles.metaBadge}>
                                 <FiClock size={12} />
-                                {phase.durationWeeks} Minggu
+                                {phase.durationWeeks} Weeks
                               </span>
                               <span style={styles.metaBadgeProgress}>
-                                Progres: {completedTasks} / {totalTasks}
+                                Progress: {completedTasks} / {totalTasks}
                               </span>
                             </div>
                           </div>
@@ -362,13 +360,13 @@ export default function CareerPlannerPage() {
                         {isActive && (
                           <div style={styles.phaseBody}>
                             <div style={styles.focusSection}>
-                              <h4 style={styles.focusLabel}>Fokus Utama</h4>
+                              <h4 style={styles.focusLabel}>Main Focus</h4>
                               <p style={styles.focusText}>{phase.focus}</p>
                             </div>
 
                             {/* Learning Tasks Checkboxes */}
                             <div style={styles.tasksSection}>
-                              <h4 style={styles.tasksTitle}>Langkah & Topik Pembelajaran</h4>
+                              <h4 style={styles.tasksTitle}>Learning Steps & Topics</h4>
                               {phase.tasks?.map((task, tIdx) => {
                                 const taskKey = `${pIdx}_${tIdx}`;
                                 const isChecked = checkedTasks[taskKey];
@@ -406,7 +404,7 @@ export default function CareerPlannerPage() {
 
                             {/* Milestone Deliverables */}
                             <div style={styles.deliverablesSection}>
-                              <h4 style={styles.deliverablesTitle}>Milestone Bukti Nyata (Deliverables)</h4>
+                              <h4 style={styles.deliverablesTitle}>Milestone Deliverables</h4>
                               <ul style={styles.deliverablesList}>
                                 {phase.deliverables?.map((del, dIdx) => (
                                   <li key={dIdx} style={styles.deliverableItem}>
@@ -426,10 +424,10 @@ export default function CareerPlannerPage() {
 
               {/* Reset Roadmap Action Box */}
               <div style={styles.actionBox}>
-                <h3>Ingin menyusun peta jalan dengan target baru?</h3>
-                <p>Anda dapat mengatur ulang dan memasukkan target role serta keahlian Anda yang baru kapan saja.</p>
+                <h3>Want to create a roadmap with a new target?</h3>
+                <p>You can reset and enter a new target role and skills anytime.</p>
                 <button onClick={resetRoadmap} style={styles.resetBtn}>
-                  Mulai Rencana Karir Baru
+                  Start New Career Plan
                 </button>
               </div>
             </div>

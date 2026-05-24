@@ -272,6 +272,7 @@ const transcribeInterviewSessionMedia = async (req, res) => {
     const result = await transcribeInterviewSession({
       userId: req.user.id,
       sessionId,
+      language: req.body.language,
     });
 
     return res.json({

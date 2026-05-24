@@ -68,7 +68,27 @@ const getInterviewSession = async ({
   }
 
   const transcript = await dependencies.interviewRepository.getTranscriptBySessionId(session.id);
-  return { ...session, transcript };
+  const evaluation = await dependencies.interviewRepository.getEvaluationBySessionId(session.id, userId);
+
+  if (transcript && evaluation && evaluation.result_json) {
+    transcript.metadata_json = {
+      ...(transcript.metadata_json || {}),
+      strengths: evaluation.result_json.strengths || [],
+      improvements: evaluation.result_json.improvements || [],
+      suggestedAnswer: evaluation.result_json.suggestedAnswer || "",
+      overallScore: evaluation.overall_score,
+      communicationScore: evaluation.communication_score,
+      relevanceScore: evaluation.relevance_score,
+      structureScore: evaluation.structure_score,
+    };
+  }
+
+  return { 
+    ...session, 
+    overall_score: evaluation ? evaluation.overall_score : null,
+    transcript, 
+    evaluation 
+  };
 };
 
 //Update edited transcript dengan ownership sesi kandidat.
@@ -113,6 +133,7 @@ const updateInterviewTranscript = async ({
 const transcribeInterviewSession = async ({
   userId,
   sessionId,
+  language,
   dependencies = defaultDependencies,
 }) => {
   const session = await dependencies.interviewRepository.getSessionByIdForUser(sessionId, userId);
@@ -130,7 +151,10 @@ const transcribeInterviewSession = async ({
     const response = await dependencies.fetch(`${getSttServiceUrl()}/transcribe`, {
       method: 'POST',
       headers: getSttRequestHeaders(),
-      body: JSON.stringify({ audio_path: session.media_path }),
+      body: JSON.stringify({ 
+        audio_path: session.media_path,
+        language: language || undefined
+      }),
     });
     const payload = await response.json().catch(() => null);
 

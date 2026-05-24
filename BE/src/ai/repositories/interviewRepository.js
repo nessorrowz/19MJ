@@ -97,7 +97,7 @@ const createTranscript = async ({
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `,
-    [interviewSessionId, rawTranscript, editedTranscript, segments, metadata]
+    [interviewSessionId, rawTranscript, editedTranscript, JSON.stringify(segments), JSON.stringify(metadata)]
   );
 
   return result.rows[0];
@@ -177,7 +177,7 @@ const createEvaluation = async ({
       communicationScore,
       relevanceScore,
       structureScore,
-      result,
+      JSON.stringify(result),
     ]
   );
 
@@ -204,6 +204,22 @@ const getAllSessionsForUser = async (userId) => {
   return result.rows;
 };
 
+// Ambil evaluasi interview terbaru berdasarkan session id.
+const getEvaluationBySessionId = async (interviewSessionId, userId) => {
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM interview_evaluations
+      WHERE interview_session_id = $1 AND user_id = $2
+      ORDER BY created_at DESC, id DESC
+      LIMIT 1
+    `,
+    [interviewSessionId, userId]
+  );
+
+  return result.rows[0] || null;
+};
+
 module.exports = {
   createSession,
   getSessionByIdForUser,
@@ -214,5 +230,6 @@ module.exports = {
   updateTranscript,
   createEvaluation,
   getAllSessionsForUser,
+  getEvaluationBySessionId,
 };
 

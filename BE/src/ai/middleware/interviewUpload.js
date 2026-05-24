@@ -14,6 +14,9 @@ const ALLOWED_MEDIA_TYPES = new Set([
   'video/mpeg',
   'video/quicktime',
   'video/webm',
+  'application/octet-stream',
+  'blob',
+  'text/plain',
 ]);
 
 const getMaxInterviewVideoBytes = () => {
@@ -47,8 +50,9 @@ const storage = multer.diskStorage({
 
 //Validasi mime type sebelum file diterima.
 const fileFilter = (req, file, callback) => {
+  console.log('[UPLOAD FILTER RECEIVED FILE]:', { originalname: file.originalname, mimetype: file.mimetype });
   if (!ALLOWED_MEDIA_TYPES.has(file.mimetype)) {
-    return callback(new Error('Tipe media interview tidak didukung.'));
+    return callback(new Error(`Tipe media interview tidak didukung: ${file.mimetype}`));
   }
 
   return callback(null, true);
@@ -91,6 +95,7 @@ const handleInterviewMediaUpload = (req, res, next) => {
       return next();
     }
 
+    console.error('[MEDIA UPLOAD ERROR]:', error);
     if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ message: 'Ukuran media interview melebihi batas.' });
     }

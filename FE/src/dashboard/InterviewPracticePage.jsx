@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLeft, FiPlay, FiSquare, FiEdit3, FiAward, FiVideo } from "react-icons/fi";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLeft, FiArrowRight, FiPlay, FiSquare, FiEdit3, FiAward, FiVideo } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
 
 const API_BASE = "http://localhost:3000/api/ai";
@@ -21,6 +21,7 @@ export default function InterviewPracticePage() {
   // Setup Form
   const [targetRole, setTargetRole] = useState("");
   const [level, setLevel] = useState("Mid-level");
+  const [interviewLanguage, setInterviewLanguage] = useState("auto");
 
   // Active Session Arena States
   const [currentSession, setCurrentSession] = useState(null);
@@ -37,14 +38,23 @@ export default function InterviewPracticePage() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const timerRef = useRef(null);
-  
+
   const videoRef = useRef(null);
   const [videoStream, setVideoStream] = useState(null);
+  const [recordedBlob, setRecordedBlob] = useState(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Fetch past sessions on load
   useEffect(() => {
     fetchSessions();
   }, []);
+
+  // Bind video stream to <video> element whenever stream or ref changes
+  useEffect(() => {
+    if (videoRef.current && videoStream) {
+      videoRef.current.srcObject = videoStream;
+    }
+  }, [videoStream, isRecording]);
 
   // Release camera resource if page transitions or unmounts
   useEffect(() => {
@@ -64,7 +74,7 @@ export default function InterviewPracticePage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        throw new Error("Gagal mengambil riwayat sesi wawancara.");
+        throw new Error("Failed to fetch interview session history.");
       }
       const data = await res.json();
       setSessions(data.result || []);
@@ -84,7 +94,7 @@ export default function InterviewPracticePage() {
 
   const handleGenerateQuestion = async () => {
     if (!targetRole.trim()) {
-      setError("Silakan isi target role pekerjaan terlebih dahulu.");
+      setError("Please enter your target job role first.");
       return;
     }
 
@@ -103,7 +113,7 @@ export default function InterviewPracticePage() {
       });
 
       if (!genRes.ok) {
-        throw new Error("Gagal membuat pertanyaan wawancara otomatis.");
+        throw new Error("Failed to generate interview question.");
       }
       const genData = await genRes.json();
       const generatedQText = genData.questionText;
@@ -119,7 +129,7 @@ export default function InterviewPracticePage() {
       });
 
       if (!sessRes.ok) {
-        throw new Error("Gagal inisialisasi sesi wawancara baru di database.");
+        throw new Error("Failed to initialize new interview session.");
       }
       const sessData = await sessRes.json();
 
@@ -140,17 +150,25 @@ export default function InterviewPracticePage() {
   // Recording Management (Webcam + Audio)
   const startRecording = async () => {
     setError(null);
+    setRecordedBlob(null);
+    setTranscript("");
+    setEditedTranscript("");
     audioChunksRef.current = [];
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+      // Set stream first, then set isRecording — useEffect will bind srcObject
       setVideoStream(stream);
-      
-      // Bind to live video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      
-      const mediaRecorder = new MediaRecorder(stream);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+          ? "video/webm;codecs=vp9,opus"
+          : MediaRecorder.isTypeSupported("video/webm")
+            ? "video/webm"
+            : undefined,
+      });
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -159,34 +177,51 @@ export default function InterviewPracticePage() {
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await uploadAndTranscribe(audioBlob);
+      mediaRecorder.onstop = () => {
+        // Build blob BEFORE releasing stream tracks
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType || "video/webm" });
+        setRecordedBlob(blob);
+
+        // NOW release camera/mic
+        stream.getTracks().forEach((track) => track.stop());
+        setVideoStream(null);
       };
 
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingSeconds(0);
+      mediaRecorder.start(1000); // collect in 1s chunks for reliability
+
       timerRef.current = setInterval(() => {
         setRecordingSeconds((prev) => prev + 1);
       }, 1000);
     } catch (err) {
       console.error(err);
-      setError("Izin kamera atau mikrofon ditolak / tidak ditemukan.");
+      setError("Camera or microphone permission denied / not found.");
     }
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stop(); // triggers onstop callback which handles cleanup
       setIsRecording(false);
       clearInterval(timerRef.current);
-      
-      // Stop webcam preview and release streams
-      if (videoStream) {
-        videoStream.getTracks().forEach((track) => track.stop());
-        setVideoStream(null);
-      }
+    }
+  };
+
+  // Try upload + transcribe; on failure, show error and fall back to manual text
+  const handleUploadAndTranscribe = async () => {
+    if (!recordedBlob) return;
+    setIsTranscribing(true);
+    setError(null);
+    try {
+      await uploadAndTranscribe(recordedBlob);
+    } catch (err) {
+      console.error(err);
+      setError("Auto-transcription unavailable. You can type your answer manually below.");
+      setTranscript("(recorded)");
+      setEditedTranscript("");
+      setIsEditingTranscript(true);
+      setAnsweringMode("text");
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -197,52 +232,47 @@ export default function InterviewPracticePage() {
   };
 
   const uploadAndTranscribe = async (audioBlob) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      const formData = new FormData();
-      formData.append("media", audioBlob, "answer.webm");
+    const token = localStorage.getItem("token");
+    const formData = new FormData();
+    formData.append("media", audioBlob, "answer.webm");
 
-      // Upload media
-      const uploadRes = await fetch(`${API_BASE}/interviews/${currentSession.id}/media`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
+    // Upload media
+    const uploadRes = await fetch(`${API_BASE}/interviews/${currentSession.id}/media`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
 
-      if (!uploadRes.ok) {
-        throw new Error("Gagal mengupload rekaman suara Anda.");
-      }
-
-      // Trigger transcription
-      const transRes = await fetch(`${API_BASE}/interviews/${currentSession.id}/transcribe`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!transRes.ok) {
-        throw new Error("Gagal melakukan transkripsi otomatis. Silakan beralih ke Mode Teks.");
-      }
-
-      const transData = await transRes.json();
-      const txt = transData.result?.transcript?.raw_transcript || transData.result?.transcript?.rawTranscript || "";
-      setTranscript(txt);
-      setEditedTranscript(txt);
-    } catch (err) {
-      console.error(err);
-      setError("Gagal memproses suara otomatis. Anda dapat mengetik jawaban secara manual di bawah.");
-      setAnsweringMode("text");
-    } finally {
-      setLoading(false);
+    if (!uploadRes.ok) {
+      throw new Error("Failed to upload your recording.");
     }
+
+    // Trigger transcription
+    const transRes = await fetch(`${API_BASE}/interviews/${currentSession.id}/transcribe`, {
+      method: "POST",
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ language: "id" }),
+    });
+
+    if (!transRes.ok) {
+      throw new Error("Auto-transcription failed.");
+    }
+
+    const transData = await transRes.json();
+    const txt = transData.result?.transcript?.raw_transcript || transData.result?.transcript?.rawTranscript || "";
+    setTranscript(txt);
+    setEditedTranscript(txt);
+    setIsEditingTranscript(true);
   };
 
   // Submit Text/Edited Answer
   const handleSaveTextAnswer = async () => {
     const finalAnswerText = answeringMode === "text" ? textAnswer : editedTranscript;
     if (!finalAnswerText.trim()) {
-      setError("Silakan masukkan atau rekam jawaban Anda terlebih dahulu.");
+      setError("Please enter or record your answer first.");
       return;
     }
 
@@ -261,7 +291,7 @@ export default function InterviewPracticePage() {
       });
 
       if (!patchRes.ok) {
-        throw new Error("Gagal memperbarui teks jawaban.");
+        throw new Error("Failed to update answer text.");
       }
 
       // Trigger evaluation
@@ -271,7 +301,7 @@ export default function InterviewPracticePage() {
       });
 
       if (!evalRes.ok) {
-        throw new Error("Gagal memicu evaluasi jawaban Sistem.");
+        throw new Error("Failed to trigger answer evaluation.");
       }
 
       const evalData = await evalRes.json();
@@ -292,7 +322,7 @@ export default function InterviewPracticePage() {
     const res = await fetch(`${API_BASE}/interviews/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error("Gagal mengambil detail sesi.");
+    if (!res.ok) throw new Error("Failed to fetch session details.");
     const data = await res.json();
     return data.result;
   };
@@ -337,7 +367,7 @@ export default function InterviewPracticePage() {
       <div style={styles.main}>
         {/* HEADER */}
         <div style={styles.header}>
-          <h2 style={styles.pageLabel}>Interview Arena</h2>
+          <h2 style={styles.pageLabel}>Interview Practice</h2>
 
           <div style={styles.headerRight}>
             <FiBell size={18} style={styles.bellIcon} />
@@ -368,70 +398,70 @@ export default function InterviewPracticePage() {
             </div>
           )}
 
-          {loading && view !== "arena" && (
+          {loading && (
             <div style={styles.skeletonContainer}>
               <div style={styles.skeletonLoader}>
                 <div style={styles.skeletonCircle}></div>
-                <h3>Sedang Berkomunikasi dengan Sistem...</h3>
-                <p>Memproses pembuatan sesi, evaluasi, atau transkripsi rekaman terbaik Anda.</p>
+                <h3>Connecting to System...</h3>
+                <p>Processing session creation, evaluation, or transcription of your recording.</p>
               </div>
             </div>
           )}
 
-          {!loading && view === "dashboard" && (
+          {view === "dashboard" && (
             <>
               <div style={styles.titleRow}>
                 <FiMic size={30} style={{ color: "#0f7c82" }} />
-                <h1 style={styles.title}>Simulasi Wawancara Kerja</h1>
+                <h1 style={styles.title}>Interview Practice</h1>
               </div>
 
               <p style={styles.subtitle}>
-                Latih keahlian berbicara dan menjawab pertanyaan teknis & behavioral langsung bersama sistem penguji kami.
+                Practice answering real interview questions and get AI feedback on every answer.
               </p>
 
               {/* STATS */}
               <div style={styles.statsGrid}>
                 <div style={styles.statCard}>
-                  <span style={styles.statLabel}>Sesi Selesai</span>
+                  <span style={styles.statLabel}>Sessions Completed</span>
                   <span style={styles.statValue}>{totalSessions}</span>
                 </div>
                 <div style={styles.statCard}>
-                  <span style={styles.statLabel}>Rata-Rata Skor</span>
+                  <span style={styles.statLabel}>Average Score</span>
                   <span style={styles.statValue}>{averageScore ? `${averageScore} / 100` : "-"}</span>
                 </div>
                 <div style={styles.statCard}>
-                  <span style={styles.statLabel}>Performa Terbaik</span>
+                  <span style={styles.statLabel}>Best Performance</span>
                   <span style={styles.statValue}>{bestScore ? `${bestScore} / 100` : "-"}</span>
                 </div>
               </div>
 
               {/* START PRACTICE BOX */}
               <div style={styles.practiceCard}>
-                <h3 style={{ marginTop: 0, color: "#1e293b" }}>Mulai Sesi Latihan Baru</h3>
+                <h3 style={{ marginTop: 0, color: "#1e293b" }}>Start a New Practice Session</h3>
                 <p style={{ color: "#64748b", fontSize: "14px", marginBottom: "20px" }}>
-                  Sistem akan berperan sebagai pewawancara ahli yang menghasilkan pertanyaan tajam, relevan dengan target karir Anda.
+                  Our system will act as an expert interviewer, generating sharp questions relevant to your target career.
                 </p>
                 <button style={styles.button} onClick={handleStartSetup}>
-                  <FiZap size={16} />
-                  Mulai Latihan Wawancara
+                  <FiPlay size={16} />
+                  Start Interview Practice
                 </button>
               </div>
 
               {/* PAST SESSIONS */}
-              <h3 style={{ color: "#1e293b", margin: "32px 0 16px" }}>Riwayat Simulasi</h3>
+              <h3 style={{ color: "#1e293b", margin: "32px 0 16px" }}>Simulation History</h3>
               {sessions.length === 0 ? (
-                <div style={styles.emptyState}>Belum ada riwayat sesi latihan interview.</div>
+                <div style={styles.emptyState}>No interview practice sessions yet.</div>
               ) : (
                 <div style={styles.tableWrapper}>
                   <table style={styles.table}>
                     <thead style={styles.tableHead}>
                       <tr>
-                        <th style={styles.th}>Sesi</th>
-                        <th style={styles.th}>Tanggal Pembuatan</th>
-                        <th style={styles.th}>Pertanyaan Utama</th>
-                        <th style={styles.th}>Status Sesi</th>
-                        <th style={styles.th}>Skor Evaluasi</th>
-                        <th style={styles.th}>Aksi</th>
+                        <th style={styles.th}>Session</th>
+                        <th style={styles.th}>Date Created</th>
+                        <th style={styles.th}>Main Question</th>
+                        <th style={styles.th}>Status</th>
+                        <th style={styles.th}>Score</th>
+                        <th style={styles.th}>Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -439,7 +469,7 @@ export default function InterviewPracticePage() {
                         <tr key={sess.id} style={styles.tableRow}>
                           <td style={styles.td}>#{sess.id}</td>
                           <td style={styles.td}>
-                            {new Date(sess.created_at).toLocaleDateString("id-ID", {
+                            {new Date(sess.created_at).toLocaleDateString("en-US", {
                               day: "numeric",
                               month: "short",
                               year: "numeric",
@@ -454,7 +484,7 @@ export default function InterviewPracticePage() {
                               background: sess.status === "completed" ? "#d1fae5" : "#fee2e2",
                               color: sess.status === "completed" ? "#065f46" : "#991b1b",
                             }}>
-                              {sess.status === "completed" ? "Selesai" : sess.status}
+                              {sess.status === "completed" ? "Completed" : sess.status}
                             </span>
                           </td>
                           <td style={styles.td}>
@@ -473,10 +503,10 @@ export default function InterviewPracticePage() {
                           <td style={styles.td}>
                             {sess.status === "completed" ? (
                               <button onClick={() => handleReviewSession(sess)} style={styles.reviewBtn}>
-                                Lihat Review
+                                View Review
                               </button>
                             ) : (
-                              <span style={{ color: "#94a3b8" }}>Belum Selesai</span>
+                              <span style={{ color: "#94a3b8" }}>Incomplete</span>
                             )}
                           </td>
                         </tr>
@@ -493,42 +523,42 @@ export default function InterviewPracticePage() {
             <div style={styles.setupCard}>
               <button onClick={handleBackToDashboard} style={styles.backLink}>
                 <FiArrowLeft size={16} />
-                Kembali ke Riwayat
+                Back to History
               </button>
 
-              <h2 style={{ marginTop: "16px", color: "#1e293b" }}>Sesuaikan Topik Wawancara</h2>
+              <h2 style={{ marginTop: "16px", color: "#1e293b" }}>Customize Interview Topic</h2>
               <p style={{ color: "#64748b", marginBottom: "24px" }}>
-                Sistem akan merancang sebuah pertanyaan khusus sesuai dengan target role dan level pengalaman yang Anda tetapkan.
+                Our system will craft a tailored question based on your target role and experience level.
               </p>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Target Role Pekerjaan</label>
+                <label style={styles.label}>Target Job Role</label>
                 <input
                   type="text"
                   value={targetRole}
                   onChange={(e) => setTargetRole(e.target.value)}
-                  placeholder="Contoh: Frontend Developer, UI/UX Designer, Data Analyst"
+                  placeholder="Search for a role or field..."
                   style={styles.inputField}
                 />
               </div>
 
               <div style={styles.formGroup}>
-                <label style={styles.label}>Level Pengalaman</label>
+                <label style={styles.label}>Experience Level</label>
                 <select
                   value={level}
                   onChange={(e) => setLevel(e.target.value)}
                   style={styles.selectField}
                 >
-                  <option value="Fresh Graduate">Fresh Graduate / Entry-level</option>
-                  <option value="Junior">Junior (1-2 tahun)</option>
-                  <option value="Mid-level">Mid-level (3-5 tahun)</option>
-                  <option value="Senior">Senior (5+ tahun)</option>
+                  <option value="Fresh Graduate">Entry Level</option>
+                  <option value="Junior">Junior (1-2 years)</option>
+                  <option value="Mid-level">Mid Level (3-5 years)</option>
+                  <option value="Senior">Senior (5+ years)</option>
                 </select>
               </div>
 
               <button style={styles.button} onClick={handleGenerateQuestion}>
-                <FiZap size={16} />
-                Buat Pertanyaan & Mulai
+                <FiArrowRight size={16} />
+                Start Practice Session
               </button>
             </div>
           )}
@@ -537,8 +567,8 @@ export default function InterviewPracticePage() {
           {view === "arena" && (
             <div style={styles.arenaCard}>
               <div style={styles.arenaHeader}>
-                <span style={styles.arenaBadge}>TIM SIMULASI INTERVIEW</span>
-                <h2>Pertanyaan Pewawancara Sistem:</h2>
+                <span style={styles.arenaBadge}>QUESTIONS</span>
+                <h2>Interviewer Question:</h2>
                 <div style={styles.questionBox}>
                   <p style={styles.questionContent}>"{questionText}"</p>
                 </div>
@@ -555,7 +585,7 @@ export default function InterviewPracticePage() {
                   onClick={() => setAnsweringMode("voice")}
                 >
                   <FiVideo size={16} />
-                  Simulasi Video Wawancara
+                  Video Interview Simulation
                 </button>
                 <button
                   style={{
@@ -566,7 +596,7 @@ export default function InterviewPracticePage() {
                   onClick={() => setAnsweringMode("text")}
                 >
                   <FiEdit3 size={16} />
-                  Ketik Jawaban Langsung
+                  Type Your Answer
                 </button>
               </div>
 
@@ -596,16 +626,68 @@ export default function InterviewPracticePage() {
 
                         <button onClick={stopRecording} style={styles.stopBtn}>
                           <FiSquare size={16} />
-                          Hentikan & Transkripsikan
+                          Stop Recording
                         </button>
+                      </div>
+                    ) : recordedBlob && !transcript ? (
+                      /* After recording, before transcription — show preview & action buttons */
+                      <div style={styles.postRecordArea}>
+                        <div style={styles.postRecordInfo}>
+                          <FiCheckCircle size={24} style={{ color: "#10b981" }} />
+                          <div>
+                            <strong style={{ color: "#1e293b" }}>Recording saved successfully</strong>
+                            <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "13px" }}>
+                              Duration: {formatTime(recordingSeconds)} &mdash; Size: {(recordedBlob.size / 1024 / 1024).toFixed(1)} MB
+                            </p>
+                          </div>
+                        </div>
+
+                        <div style={styles.postRecordActions}>
+                          <button onClick={handleUploadAndTranscribe} style={styles.submitArenaBtn} disabled={isTranscribing}>
+                            {isTranscribing ? "Transcribing..." : "Proceed to Type Your Answer"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setTranscript("(manual)");
+                              setEditedTranscript("");
+                              setIsEditingTranscript(true);
+                            }}
+                            style={styles.reRecordBtn}
+                          >
+                            <FiEdit3 size={16} />
+                            Type Answer Manually
+                          </button>
+                          <button onClick={startRecording} style={styles.reRecordBtn}>
+                            <FiVideo size={16} />
+                            Re-record
+                          </button>
+                        </div>
                       </div>
                     ) : transcript ? (
                       <div style={styles.transcriptArea}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                          <span style={styles.sectionMiniTitle}>Hasil Transkripsi Jawaban Anda</span>
-                          <button onClick={() => setIsEditingTranscript(!isEditingTranscript)} style={styles.editLink}>
-                            {isEditingTranscript ? "Selesai Edit" : "Edit Teks"}
-                          </button>
+                        <div style={{ marginBottom: "16px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{
+                                background: "#f1f5f9",
+                                color: "#475569",
+                                fontSize: "11px",
+                                fontWeight: "600",
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                letterSpacing: "0.5px"
+                              }}>
+                                RECORDED ANSWER
+                              </span>
+                              <h3 style={{ margin: 0, color: "#0f172a", fontSize: "18px", fontWeight: "600" }}>Review & Edit Answer</h3>
+                            </div>
+                            <button onClick={() => setIsEditingTranscript(!isEditingTranscript)} style={styles.editLink}>
+                              {isEditingTranscript ? "Save Changes" : "Edit Answer"}
+                            </button>
+                          </div>
+                          <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
+                            We've turned your speech into text. Feel free to make any corrections to your answer before saving.
+                          </p>
                         </div>
 
                         {isEditingTranscript ? (
@@ -614,18 +696,19 @@ export default function InterviewPracticePage() {
                             onChange={(e) => setEditedTranscript(e.target.value)}
                             style={styles.textareaField}
                             rows={6}
+                            placeholder="Type your complete answer here..."
                           />
                         ) : (
-                          <div style={styles.transcriptBox}>{editedTranscript || "(Hasil transkripsi kosong)"}</div>
+                          <div style={styles.transcriptBox}>{editedTranscript || "(Empty transcript)"}</div>
                         )}
 
                         <div style={{ marginTop: "24px", display: "flex", gap: "12px" }}>
                           <button onClick={startRecording} style={styles.reRecordBtn}>
                             <FiVideo size={16} />
-                            Rekam Ulang Video
+                            Re-record Video
                           </button>
                           <button onClick={handleSaveTextAnswer} style={styles.submitArenaBtn} disabled={loading}>
-                            {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi Sistem"}
+                            {loading ? "Saving..." : "Submit Answer"}
                           </button>
                         </div>
                       </div>
@@ -634,15 +717,15 @@ export default function InterviewPracticePage() {
                         <div style={styles.webcamPlaceholder}>
                           <FiVideo size={48} style={{ color: "#94a3b8", marginBottom: "16px" }} />
                           <p style={{ color: "#64748b", fontSize: "14px", margin: 0 }}>
-                            Kamera & Mikrofon siap digunakan untuk merekam simulasi video Anda.
+                            Camera & Microphone ready to record your video simulation.
                           </p>
                         </div>
                         <button onClick={startRecording} style={styles.recordStartBtn}>
                           <FiVideo size={24} />
-                          Mulai Rekam Video
+                          Start Recording Video
                         </button>
                         <p style={{ color: "#64748b", marginTop: "16px", fontSize: "13px" }}>
-                          Gunakan kamera dan mikrofon browser Anda untuk menjawab. Durasi optimal: 30 - 120 detik.
+                          Use your browser's camera and microphone to answer. Optimal duration: 30 - 120 seconds.
                         </p>
                       </div>
                     )}
@@ -652,12 +735,12 @@ export default function InterviewPracticePage() {
                     <textarea
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
-                      placeholder="Ketikkan jawaban lengkap Anda di sini..."
+                      placeholder="Type your complete answer here..."
                       style={styles.textareaField}
                       rows={8}
                     />
                     <button onClick={handleSaveTextAnswer} style={styles.submitArenaBtn} disabled={loading}>
-                      {loading ? "Mengevaluasi..." : "Kirim Jawaban untuk Evaluasi Sistem"}
+                      {loading ? "Evaluating..." : "Submit Answer for Evaluation"}
                     </button>
                   </div>
                 )}
@@ -670,139 +753,174 @@ export default function InterviewPracticePage() {
             <div style={styles.reviewCard}>
               <button onClick={handleBackToDashboard} style={styles.backLink}>
                 <FiArrowLeft size={16} />
-                Kembali ke Dashboard
+                Back to Dashboard
               </button>
 
               <div style={styles.reviewHeader}>
-                <span style={styles.reviewBadge}>HASIL REVIEW EVALUASI SISTEM</span>
-                <h1 style={{ margin: "12px 0 6px", color: "#1e293b" }}>Simulasi #{selectedSession.id}</h1>
+                <span style={styles.reviewBadge}>EVALUATION REVIEW RESULTS</span>
+                <h1 style={{ margin: "12px 0 6px", color: "#1e293b" }}>Simulation #{selectedSession.id}</h1>
                 <p style={{ color: "#64748b", margin: 0 }}>
-                  Pertanyaan: <span style={{ fontStyle: "italic" }}>"{selectedSession.question_text}"</span>
+                  Question: <span style={{ fontStyle: "italic" }}>"{selectedSession.question_text}"</span>
                 </p>
               </div>
 
               {/* Dynamic Score Report Grid */}
-              <div style={styles.evaluationScoreboard}>
-                {/* Left Side: overall radial column */}
-                <div style={styles.overallScoreCol}>
-                  <div style={styles.radialWrapper}>
-                    <svg style={styles.svgCircular} viewBox="0 0 36 36">
-                      <path
-                        style={styles.circularBg}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        style={{
-                          ...styles.circularFill,
-                          stroke: selectedSession.overall_score >= 80 ? "#10b981" : "#f59e0b",
-                          strokeDasharray: `${selectedSession.overall_score || 0}, 100`,
-                        }}
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div style={styles.circularText}>
-                      <span style={styles.circularVal}>{selectedSession.overall_score}%</span>
-                      <span style={styles.circularSubText}>Skor Total</span>
-                    </div>
-                  </div>
-                </div>
+              {(() => {
+                const score = selectedSession.overall_score || 0;
+                const circumference = 2 * Math.PI * 54;
+                const offset = circumference - (score / 100) * circumference;
+                
+                const getScoreColor = (s) => (s >= 85 ? "#10b981" : s >= 70 ? "#0d9488" : s >= 50 ? "#f59e0b" : "#ef4444");
+                const getScoreLabel = (s) => (s >= 85 ? "Excellent Performance" : s >= 70 ? "Good Performance" : s >= 50 ? "Satisfactory" : "Needs Improvement");
+                
+                const commScore = selectedSession.transcript?.metadata_json?.communicationScore || score;
+                const relScore = selectedSession.transcript?.metadata_json?.relevanceScore || score;
+                const structScore = selectedSession.transcript?.metadata_json?.structureScore || score;
 
-                {/* Right Side: Horizontal Bar Metrics */}
-                <div style={styles.metricsCol}>
-                  {/* Communication */}
-                  <div style={styles.metricRow}>
-                    <div style={styles.metricLabels}>
-                      <span style={styles.metricTitle}>Kemampuan Komunikasi</span>
-                      <span style={styles.metricPercent}>{selectedSession.transcript?.metadata_json?.communicationScore || selectedSession.overall_score}%</span>
-                    </div>
-                    <div style={styles.barOuter}>
-                      <div style={{ ...styles.barInner, background: "#10b981", width: `${selectedSession.transcript?.metadata_json?.communicationScore || selectedSession.overall_score}%` }}></div>
-                    </div>
-                  </div>
+                return (
+                  <>
+                    <div style={{
+                      background: "white",
+                      borderRadius: "16px",
+                      padding: "32px",
+                      marginTop: "24px",
+                      border: "1px solid #e2e8f0",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "48px", flexWrap: "wrap" }}>
+                        {/* Circle */}
+                        <div style={{ textAlign: "center", minWidth: "140px" }}>
+                          <svg width="140" height="140" viewBox="0 0 120 120">
+                            <circle cx="60" cy="60" r="54" fill="none" stroke="#e2e8f0" strokeWidth="8" />
+                            <circle cx="60" cy="60" r="54" fill="none" stroke={getScoreColor(score)}
+                              strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference}
+                              strokeDashoffset={offset}
+                              style={{ transform: "rotate(-90deg)", transformOrigin: "center", transition: "stroke-dashoffset 1s ease" }} />
+                            <text x="60" y="60" textAnchor="middle" dominantBaseline="central" fontSize="38" fontWeight="700" fill="#1e293b" style={{ alignmentBaseline: "middle" }}>{score}</text>
+                          </svg>
+                          <p style={{ color: getScoreColor(score), fontWeight: 600, fontSize: 13, marginTop: 12, marginBottom: 0 }}>
+                            {getScoreLabel(score)}
+                          </p>
+                        </div>
 
-                  {/* Relevance */}
-                  <div style={styles.metricRow}>
-                    <div style={styles.metricLabels}>
-                      <span style={styles.metricTitle}>Kesesuaian Pertanyaan (Relevance)</span>
-                      <span style={styles.metricPercent}>{selectedSession.transcript?.metadata_json?.relevanceScore || selectedSession.overall_score}%</span>
-                    </div>
-                    <div style={styles.barOuter}>
-                      <div style={{ ...styles.barInner, background: "#3b82f6", width: `${selectedSession.transcript?.metadata_json?.relevanceScore || selectedSession.overall_score}%` }}></div>
-                    </div>
-                  </div>
+                        {/* Sub-scores */}
+                        <div style={{ flex: 1, minWidth: "250px", display: "flex", flexDirection: "column", gap: "20px" }}>
+                          {/* Communication */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <span style={{ fontSize: 13, color: "#475569", minWidth: 140, fontWeight: 600 }}>Communication</span>
+                            <div style={{ flex: 1, height: 10, background: "#e2e8f0", borderRadius: 5, overflow: "hidden" }}>
+                              <div style={{ width: `${commScore}%`, height: "100%", background: "#0d9488", borderRadius: 5, transition: "width 1s ease" }} />
+                            </div>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b", minWidth: 30, textAlign: "right" }}>{commScore}</span>
+                          </div>
 
-                  {/* Structure */}
-                  <div style={styles.metricRow}>
-                    <div style={styles.metricLabels}>
-                      <span style={styles.metricTitle}>Struktur Jawaban</span>
-                      <span style={styles.metricPercent}>{selectedSession.transcript?.metadata_json?.structureScore || selectedSession.overall_score}%</span>
+                          {/* Relevance */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <span style={{ fontSize: 13, color: "#475569", minWidth: 140, fontWeight: 600 }}>Relevance</span>
+                            <div style={{ flex: 1, height: 10, background: "#e2e8f0", borderRadius: 5, overflow: "hidden" }}>
+                              <div style={{ width: `${relScore}%`, height: "100%", background: "#f59e0b", borderRadius: 5, transition: "width 1s ease" }} />
+                            </div>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b", minWidth: 30, textAlign: "right" }}>{relScore}</span>
+                          </div>
+
+                          {/* Answer Structure */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                            <span style={{ fontSize: 13, color: "#475569", minWidth: 140, fontWeight: 600 }}>Answer Structure</span>
+                            <div style={{ flex: 1, height: 10, background: "#e2e8f0", borderRadius: 5, overflow: "hidden" }}>
+                              <div style={{ width: `${structScore}%`, height: "100%", background: "#3b82f6", borderRadius: 5, transition: "width 1s ease" }} />
+                            </div>
+                            <span style={{ fontWeight: 700, fontSize: 14, color: "#1e293b", minWidth: 30, textAlign: "right" }}>{structScore}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div style={styles.barOuter}>
-                      <div style={{ ...styles.barInner, background: "#8b5cf6", width: `${selectedSession.transcript?.metadata_json?.structureScore || selectedSession.overall_score}%` }}></div>
+
+                    {/* Feedback Summary Column */}
+                    <div style={styles.feedbackSection}>
+                      <h3 style={{ color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px", marginTop: "32px", marginBottom: "16px" }}>Interviewer Feedback</h3>
+                      <p style={{ color: "#334155", lineHeight: "1.6", fontSize: "15px" }}>
+                        {selectedSession.transcript?.metadata_json?.summary || "Your answer demonstrated strong technical competence in a systematic manner."}
+                      </p>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Feedback Summary Column */}
-              <div style={styles.feedbackSection}>
-                <h3 style={{ color: "#1e293b", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>Ulasan Penguji</h3>
-                <p style={{ color: "#334155", lineHeight: "1.6", fontSize: "15px" }}>
-                  {selectedSession.transcript?.metadata_json?.summary || "Jawaban Anda dinilai sangat baik dalam menunjukkan kemampuan teknis secara sistematis."}
-                </p>
-              </div>
+                    {/* Two Column strengths & improvements */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px", marginBottom: "32px" }}>
+                      {/* Strengths Card */}
+                      <div style={{
+                        background: "white",
+                        borderRadius: "14px",
+                        padding: "24px 28px",
+                        border: "1px solid #e2e8f0",
+                        borderLeftWidth: "6px",
+                        borderLeftStyle: "solid",
+                        borderLeftColor: "#10b981",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                      }}>
+                        <h3 style={{ color: "#059669", fontSize: "16px", marginBottom: "16px", marginTop: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                          <FiCheckCircle size={18} />
+                          Your Strengths
+                        </h3>
+                        <ul style={{ margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {(selectedSession.transcript?.metadata_json?.strengths && selectedSession.transcript?.metadata_json?.strengths.length > 0) ? (
+                            selectedSession.transcript.metadata_json.strengths.map((str, idx) => (
+                              <li key={idx} style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>{str}</li>
+                            ))
+                          ) : (
+                            <>
+                              <li style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>Effective use of professional vocabulary.</li>
+                              <li style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>Logical and detailed explanation of implementation.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
 
-              {/* Two Column strengths & improvements */}
-              <div style={styles.bulletGrid}>
-                <div style={styles.bulletCard}>
-                  <h4 style={{ color: "#065f46", display: "flex", alignItems: "center", gap: "8px", margin: "0 0 16px 0" }}>
-                    <FiCheckCircle size={18} />
-                    Kekuatan Jawaban Anda (Strengths)
-                  </h4>
-                  <ul style={styles.bullets}>
-                    {selectedSession.transcript?.metadata_json?.strengths?.map((str, idx) => (
-                      <li key={idx} style={styles.bulletLi}>{str}</li>
-                    )) || (
-                      <>
-                        <li style={styles.bulletLi}>Penggunaan kosa kata profesional tepat sasaran.</li>
-                        <li style={styles.bulletLi}>Menguraikan implementasi coding dengan detail logis.</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-
-                <div style={styles.bulletCard}>
-                  <h4 style={{ color: "#92400e", display: "flex", alignItems: "center", gap: "8px", margin: "0 0 16px 0" }}>
-                    <FiAlertCircle size={18} />
-                    Saran & Perbaikan (Improvements)
-                  </h4>
-                  <ul style={styles.bullets}>
-                    {selectedSession.transcript?.metadata_json?.improvements?.map((imp, idx) => (
-                      <li key={idx} style={styles.bulletLi}>{imp}</li>
-                    )) || (
-                      <>
-                        <li style={styles.bulletLi}>Berikan contoh implementasi terukur di masa lalu.</li>
-                        <li style={styles.bulletLi}>Kurangi penggunaan jeda 'ehm' atau transisi berulang.</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-              </div>
+                      {/* Suggestions & Improvements Card */}
+                      <div style={{
+                        background: "white",
+                        borderRadius: "14px",
+                        padding: "24px 28px",
+                        border: "1px solid #e2e8f0",
+                        borderLeftWidth: "6px",
+                        borderLeftStyle: "solid",
+                        borderLeftColor: "#f59e0b",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                      }}>
+                        <h3 style={{ color: "#d97706", fontSize: "16px", marginBottom: "16px", marginTop: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+                          <FiAlertCircle size={18} />
+                          Suggestions & Improvements
+                        </h3>
+                        <ul style={{ margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                          {(selectedSession.transcript?.metadata_json?.improvements && selectedSession.transcript?.metadata_json?.improvements.length > 0) ? (
+                            selectedSession.transcript.metadata_json.improvements.map((imp, idx) => (
+                              <li key={idx} style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>{imp}</li>
+                            ))
+                          ) : (
+                            <>
+                              <li style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>Provide measurable examples from past experience.</li>
+                              <li style={{ fontSize: "13px", color: "#475569", lineHeight: 1.5 }}>Reduce filler words and repetitive transitions.</li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
 
               {/* Side by side Answer Comparison */}
               <div style={styles.comparisonBox}>
-                <h3 style={{ color: "#1e293b", marginBottom: "20px" }}>Komparasi Konstruksi Jawaban</h3>
+                <h3 style={{ color: "#1e293b", marginBottom: "20px" }}>Answer Comparison</h3>
                 <div style={styles.comparisonGrid}>
                   <div style={styles.compColumn}>
-                    <h4 style={styles.compColTitle}>Jawaban Anda</h4>
+                    <h4 style={styles.compColTitle}>Your Answer</h4>
                     <div style={styles.compTextScroll}>
-                      {selectedSession.transcript?.edited_transcript || selectedSession.transcript?.raw_transcript || "Tidak tersedia."}
+                      {selectedSession.transcript?.edited_transcript || selectedSession.transcript?.raw_transcript || "Not available."}
                     </div>
                   </div>
                   <div style={styles.compColumn}>
-                    <h4 style={{ ...styles.compColTitle, color: "#0f7c82" }}>Saran Jawaban Ideal AI</h4>
+                    <h4 style={{ ...styles.compColTitle, color: "#0f7c82" }}>Suggested Ideal Answer</h4>
                     <div style={{ ...styles.compTextScroll, background: "#f0fdfa", borderLeft: "4px solid #0f7c82" }}>
-                      {selectedSession.transcript?.metadata_json?.suggestedAnswer || "Sebagai insinyur berpengalaman, Anda dapat menjawab dengan struktur STAR (Situation, Task, Action, Result) berfokus pada efisiensi skala microservices."}
+                      {selectedSession.transcript?.metadata_json?.suggestedAnswer || "As an experienced engineer, you can answer using the STAR framework (Situation, Task, Action, Result) focusing on microservices scalability."}
                     </div>
                   </div>
                 </div>
@@ -811,7 +929,7 @@ export default function InterviewPracticePage() {
               {/* Close Button */}
               <div style={{ textAlign: "center", marginTop: "36px" }}>
                 <button onClick={handleBackToDashboard} style={styles.closeReviewBtn}>
-                  Selesai Review & Kembali
+                  Done & Return
                 </button>
               </div>
             </div>
@@ -900,25 +1018,39 @@ const styles = {
     fontWeight: 500,
   },
   skeletonContainer: {
-    background: "white",
-    borderRadius: "20px",
-    padding: "60px 40px",
-    border: "1px solid #e2e8f0",
-    textAlign: "center",
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(15, 23, 42, 0.45)",
+    backdropFilter: "blur(6px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
   },
   skeletonLoader: {
+    background: "white",
+    borderRadius: "24px",
+    padding: "40px 32px",
+    border: "1px solid rgba(255, 255, 255, 0.8)",
+    textAlign: "center",
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    maxWidth: "420px",
+    width: "90%",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
   },
   skeletonCircle: {
-    width: "70px",
-    height: "70px",
+    width: "56px",
+    height: "56px",
     borderRadius: "50%",
     border: "4px solid #f1f5f9",
     borderTopColor: "#0f7c82",
     animation: "spin 1s linear infinite",
-    marginBottom: "24px",
+    marginBottom: "20px",
   },
   titleRow: {
     display: "flex",
@@ -1471,5 +1603,25 @@ const styles = {
     fontWeight: 600,
     fontSize: "15px",
     cursor: "pointer",
+  },
+  postRecordArea: {
+    background: "#f0fdfa",
+    border: "1px solid #ccfbf1",
+    borderRadius: "16px",
+    padding: "32px",
+    textAlign: "center",
+  },
+  postRecordInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    justifyContent: "center",
+    marginBottom: "24px",
+  },
+  postRecordActions: {
+    display: "flex",
+    gap: "12px",
+    justifyContent: "center",
+    flexWrap: "wrap",
   },
 };
