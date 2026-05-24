@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { requireEnv } = require('../config/env');
 
 //Validasi JWT bearer token untuk route protected.
 const protect = (req, res, next) => {
@@ -11,7 +12,7 @@ const protect = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    const decoded = jwt.verify(token, requireEnv('JWT_SECRET'));
     req.user = decoded; //Payload login berisi { id, email, role }.
     next();
   } catch (err) {

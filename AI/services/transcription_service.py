@@ -46,6 +46,9 @@ _faster_whisper_model = None
 _faster_whisper_pipeline = None
 _cuda_dll_dirs_loaded = False
 _cuda_dll_dir_handles = []
+_transcription_semaphore = None
+_transcription_semaphore_key = None
+_transcription_semaphore_lock = threading.Lock()
 
 
 #Validasi file audio sebelum STT dijalankan.
@@ -317,6 +320,21 @@ def preload_stt_model() -> None:
         get_faster_whisper_model(config)
 
 
+def get_transcription_semaphore(config):
+    global _transcription_semaphore, _transcription_semaphore_key
+
+    if _transcription_semaphore is not None and _transcription_semaphore_key == config.max_concurrent_requests:
+        return _transcription_semaphore
+
+    with _transcription_semaphore_lock:
+        if _transcription_semaphore is not None and _transcription_semaphore_key == config.max_concurrent_requests:
+            return _transcription_semaphore
+
+        _transcription_semaphore = threading.BoundedSemaphore(config.max_concurrent_requests)
+        _transcription_semaphore_key = config.max_concurrent_requests
+        return _transcription_semaphore
+
+
 def run_faster_whisper_transcription(config, request: TranscriptionRequest, audio_path: Path, forced_device: str | None = None):
     model, device, compute_type = get_faster_whisper_model(config, forced_device=forced_device)
     selected_language = normalize_language(request.language, config.default_language)
@@ -433,10 +451,11 @@ def transcribe_audio(request: TranscriptionRequest) -> TranscriptionResponse:
 
     started_at = time.perf_counter()
 
-    if model.engine == "faster-whisper":
-        transcript, segments, runtime_metadata = transcribe_with_faster_whisper(model, request, audio_path)
-    else:
-        transcript, segments, runtime_metadata = transcribe_with_whisper_cpp(model, audio_path, request.language)
+    with get_transcription_semaphore(model):
+        if model.engine == "faster-whisper":
+            transcript, segments, runtime_metadata = transcribe_with_faster_whisper(model, request, audio_path)
+        else:
+            transcript, segments, runtime_metadata = transcribe_with_whisper_cpp(model, audio_path, request.language)
 
     return TranscriptionResponse(
         status="completed",

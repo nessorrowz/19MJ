@@ -1,6 +1,18 @@
 //Repository hasil career roadmap AI.
 const pool = require('../../config/db');
 
+const CAREER_ROADMAP_COLUMNS = `
+  id,
+  user_id,
+  ai_request_id,
+  target_role,
+  prompt_version,
+  input_hash,
+  timeline_weeks,
+  result_json,
+  created_at
+`;
+
 //Simpan roadmap hasil validasi AI.
 const create = async ({
   userId,
@@ -35,7 +47,7 @@ const create = async ({
 const getLatestForUser = async (userId) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CAREER_ROADMAP_COLUMNS}
       FROM career_roadmaps
       WHERE user_id = $1
       ORDER BY created_at DESC, id DESC
@@ -51,7 +63,7 @@ const getLatestForUser = async (userId) => {
 const getByIdForUser = async (id, userId) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CAREER_ROADMAP_COLUMNS}
       FROM career_roadmaps
       WHERE id = $1
         AND user_id = $2

@@ -1,6 +1,20 @@
 //Repository screening question, answer, dan evaluasi kandidat.
 const pool = require('../../config/db');
 
+const CANDIDATE_EVALUATION_COLUMNS = `
+  id,
+  company_user_id,
+  candidate_user_id,
+  ai_request_id,
+  job_id,
+  prompt_version,
+  input_hash,
+  fit_score,
+  recommendation,
+  result_json,
+  created_at
+`;
+
 //Simpan pertanyaan screening dari company.
 const createQuestion = async ({
   companyUserId,
@@ -55,7 +69,12 @@ const getAnswerForCompany = async ({
   const result = await pool.query(
     `
       SELECT
-        answer.*,
+        answer.id,
+        answer.screening_question_id,
+        answer.candidate_user_id,
+        answer.answer_text,
+        answer.created_at,
+        answer.updated_at,
         question.company_user_id,
         question.job_id,
         question.question_text,
@@ -124,7 +143,7 @@ const getCandidateEvaluation = async ({
 }) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CANDIDATE_EVALUATION_COLUMNS}
       FROM candidate_evaluations
       WHERE company_user_id = $1
         AND candidate_user_id = $2

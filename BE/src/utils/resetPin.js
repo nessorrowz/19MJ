@@ -1,9 +1,7 @@
 const crypto = require('crypto');
+const { requireEnv } = require('../config/env');
 
-const RESET_PIN_SECRET =
-  process.env.RESET_PIN_SECRET ||
-  process.env.JWT_SECRET ||
-  'fallback_secret';
+const getResetPinSecret = () => process.env.RESET_PIN_SECRET || requireEnv('JWT_SECRET');
 
 // PIN dibuat dengan random number dan disimpan dalam bentuk hash.
 const generateResetPin = () =>
@@ -15,7 +13,7 @@ const formatResetPin = (pin) => {
 };
 
 const hashResetPin = (pin) =>
-  crypto.createHmac('sha256', RESET_PIN_SECRET).update(String(pin)).digest('hex');
+  crypto.createHmac('sha256', getResetPinSecret()).update(String(pin)).digest('hex');
 
 const verifyResetPin = (pin, storedHash) => {
   const computedHash = hashResetPin(pin);

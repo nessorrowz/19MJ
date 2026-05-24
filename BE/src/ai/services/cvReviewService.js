@@ -5,7 +5,7 @@ const aiRequestRepository = require('../repositories/aiRequestRepository');
 const candidateDocumentRepository = require('../repositories/candidateDocumentRepository');
 const cvReviewRepository = require('../repositories/cvReviewRepository');
 const { getCachedResult } = require('./aiCacheService');
-const { assertWithinLimit } = require('./aiBudgetService');
+const { assertWithinLimit, getMaxOutputTokens } = require('./aiBudgetService');
 const { parseAndValidateAiOutput } = require('./aiOutputService');
 const { createAiHash } = require('../utils/aiHash');
 const { logAiEvent } = require('../utils/aiLogger');
@@ -134,12 +134,14 @@ const createCvReview = async ({
         targetRole: normalizedTargetRole,
       }),
       responseMimeType: 'application/json',
+      maxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const validatedResult = await parseAndValidateAiOutput({
       feature: FEATURE,
       rawText: llmResult.text,
       llmGateway: gateway,
       allowRepair: true,
+      repairMaxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const savedReview = await dependencies.cvReviewRepository.create({
       userId,
@@ -158,7 +160,7 @@ const createCvReview = async ({
       latencyMs: llmResult.latencyMs,
       outputSizeChars: llmResult.text.length,
       attemptCount: (llmResult.attempts?.length || 0) + 1,
-      metadata: { attempts: llmResult.attempts || [] },
+      metadata: { attempts: llmResult.attempts || [], providerMetadata: llmResult.metadata || null },
     });
     logAiEvent('ai_request_completed', {
       feature: FEATURE,

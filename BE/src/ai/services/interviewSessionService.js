@@ -12,6 +12,17 @@ const defaultDependencies = {
 
 const getSttServiceUrl = () => process.env.AI_STT_SERVICE_URL || 'http://localhost:8001';
 
+const getSttRequestTimeoutMs = () => {
+  const requestTimeoutMs = Number(process.env.AI_STT_REQUEST_TIMEOUT_MS);
+
+  if (Number.isFinite(requestTimeoutMs) && requestTimeoutMs > 0) {
+    return requestTimeoutMs;
+  }
+
+  const timeoutSeconds = Number(process.env.AI_STT_TIMEOUT_SECONDS || 600);
+  return Math.max(1, timeoutSeconds) * 1000;
+};
+
 const getSttRequestHeaders = () => ({
   'Content-Type': 'application/json',
   ...(process.env.AI_SERVICE_TOKEN ? { 'X-19MJ-AI-Token': process.env.AI_SERVICE_TOKEN } : {}),
@@ -78,6 +89,8 @@ const requestSttTranscription = async ({
   dependencies,
 }) => {
   let response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getSttRequestTimeoutMs());
   const requestBody = {
     audio_path: mediaPath,
     language,
@@ -88,10 +101,17 @@ const requestSttTranscription = async ({
     response = await dependencies.fetch(`${getSttServiceUrl()}/transcribe`, {
       method: 'POST',
       headers: getSttRequestHeaders(),
+      signal: controller.signal,
       body: JSON.stringify(requestBody),
     });
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new AiServiceError(503, 'Service transkripsi melewati batas waktu.');
+    }
+
     throw new AiServiceError(503, 'Service transkripsi sedang tidak tersedia.', { cause: error.message });
+  } finally {
+    clearTimeout(timeout);
   }
 
   const payload = await response.json().catch(() => null);
@@ -326,6 +346,7 @@ module.exports = {
   buildSttContext,
   normalizeSttPayload,
   requestSttTranscription,
+  getSttRequestTimeoutMs,
 };
 
 

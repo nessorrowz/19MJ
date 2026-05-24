@@ -3,6 +3,7 @@ const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
 const { generateResetPin, formatResetPin, hashResetPin, verifyResetPin } = require('../utils/resetPin');
 const { sendResendEmail } = require('../config/resend');
+const { requireEnv } = require('../config/env');
 const { buildResetPasswordPinEmail } = require('../utils/emailTemplates/resetPasswordPin');
 const { buildPasswordResetSuccessEmail } = require('../utils/emailTemplates/passwordResetSuccess');
 
@@ -12,7 +13,7 @@ const isValidEmail = (email) =>
 
 // ─── Helper: Sign JWT ─────────────────────────────────────────────────────────
 const signToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', {
+  jwt.sign(payload, requireEnv('JWT_SECRET'), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 
@@ -20,7 +21,7 @@ const RESET_PIN_EXPIRY_MINUTES = Number(process.env.RESET_PIN_EXPIRY_MINUTES || 
 const RESET_PIN_MAX_ATTEMPTS = Number(process.env.RESET_PIN_MAX_ATTEMPTS || 3);
 const RESET_PIN_RESEND_COOLDOWN_SECONDS = Number(process.env.RESET_PIN_RESEND_COOLDOWN_SECONDS || 60);
 const RESET_TOKEN_EXPIRES_IN = process.env.RESET_TOKEN_EXPIRES_IN || '15m';
-const RESET_TOKEN_SECRET = process.env.RESET_TOKEN_SECRET || process.env.JWT_SECRET || 'fallback_secret';
+const getResetTokenSecret = () => process.env.RESET_TOKEN_SECRET || requireEnv('JWT_SECRET');
 const RESET_TOKEN_PURPOSE = 'password-reset';
 // Balasan publik harus seragam agar status email tidak bisa ditebak dari luar.
 const FORGOT_PASSWORD_GENERIC_RESPONSE = {
@@ -34,11 +35,11 @@ const normalizePin = (pin) => String(pin || '').replace(/\D/g, '').slice(0, 6);
 const signResetToken = (payload) =>
   jwt.sign(
     { ...payload, purpose: RESET_TOKEN_PURPOSE },
-    RESET_TOKEN_SECRET,
+    getResetTokenSecret(),
     { expiresIn: RESET_TOKEN_EXPIRES_IN }
   );
 
-const verifyResetToken = (token) => jwt.verify(token, RESET_TOKEN_SECRET);
+const verifyResetToken = (token) => jwt.verify(token, getResetTokenSecret());
 
 const getResetCooldownRemainingSeconds = (lastSentAt) => {
   if (!lastSentAt) {
@@ -307,7 +308,8 @@ const login = async (req, res) => {
   try {
     // Cari user berdasarkan email
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1', [email]
+      'SELECT id, email, password, role, created_at, updated_at FROM users WHERE email = $1',
+      [email]
     );
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Email atau password salah.' });
@@ -787,7 +789,10 @@ const googleTokenLogin = async (req, res) => {
     }
 
     // Check if user already exists
-    let userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    let userResult = await pool.query(
+      'SELECT id, email, password, role, created_at, updated_at FROM users WHERE email = $1',
+      [email]
+    );
 
     if (userResult.rows.length === 0) {
       // New user — auto-register as candidate
@@ -818,7 +823,10 @@ const googleTokenLogin = async (req, res) => {
         );
 
         await client.query('COMMIT');
-        userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
+        userResult = await pool.query(
+          'SELECT id, email, password, role, created_at, updated_at FROM users WHERE id = $1',
+          [user.id]
+        );
       } catch (err) {
         await client.query('ROLLBACK');
         throw err;

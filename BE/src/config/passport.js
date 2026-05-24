@@ -2,6 +2,7 @@ const passport       = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const pool           = require('./db');
 const jwt            = require('jsonwebtoken');
+const { requireEnv } = require('./env');
 
 if (
   process.env.GOOGLE_CLIENT_ID &&
@@ -20,7 +21,10 @@ if (
       const fullName = profile.displayName;
 
       // Cek apakah user sudah ada
-      let userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      let userResult = await pool.query(
+        'SELECT id, email, password, role, created_at, updated_at FROM users WHERE email = $1',
+        [email]
+      );
 
       if (userResult.rows.length === 0) {
         // User baru — daftar otomatis sebagai candidate
@@ -52,7 +56,10 @@ if (
           );
 
           await client.query('COMMIT');
-          userResult = await pool.query('SELECT * FROM users WHERE id = $1', [user.id]);
+          userResult = await pool.query(
+            'SELECT id, email, password, role, created_at, updated_at FROM users WHERE id = $1',
+            [user.id]
+          );
         } catch (err) {
           await client.query('ROLLBACK');
           throw err;
@@ -72,7 +79,7 @@ if (
       // Buat JWT
       const token = jwt.sign(
         { id: user.id, email: user.email, role: user.role },
-        process.env.JWT_SECRET || 'fallback_secret',
+        requireEnv('JWT_SECRET'),
         { expiresIn: process.env.JWT_EXPIRES_IN || '1y' }
       );
 

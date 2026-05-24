@@ -12,15 +12,15 @@ require('./config/db');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+//Ambil origin CORS dari env agar tidak terkunci ke port dev.
+const getCorsOrigins = () => {
+  const configuredOrigins = process.env.CORS_ORIGINS || process.env.FE_URL || 'http://localhost:5173';
+  return [...new Set(configuredOrigins.split(',').map((origin) => origin.trim()).filter(Boolean))];
+};
+
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    process.env.FE_URL || 'http://localhost:5173',
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:5174',
-  ],
+  origin: getCorsOrigins(),
   credentials: true,
 }));
 app.use(express.json());

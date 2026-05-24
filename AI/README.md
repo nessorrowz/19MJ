@@ -45,6 +45,7 @@ AI_STT_DEVICE=auto
 AI_STT_COMPUTE_TYPE=auto
 AI_STT_CPU_THREADS=0
 AI_STT_NUM_WORKERS=1
+AI_STT_MAX_CONCURRENT_REQUESTS=1
 AI_STT_BATCH_SIZE=8
 AI_STT_BEAM_SIZE=1
 AI_STT_VAD_FILTER=true
@@ -52,10 +53,10 @@ AI_STT_VAD_MIN_SILENCE_MS=500
 AI_STT_DEFAULT_LANGUAGE=auto
 AI_STT_CONDITION_ON_PREVIOUS_TEXT=false
 AI_STT_PRELOAD_MODEL=true
-AI_STT_COMMAND_PATH=D:/Programming/Capstone/19MJ/AI/tools/whisper.cpp/Release/whisper-cli.exe
+AI_STT_COMMAND_PATH=tools/whisper.cpp/Release/whisper-cli.exe
 AI_STT_TIMEOUT_SECONDS=600
 AI_STT_TEMP_DIR=storage/stt_tmp
-AI_ALLOWED_AUDIO_ROOT=D:/Programming/Capstone/19MJ/BE/storage/interviews
+AI_ALLOWED_AUDIO_ROOT=../BE/storage/interviews
 ```
 
 `AI_ALLOWED_AUDIO_ROOT` wajib mengarah ke folder media interview backend. Endpoint `/transcribe` akan menolak path audio di luar folder ini.
@@ -63,6 +64,16 @@ AI_ALLOWED_AUDIO_ROOT=D:/Programming/Capstone/19MJ/BE/storage/interviews
 `AI_SERVICE_TOKEN` opsional untuk local development. Jika diisi, value yang sama harus ada di env BE agar request `BE -> AI` membawa header internal yang valid.
 
 Default STT memakai `faster-whisper` dengan `large-v3-turbo`. Model dimuat sekali per proses FastAPI agar request berikutnya tidak mengulang startup cost.
+
+Untuk BE, pastikan `.env` atau `.env.example` memuat:
+
+```env
+AI_STT_SERVICE_URL=http://localhost:8001
+AI_SERVICE_TOKEN=
+AI_STT_LANGUAGE=auto
+```
+
+`AI_STT_LANGUAGE=auto` membuat BE mengirim request bilingual secara default. Nilai valid: `auto`, `id`, atau `en`.
 
 Default optimisasi:
 
@@ -129,7 +140,7 @@ AI/tools/whisper.cpp/
 Pastikan env menunjuk ke `whisper-cli.exe`, bukan `main.exe`:
 
 ```env
-AI_STT_COMMAND_PATH=D:/Programming/Capstone/19MJ/AI/tools/whisper.cpp/Release/whisper-cli.exe
+AI_STT_COMMAND_PATH=tools/whisper.cpp/Release/whisper-cli.exe
 ```
 
 ## 5. Run AI Service
@@ -168,7 +179,7 @@ Contoh memakai file hasil upload backend:
 ```bash
 curl -X POST http://127.0.0.1:8001/transcribe \
   -H "Content-Type: application/json" \
-  -d '{"audio_path":"D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3","language":"auto"}'
+  -d '{"audio_path":"../BE/storage/interviews/1/media-test.mp3","language":"auto"}'
 ```
 
 `language` menerima `auto`, `id`, atau `en`. Gunakan `auto` untuk jawaban Indonesia, Inggris, atau campuran.
@@ -177,7 +188,7 @@ Untuk meningkatkan akurasi tanpa hardcoded correction dictionary, request boleh 
 
 ```json
 {
-  "audio_path": "D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3",
+  "audio_path": "../BE/storage/interviews/1/media-test.mp3",
   "language": "auto",
   "context_prompt": "Transcribe the interview answer accurately. Preserve Indonesian and English words as spoken. Interview question: Ceritakan pengalaman Anda menangani pelanggan marah.",
   "hotwords": "Transcribe the interview answer accurately. Preserve Indonesian and English words as spoken. Interview question: Ceritakan pengalaman Anda menangani pelanggan marah."
@@ -245,7 +256,7 @@ Request:
 
 ```json
 {
-  "audio_path": "D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3",
+  "audio_path": "../BE/storage/interviews/1/media-test.mp3",
   "language": "auto",
   "context_prompt": "Transcribe the interview answer accurately. Preserve Indonesian and English words as spoken. Interview question: Ceritakan pengalaman Anda membangun API yang aman dan mudah dirawat.",
   "hotwords": "Transcribe the interview answer accurately. Preserve Indonesian and English words as spoken. Interview question: Ceritakan pengalaman Anda membangun API yang aman dan mudah dirawat."
@@ -279,7 +290,7 @@ Response:
     "runtime_inference": "batched",
     "context_prompt_used": true,
     "hotwords_used": true,
-    "audio_path": "D:/Programming/Capstone/19MJ/BE/storage/interviews/1/media-test.mp3"
+    "audio_path": "../BE/storage/interviews/1/media-test.mp3"
   }
 }
 ```
@@ -369,13 +380,22 @@ Saat membuat sesi interview, BE menerima opsi STT berikut:
 
 ```json
 {
+  "questionText": "Ceritakan pengalaman Anda menangani pelanggan marah."
+}
+```
+
+`transcriptionLanguage` dan `transcriptionContext` bersifat opsional. Jika `transcriptionLanguage` tidak dikirim, BE memakai `AI_STT_LANGUAGE`, lalu fallback ke `auto`.
+
+Saat transkripsi, BE selalu membangun `context_prompt` minimal dari `questionText`. Jika UI punya konteks domain tambahan seperti role, industri, jenis interview, atau job title, kirim lewat `transcriptionContext`:
+
+```json
+{
   "questionText": "Ceritakan pengalaman Anda menangani pelanggan marah.",
-  "transcriptionLanguage": "auto",
   "transcriptionContext": "Customer service interview"
 }
 ```
 
-`transcriptionLanguage` menerima `auto`, `id`, atau `en`. `transcriptionContext` opsional dan disimpan sebagai metadata sesi. Saat transkripsi, BE membangun `context_prompt` dari `questionText` dan `transcriptionContext`, lalu mengirimkannya ke service AI. Ini menjaga akurasi untuk berbagai domain tanpa hardcoded tech dictionary.
+Pendekatan ini menjaga akurasi untuk berbagai domain tanpa hardcoded tech dictionary. FE atau Swagger tidak wajib mengirim `transcriptionLanguage: "auto"` karena default sudah `auto`.
 
 ## 10. Integrasi FE
 
@@ -385,7 +405,8 @@ Aturan integrasi FE:
 
 - Jangan simpan `AI_STT_SERVICE_URL`, `AI_SERVICE_TOKEN`, path model, atau path storage di FE.
 - Upload media interview ke `POST /api/ai/interviews/:id/media` dengan `multipart/form-data` field `media`.
-- Saat membuat sesi, kirim `transcriptionLanguage=auto` untuk jawaban bilingual dan `transcriptionContext` jika UI punya role, industri, jenis interview, atau konteks domain lain.
+- Saat membuat sesi, `transcriptionLanguage` tidak wajib dikirim karena default BE adalah `auto`.
+- Kirim `transcriptionContext` hanya jika UI punya role, industri, jenis interview, job title, atau konteks domain lain yang memang berasal dari pilihan user/session.
 - Trigger transkripsi lewat `POST /api/ai/interviews/:id/transcribe`.
 - Ambil hasil sesi lewat `GET /api/ai/interviews/:id`.
 - Tampilkan `raw_transcript` sebagai hasil awal dan simpan koreksi user lewat `PATCH /api/ai/interviews/:id/transcript`.

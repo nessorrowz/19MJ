@@ -22,25 +22,35 @@ const buildProviderPlan = (providerFactories = defaultProviderFactories) => [
   },
   {
     provider: 'openrouter',
-    model: process.env.OPENROUTER_FALLBACK_MODEL || 'tencent/hy3-preview:free',
+    model: process.env.OPENROUTER_FALLBACK_MODEL || 'deepseek/deepseek-v4-flash:free',
     factory: providerFactories.openrouter,
   },
   {
     provider: 'openrouter',
-    model: process.env.OPENROUTER_SECONDARY_FALLBACK_MODEL || 'nvidia/nemotron-3-nano-30b-a3b:free',
+    model: process.env.OPENROUTER_SECONDARY_FALLBACK_MODEL || 'deepseek/deepseek-v4-flash:free',
     factory: providerFactories.openrouter,
   },
 ];
 
 //Gateway per provider dan fallback untuk repeated error.
 const createLlmGateway = ({ providerFactories = defaultProviderFactories } = {}) => {
+  const providerCache = new Map();
+
+  const getProvider = (step) => {
+    if (!providerCache.has(step.provider)) {
+      providerCache.set(step.provider, step.factory());
+    }
+
+    return providerCache.get(step.provider);
+  };
+
   //Generate text dan simpan metadata attempt gagal.
   const generateText = async (input) => {
     const attempts = [];
 
     for (const step of buildProviderPlan(providerFactories)) {
       try {
-        const provider = step.factory();
+        const provider = getProvider(step);
         const result = await provider.generateText({ ...input, model: step.model });
         return {
           ...result,

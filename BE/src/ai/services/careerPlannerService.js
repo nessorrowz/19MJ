@@ -5,7 +5,7 @@ const aiRequestRepository = require('../repositories/aiRequestRepository');
 const careerRoadmapRepository = require('../repositories/careerRoadmapRepository');
 const cvReviewRepository = require('../repositories/cvReviewRepository');
 const { getCachedResult } = require('./aiCacheService');
-const { assertWithinLimit } = require('./aiBudgetService');
+const { assertWithinLimit, getMaxOutputTokens } = require('./aiBudgetService');
 const { parseAndValidateAiOutput } = require('./aiOutputService');
 const { createAiHash } = require('../utils/aiHash');
 const { logAiEvent } = require('../utils/aiLogger');
@@ -150,12 +150,14 @@ const createCareerRoadmap = async ({
         cvReviewSummary,
       }),
       responseMimeType: 'application/json',
+      maxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const validatedResult = await parseAndValidateAiOutput({
       feature: FEATURE,
       rawText: llmResult.text,
       llmGateway: gateway,
       allowRepair: true,
+      repairMaxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const savedRoadmap = await dependencies.careerRoadmapRepository.create({
       userId,
@@ -173,7 +175,7 @@ const createCareerRoadmap = async ({
       latencyMs: llmResult.latencyMs,
       outputSizeChars: llmResult.text.length,
       attemptCount: (llmResult.attempts?.length || 0) + 1,
-      metadata: { attempts: llmResult.attempts || [] },
+      metadata: { attempts: llmResult.attempts || [], providerMetadata: llmResult.metadata || null },
     });
     logAiEvent('ai_request_completed', {
       feature: FEATURE,

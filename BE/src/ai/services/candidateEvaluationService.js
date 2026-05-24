@@ -3,7 +3,7 @@ const { createLlmGateway } = require('../llm/llmGateway');
 const { ERROR_CATEGORIES, LlmError } = require('../llm/llmErrors');
 const aiRequestRepository = require('../repositories/aiRequestRepository');
 const screeningRepository = require('../repositories/screeningRepository');
-const { assertWithinLimit } = require('./aiBudgetService');
+const { assertWithinLimit, getMaxOutputTokens } = require('./aiBudgetService');
 const { getCachedResult } = require('./aiCacheService');
 const { parseAndValidateAiOutput } = require('./aiOutputService');
 const { AiServiceError } = require('./cvReviewService');
@@ -161,12 +161,14 @@ const evaluateCandidateScreening = async ({
         rubric,
       }),
       responseMimeType: 'application/json',
+      maxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const validatedResult = await parseAndValidateAiOutput({
       feature: FEATURE,
       rawText: llmResult.text,
       llmGateway: gateway,
       allowRepair: true,
+      repairMaxOutputTokens: getMaxOutputTokens(FEATURE),
     });
     const savedEvaluation = await dependencies.screeningRepository.createCandidateEvaluation({
       companyUserId,
@@ -186,7 +188,7 @@ const evaluateCandidateScreening = async ({
       latencyMs: llmResult.latencyMs,
       outputSizeChars: llmResult.text.length,
       attemptCount: (llmResult.attempts?.length || 0) + 1,
-      metadata: { attempts: llmResult.attempts || [] },
+      metadata: { attempts: llmResult.attempts || [], providerMetadata: llmResult.metadata || null },
     });
     logAiEvent('ai_request_completed', {
       feature: FEATURE,

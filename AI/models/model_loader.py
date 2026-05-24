@@ -22,6 +22,7 @@ class SttModelConfig(BaseModel):
     cpu_threads: int
     num_workers: int
     batch_size: int
+    max_concurrent_requests: int
     beam_size: int
     vad_filter: bool
     vad_min_silence_ms: int
@@ -151,6 +152,7 @@ def get_model_config() -> SttModelConfig:
         cpu_threads=parse_int_env("AI_STT_CPU_THREADS", 0),
         num_workers=parse_int_env("AI_STT_NUM_WORKERS", 1, minimum=1),
         batch_size=parse_int_env("AI_STT_BATCH_SIZE", 8, minimum=1),
+        max_concurrent_requests=parse_int_env("AI_STT_MAX_CONCURRENT_REQUESTS", 1, minimum=1),
         beam_size=parse_int_env("AI_STT_BEAM_SIZE", 1, minimum=1),
         vad_filter=parse_bool_env("AI_STT_VAD_FILTER", True),
         vad_min_silence_ms=parse_int_env("AI_STT_VAD_MIN_SILENCE_MS", 500, minimum=0),
