@@ -364,7 +364,7 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <GoogleOAuthProvider clientId="GOOGLE_CLIENT_ID_KAMU">
+    <GoogleOAuthProvider clientId="674676669844-o0kpk4l33dv4gq0mhgljevpnqtgism1o.apps.googleusercontent.com">
 
       <BrowserRouter>
         <AppRoutes />

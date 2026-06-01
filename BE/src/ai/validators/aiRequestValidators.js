@@ -14,6 +14,8 @@ const careerRoadmapRequestSchema = z.object({
 
 const interviewSessionRequestSchema = z.object({
   questionText: z.string().trim().min(10).max(2000),
+  transcriptionLanguage: z.enum(['auto', 'id', 'en']).optional(),
+  transcriptionContext: z.string().trim().min(2).max(1000).optional(),
 });
 
 const transcriptUpdateRequestSchema = z.object({

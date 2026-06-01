@@ -3,6 +3,7 @@ const jwt    = require('jsonwebtoken');
 const pool   = require('../config/db');
 const { generateResetPin, formatResetPin, hashResetPin, verifyResetPin } = require('../utils/resetPin');
 const { sendResendEmail } = require('../config/resend');
+const { requireEnv } = require('../config/env');
 const { buildResetPasswordPinEmail } = require('../utils/emailTemplates/resetPasswordPin');
 const { buildPasswordResetSuccessEmail } = require('../utils/emailTemplates/passwordResetSuccess');
 
@@ -12,7 +13,7 @@ const isValidEmail = (email) =>
 
 // ─── Helper: Sign JWT ─────────────────────────────────────────────────────────
 const signToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET || 'fallback_secret', {
+  jwt.sign(payload, requireEnv('JWT_SECRET'), {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 
@@ -20,7 +21,7 @@ const RESET_PIN_EXPIRY_MINUTES = Number(process.env.RESET_PIN_EXPIRY_MINUTES || 
 const RESET_PIN_MAX_ATTEMPTS = Number(process.env.RESET_PIN_MAX_ATTEMPTS || 3);
 const RESET_PIN_RESEND_COOLDOWN_SECONDS = Number(process.env.RESET_PIN_RESEND_COOLDOWN_SECONDS || 60);
 const RESET_TOKEN_EXPIRES_IN = process.env.RESET_TOKEN_EXPIRES_IN || '15m';
-const RESET_TOKEN_SECRET = process.env.RESET_TOKEN_SECRET || process.env.JWT_SECRET || 'fallback_secret';
+const getResetTokenSecret = () => process.env.RESET_TOKEN_SECRET || requireEnv('JWT_SECRET');
 const RESET_TOKEN_PURPOSE = 'password-reset';
 // Balasan publik harus seragam agar status email tidak bisa ditebak dari luar.
 const FORGOT_PASSWORD_GENERIC_RESPONSE = {
@@ -34,11 +35,11 @@ const normalizePin = (pin) => String(pin || '').replace(/\D/g, '').slice(0, 6);
 const signResetToken = (payload) =>
   jwt.sign(
     { ...payload, purpose: RESET_TOKEN_PURPOSE },
-    RESET_TOKEN_SECRET,
+    getResetTokenSecret(),
     { expiresIn: RESET_TOKEN_EXPIRES_IN }
   );
 
-const verifyResetToken = (token) => jwt.verify(token, RESET_TOKEN_SECRET);
+const verifyResetToken = (token) => jwt.verify(token, getResetTokenSecret());
 
 const getResetCooldownRemainingSeconds = (lastSentAt) => {
   if (!lastSentAt) {
@@ -307,7 +308,8 @@ const login = async (req, res) => {
   try {
     // Cari user berdasarkan email
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1', [email]
+      'SELECT id, email, password, role, created_at, updated_at FROM users WHERE email = $1',
+      [email]
     );
     if (result.rows.length === 0) {
       return res.status(401).json({ message: 'Email atau password salah.' });
@@ -756,11 +758,126 @@ const resetPasswordWithPin = async (req, res) => {
   });
 };
 
+// ============================================================
+// Google Token Login (from @react-oauth/google popup)
+// POST /api/auth/google/token
+// Body: { credential: string }
+// ============================================================
+const googleTokenLogin = async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ message: 'Google credential wajib dikirim.' });
+  }
+
+  try {
+    // Verify Google ID token via Google API
+    const verifyRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`
+    );
+
+    if (!verifyRes.ok) {
+      return res.status(401).json({ message: 'Google credential tidak valid.' });
+    }
+
+    const googleUser = await verifyRes.json();
+    const email = googleUser.email;
+    const fullName = googleUser.name || email.split('@')[0];
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email tidak ditemukan dari Google.' });
+    }
+
+    // Check if user already exists
+    let userResult = await pool.query(
+      'SELECT id, email, password, role, created_at, updated_at FROM users WHERE email = $1',
+      [email]
+    );
+
+    if (userResult.rows.length === 0) {
+      // New user — auto-register as candidate
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+
+        const newUser = await client.query(
+          `INSERT INTO users (email, password, role)
+           VALUES ($1, 'GOOGLE_AUTH', 'candidate')
+           RETURNING id, email, role`,
+          [email]
+        );
+        const user = newUser.rows[0];
+
+        const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+        let username = baseUsername;
+        let check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
+        let counter = 1;
+        while (check.rows.length > 0) {
+          username = `${baseUsername}${counter++}`;
+          check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
+        }
+
+        await client.query(
+          'INSERT INTO candidates (user_id, username, full_name) VALUES ($1, $2, $3)',
+          [user.id, username, fullName]
+        );
+
+        await client.query('COMMIT');
+        userResult = await pool.query(
+          'SELECT id, email, password, role, created_at, updated_at FROM users WHERE id = $1',
+          [user.id]
+        );
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+
+    const user = userResult.rows[0];
+
+    // Get profile based on role
+    let profile = {};
+    if (user.role === 'candidate') {
+      const r = await pool.query(
+        'SELECT username, full_name, headline FROM candidates WHERE user_id = $1',
+        [user.id]
+      );
+      profile = r.rows[0] || {};
+    } else if (user.role === 'company') {
+      const r = await pool.query(
+        'SELECT company_name, industry, website FROM companies WHERE user_id = $1',
+        [user.id]
+      );
+      profile = r.rows[0] || {};
+    }
+
+    // Create JWT
+    const token = signToken({ id: user.id, email: user.email, role: user.role });
+
+    return res.status(200).json({
+      message: 'Login Google berhasil!',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        ...profile,
+      },
+    });
+  } catch (err) {
+    console.error('Google token login error:', err);
+    return res.status(500).json({ message: 'Terjadi kesalahan server.' });
+  }
+};
+
 module.exports = {
   registerCandidate,
   registerCompany,
   login,
   getMe,
+  googleTokenLogin,
   requestPasswordReset,
   verifyPasswordResetPin,
   resetPasswordWithPin,

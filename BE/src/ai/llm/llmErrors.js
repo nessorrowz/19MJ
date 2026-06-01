@@ -6,6 +6,7 @@ const ERROR_CATEGORIES = {
   NETWORK: 'network',
   INVALID_RESPONSE: 'invalid_response',
   AUTH: 'auth',
+  INSUFFICIENT_CREDITS: 'insufficient_credits',
   BAD_REQUEST: 'bad_request',
   ALL_FAILED: 'all_failed',
 };
@@ -34,6 +35,10 @@ const isRetryableLlmError = (error) =>
 const mapHttpStatusToCategory = (status) => {
   if (status === 401 || status === 403) {
     return ERROR_CATEGORIES.AUTH;
+  }
+
+  if (status === 402) {
+    return ERROR_CATEGORIES.INSUFFICIENT_CREDITS;
   }
 
   if (status === 408 || status === 504) {

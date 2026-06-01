@@ -11,6 +11,13 @@ import {
 
 import './Auth.css';
 
+import {
+  FiUser,
+  FiMail
+} from 'react-icons/fi';
+
+import AuthLeftPanel from '../components/AuthLeftPanel';
+
 export default function ForgotPassword() {
   const navigate = useNavigate();
 
@@ -24,7 +31,8 @@ export default function ForgotPassword() {
 
   const [form, setForm] =
     useState({
-      email: ''
+      email: '',
+      companyName: ''
     });
 
   const [error, setError] =
@@ -112,7 +120,7 @@ export default function ForgotPassword() {
 
       setError(
         err.message ||
-        'Failed to send reset PIN.'
+        'Failed to send verification code.'
       );
 
     } finally {
@@ -121,51 +129,58 @@ export default function ForgotPassword() {
   };
 
 
+  const inputStyle = {
+    width: "100%",
+    height: "52px",
+    padding: "0 18px",
+    borderRadius: "12px",
+    border: "1.5px solid #D1D5DB",
+    fontSize: "15px",
+    fontFamily: "Inter, sans-serif",
+    boxSizing: "border-box",
+    outline: "none",
+    background: "white"
+  };
+
+  const inputWrapper = {
+    position: "relative",
+    marginBottom: "16px"
+  };
+
+  const leftIconStyle = {
+    position: "absolute",
+    left: "16px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    color: "#94A3B8",
+    zIndex: 2
+  };
+
+  const inputWithIcon = {
+    ...inputStyle,
+    paddingLeft: "48px"
+  };
+
+
   return (
     <div className="auth-layout">
 
       {/* LEFT */}
-      <div className="auth-left-panel">
-
-        <img
-          src="/gambar/19mj.png"
-          alt="logo"
-          style={{
-            width: "150px",
-            marginBottom: "20px"
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            background: "#8FA5B8",
-            borderRadius: "25px",
-            height: "500px",
-            overflow: "hidden"
-          }}
-        >
-
-          <img
-            src="/gambar/ceweray.png"
-            alt="character"
-            className="character-animation"
-            style={{
-              position: "absolute",
-              bottom: "0",
-              left: "50%",
-              width: "85%",
-              maxHeight: "95%"
-            }}
-          />
-
-        </div>
-
-      </div>
-
+      <AuthLeftPanel />
 
       {/* RIGHT */}
-      <div className="auth-right-panel">
+      <div
+        className="auth-right-panel"
+        style={{
+          flex: 1,
+          background: "white",
+          borderRadius: "32px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "40px"
+        }}
+      >
 
         <form
           onSubmit={handleSubmit}
@@ -176,28 +191,41 @@ export default function ForgotPassword() {
           }
           style={{
             width: "100%",
-            maxWidth: "500px"
+            maxWidth: "420px",
+            fontFamily: "Inter, sans-serif"
           }}
         >
 
-          <h1
+          {/* HEADER */}
+          <div
             style={{
-              textAlign: "center",
-              marginBottom: "8px"
+              marginBottom: "28px"
             }}
           >
-            Forgot Password
-          </h1>
+            <h1
+              style={{
+                textAlign: "center",
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "#0F172A",
+                marginBottom: "8px"
+              }}
+            >
+              Reset Password
+            </h1>
 
-          <p
-            style={{
-              textAlign: "center",
-              color: "#777",
-              marginBottom: "30px"
-            }}
-          >
-            Enter your email
-          </p>
+            <p
+              style={{
+                textAlign: "center",
+                color: "#64748B",
+                fontSize: "15px",
+                lineHeight: "1.5"
+              }}
+            >
+              Please enter your email address. You will then receive
+              an email containing a code to reset your password.
+            </p>
+          </div>
 
 
           {error && (
@@ -207,48 +235,67 @@ export default function ForgotPassword() {
           )}
 
 
-          <input
-            name="email"
-            type="email"
-            placeholder="Email Address"
-            value={form.email}
-            onChange={handleChange}
-            style={{
-              width: "100%",
-              height: "58px",
-              padding: "0 18px",
-              borderRadius: "14px",
-              border: "1px solid #ddd",
-              marginBottom: "20px"
-            }}
-          />
+          {/* COMPANY NAME (only for company role) */}
+          {role === 'company' && (
+            <div style={inputWrapper}>
+              <FiUser style={leftIconStyle} />
+
+              <input
+                name="companyName"
+                placeholder="Company Name"
+                value={form.companyName}
+                onChange={handleChange}
+                style={inputWithIcon}
+              />
+            </div>
+          )}
 
 
+          {/* EMAIL */}
+          <div style={inputWrapper}>
+            <FiMail style={leftIconStyle} />
+
+            <input
+              name="email"
+              type="email"
+              placeholder="Email address"
+              value={form.email}
+              onChange={handleChange}
+              style={inputWithIcon}
+            />
+          </div>
+
+
+          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
             style={{
               width: "100%",
-              height: "58px",
+              height: "52px",
               background: "#0f7c82",
               color: "white",
               border: "none",
-              borderRadius: "14px",
-              cursor: "pointer"
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontWeight: "600",
+              fontSize: "16px"
             }}
           >
             {
               loading
                 ? "Sending..."
-                : "Send Reset PIN"
+                : "Send Verification Code"
             }
           </button>
 
 
+          {/* FOOTER */}
           <div
             style={{
               textAlign: "center",
-              marginTop: "20px"
+              marginTop: "24px",
+              color: "#64748B"
             }}
           >
             Back to{" "}

@@ -255,18 +255,28 @@ CREATE INDEX IF NOT EXISTS idx_candidate_documents_user_id
   ON candidate_documents(user_id);
 CREATE INDEX IF NOT EXISTS idx_cv_reviews_user_id
   ON cv_reviews(user_id);
+CREATE INDEX IF NOT EXISTS idx_cv_reviews_cache_lookup
+  ON cv_reviews(user_id, input_hash, prompt_version, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_career_roadmaps_user_id
   ON career_roadmaps(user_id);
+CREATE INDEX IF NOT EXISTS idx_career_roadmaps_cache_lookup
+  ON career_roadmaps(user_id, input_hash, prompt_version, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_id
   ON interview_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_interview_transcripts_interview_session_id
   ON interview_transcripts(interview_session_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_interview_transcripts_one_per_session
+  ON interview_transcripts(interview_session_id);
 CREATE INDEX IF NOT EXISTS idx_interview_evaluations_interview_session_id
   ON interview_evaluations(interview_session_id);
+CREATE INDEX IF NOT EXISTS idx_interview_evaluations_cache_lookup
+  ON interview_evaluations(user_id, input_hash, prompt_version, created_at DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_screening_answers_candidate_user_id
   ON screening_answers(candidate_user_id);
 CREATE INDEX IF NOT EXISTS idx_candidate_evaluations_candidate_user_id
   ON candidate_evaluations(candidate_user_id);
+CREATE INDEX IF NOT EXISTS idx_candidate_evaluations_cache_lookup
+  ON candidate_evaluations(company_user_id, input_hash, prompt_version, created_at DESC, id DESC);
 
 CREATE TRIGGER ai_requests_updated_at
   BEFORE UPDATE ON ai_requests

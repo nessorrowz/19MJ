@@ -19,6 +19,7 @@ const parseAndValidateAiOutput = async ({
   llmGateway,
   allowRepair = false,
   repairSystemInstruction = 'Anda hanya memperbaiki JSON agar valid.',
+  repairMaxOutputTokens = 1200,
 }) => {
   try {
     return validateAiResult(feature, parseStrictJson(rawText));
@@ -34,6 +35,7 @@ const parseAndValidateAiOutput = async ({
       prompt: buildRepairPrompt(rawText),
       systemInstruction: repairSystemInstruction,
       responseMimeType: 'application/json',
+      maxOutputTokens: repairMaxOutputTokens,
     });
 
     try {

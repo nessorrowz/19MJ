@@ -9,6 +9,7 @@ const {
   registerCompany,
   login,
   getMe,
+  googleTokenLogin,
   requestPasswordReset,
   verifyPasswordResetPin,
   resetPasswordWithPin,
@@ -23,6 +24,9 @@ router.get('/me', protect,         getMe);
 router.post('/forgot-password/request', forgotPasswordRequestLimiter, requestPasswordReset);
 router.post('/forgot-password/verify-pin', verifyPasswordResetPin);
 router.post('/forgot-password/reset', resetPasswordWithPin);
+
+// Google ID token login (from @react-oauth/google popup)
+router.post('/google/token', googleTokenLogin);
 
 // ── Google OAuth ──────────────────────────────────────────
 // Step 1: Redirect ke Google

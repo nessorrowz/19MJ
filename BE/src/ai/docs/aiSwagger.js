@@ -350,6 +350,18 @@ const aiSwaggerDefinition = {
                 required: ['questionText'],
                 properties: {
                   questionText: { type: 'string', minLength: 10, maxLength: 2000 },
+                  transcriptionLanguage: {
+                    type: 'string',
+                    enum: ['auto', 'id', 'en'],
+                    default: 'auto',
+                    description: 'Opsional. Jika tidak dikirim, BE memakai AI_STT_LANGUAGE atau auto.',
+                  },
+                  transcriptionContext: {
+                    type: 'string',
+                    minLength: 2,
+                    maxLength: 1000,
+                    description: 'Opsional. Konteks domain tambahan dari UI, misalnya role, industri, atau jenis interview.',
+                  },
                 },
               },
               example: {

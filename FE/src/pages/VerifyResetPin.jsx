@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import {
@@ -11,6 +11,7 @@ import {
   setResetResendCooldown,
 } from '../utils/passwordReset';
 import './Auth.css';
+import AuthLeftPanel from '../components/AuthLeftPanel';
 
 const formatCooldown = (seconds) => {
   const minutes = Math.floor(seconds / 60);
@@ -23,7 +24,7 @@ export default function VerifyResetPin() {
   const location = useLocation();
   const role = getRoleFromSearch(location.search);
   const [flow, setFlow] = useState(getResetFlow());
-  const [pin, setPin] = useState('');
+  const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,6 +33,8 @@ export default function VerifyResetPin() {
     getResetResendCooldownRemaining(getResetFlow())
   );
   const [shake, setShake] = useState(false);
+
+  const inputRefs = useRef([]);
 
   useEffect(() => {
     const savedFlow = getResetFlow();
@@ -62,21 +65,60 @@ export default function VerifyResetPin() {
   const email = flow.email || location.state?.email || '';
   const activeRole = flow.role || role || location.state?.role || 'candidate';
   const resendLabel = cooldownRemaining > 0
-    ? `Kirim ulang PIN dalam ${formatCooldown(cooldownRemaining)}`
-    : 'Kirim ulang PIN';
+    ? `Resend code in ${formatCooldown(cooldownRemaining)}`
+    : 'Resend code';
 
   const triggerShake = () => {
     setShake(true);
     setTimeout(() => setShake(false), 400);
   };
 
+  const handleDigitChange = (index, value) => {
+    // Only allow single digit
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const newDigits = [...digits];
+    newDigits[index] = digit;
+    setDigits(newDigits);
+    setError('');
+    setStatus('');
+
+    // Auto-focus next input
+    if (digit && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (pasted.length > 0) {
+      const newDigits = [...digits];
+      for (let i = 0; i < 6; i++) {
+        newDigits[i] = pasted[i] || '';
+      }
+      setDigits(newDigits);
+      setError('');
+      setStatus('');
+
+      // Focus last filled or next empty
+      const focusIndex = Math.min(pasted.length, 5);
+      inputRefs.current[focusIndex]?.focus();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const normalizedPin = pin.replace(/\D/g, '');
-    if (normalizedPin.length !== 6) {
+    const pin = digits.join('');
+    if (pin.length !== 6) {
       triggerShake();
-      setError('PIN harus terdiri dari 6 digit.');
+      setError('Please enter the complete 6-digit code.');
       return;
     }
 
@@ -87,7 +129,7 @@ export default function VerifyResetPin() {
     try {
       const data = await api.post('/auth/forgot-password/verify-pin', {
         email,
-        pin: normalizedPin,
+        pin,
       });
 
       // Reset token hanya dipakai untuk langkah penggantian password berikutnya.
@@ -113,7 +155,7 @@ export default function VerifyResetPin() {
     try {
       await api.post('/auth/forgot-password/request', { email });
       setResetResendCooldown(RESET_PIN_RESEND_COOLDOWN_SECONDS);
-      setPin('');
+      setDigits(['', '', '', '', '', '']);
       setFlow((current) => ({
         ...current,
         email,
@@ -121,7 +163,8 @@ export default function VerifyResetPin() {
         resendAvailableAt: Date.now() + (RESET_PIN_RESEND_COOLDOWN_SECONDS * 1000),
       }));
       setCooldownRemaining(RESET_PIN_RESEND_COOLDOWN_SECONDS);
-      setStatus('PIN baru sudah dikirim ke email yang sama.');
+      setStatus('A new code has been sent to your email.');
+      inputRefs.current[0]?.focus();
     } catch (err) {
       const cooldownMatch = err.message.match(/Tunggu\s+(\d+)\s+detik/i);
 
@@ -144,67 +187,149 @@ export default function VerifyResetPin() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-left">
-        <form className={`auth-card ${shake ? 'shake' : ''}`} onSubmit={handleSubmit} noValidate>
-          <div className="card-header">
-            <h2>Verifikasi PIN</h2>
-            <p>Masukkan 6 digit PIN yang dikirim ke email {email || 'akunmu'}.</p>
+    <div className="auth-layout">
+
+      {/* LEFT */}
+      <AuthLeftPanel />
+
+      {/* RIGHT */}
+      <div
+        className="auth-right-panel"
+        style={{
+          flex: 1,
+          background: "white",
+          borderRadius: "32px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "40px"
+        }}
+      >
+
+        <form
+          onSubmit={handleSubmit}
+          className={shake ? "shake" : ""}
+          style={{
+            width: "100%",
+            maxWidth: "420px",
+            fontFamily: "Inter, sans-serif"
+          }}
+        >
+
+          {/* HEADER */}
+          <div
+            style={{
+              marginBottom: "28px"
+            }}
+          >
+            <h1
+              style={{
+                textAlign: "center",
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "#0F172A",
+                marginBottom: "8px"
+              }}
+            >
+              Verification Code
+            </h1>
+
+            <p
+              style={{
+                textAlign: "center",
+                color: "#64748B",
+                fontSize: "15px",
+                lineHeight: "1.5"
+              }}
+            >
+              Enter the 6-digit code sent to {email || 'your email'}
+            </p>
           </div>
+
 
           {error && <div className="error-banner">{error}</div>}
           {status && <div className="success-banner">{status}</div>}
 
-          <div className="field">
-            <label htmlFor="pin">PIN 6 Digit</label>
-            <input
-              id="pin"
-              name="pin"
-              type="text"
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="123456"
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value.replace(/\D/g, '').slice(0, 6));
-                setError('');
-                setStatus('');
-              }}
-              style={{ letterSpacing: '0.35em', textAlign: 'center', fontWeight: 700, fontSize: '20px' }}
-              autoComplete="one-time-code"
-            />
+
+          {/* VERIFICATION CODE BOXES */}
+          <div
+            className="verification-code-container"
+            onPaste={handlePaste}
+          >
+            {digits.map((digit, idx) => (
+              <input
+                key={idx}
+                ref={(el) => { inputRefs.current[idx] = el; }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleDigitChange(idx, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(idx, e)}
+                className={`verification-digit-box ${digit ? 'filled' : ''}`}
+                autoComplete="one-time-code"
+              />
+            ))}
           </div>
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Memverifikasi...' : 'Verifikasi PIN'}
+
+          {/* SUBMIT */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              height: "52px",
+              background: "#0f7c82",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              cursor: "pointer",
+              fontWeight: "600",
+              fontSize: "16px"
+            }}
+          >
+            {loading ? 'Verifying...' : 'Send Verification Code'}
           </button>
 
-          <div style={{ marginTop: 16 }}>
+
+          {/* RESEND & LINKS */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "20px",
+              color: "#64748B",
+              fontSize: "14px"
+            }}
+          >
             <button
               type="button"
-              className="btn btn-secondary"
               onClick={handleResend}
               disabled={loading || resendLoading || cooldownRemaining > 0 || !email}
+              style={{
+                background: "none",
+                border: "none",
+                color: cooldownRemaining > 0 ? "#94A3B8" : "#0f7c82",
+                cursor: cooldownRemaining > 0 ? "default" : "pointer",
+                fontWeight: 600,
+                fontSize: "14px",
+                fontFamily: "Inter, sans-serif"
+              }}
             >
-              {resendLoading ? 'Mengirim ulang...' : resendLabel}
+              {resendLoading ? 'Sending...' : resendLabel}
             </button>
 
-            {cooldownRemaining > 0 && (
-              <div className="resend-hint">
-                PIN bisa dikirim ulang setelah {formatCooldown(cooldownRemaining)}.
-              </div>
-            )}
-
-            <div className="bottom-link" style={{ marginTop: 16 }}>
-              <Link to={`/forgot-password?role=${activeRole}`}>Ubah email</Link>
-              <span style={{ margin: '0 8px' }}>-</span>
-              <Link to={getLoginRouteByRole(activeRole)}>Kembali ke login</Link>
+            <div style={{ marginTop: "16px" }}>
+              <Link to={`/forgot-password?role=${activeRole}`}>Change email</Link>
+              <span style={{ margin: '0 8px', color: '#CBD5E1' }}>|</span>
+              <Link to={getLoginRouteByRole(activeRole)}>Back to login</Link>
             </div>
           </div>
+
         </form>
+
       </div>
 
-      <RightPanel />
     </div>
   );
 }

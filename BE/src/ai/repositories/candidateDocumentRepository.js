@@ -1,6 +1,20 @@
 //Repository dokumen kandidat untuk input AI.
 const pool = require('../../config/db');
 
+const CANDIDATE_DOCUMENT_COLUMNS = `
+  id,
+  user_id,
+  document_type,
+  source_type,
+  original_filename,
+  storage_path,
+  content_text,
+  content_hash,
+  metadata_json,
+  created_at,
+  updated_at
+`;
+
 //Simpan metadata dan teks dokumen kandidat.
 const create = async ({
   userId,
@@ -37,7 +51,7 @@ const create = async ({
 const findByIdForUser = async (id, userId) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CANDIDATE_DOCUMENT_COLUMNS}
       FROM candidate_documents
       WHERE id = $1
         AND user_id = $2

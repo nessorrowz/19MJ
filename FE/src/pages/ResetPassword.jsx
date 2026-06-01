@@ -17,6 +17,8 @@ import {
   FiEyeOff
 } from "react-icons/fi";
 
+import AuthLeftPanel from '../components/AuthLeftPanel';
+
 export default function ResetPassword() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,44 +161,7 @@ export default function ResetPassword() {
     <div className="auth-layout">
 
       {/* LEFT SIDE */}
-      <div className="auth-left-panel">
-
-        <img
-          src="/gambar/19mj.png"
-          alt="logo"
-          style={{
-            width: "150px",
-            marginBottom: "20px"
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            background: "#8FA5B8",
-            borderRadius: "25px",
-            height: "500px",
-            overflow: "hidden"
-          }}
-        >
-
-          <img
-            src="/gambar/ceweray.png"
-            alt="character"
-            className="character-animation"
-            style={{
-              position: "absolute",
-              bottom: "0",
-              left: "50%",
-              width: "85%",
-              maxHeight: "95%",
-              objectFit: "contain"
-            }}
-          />
-
-        </div>
-
-      </div>
+      <AuthLeftPanel />
 
 
       {/* RIGHT SIDE */}

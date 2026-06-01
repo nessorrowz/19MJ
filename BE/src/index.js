@@ -48,4 +48,8 @@ app.listen(PORT, () => {
   console.log('   GET  /api/auth/me  (protected)');
   console.log('   POST /api/ai/cv-review  (protected)');
   console.log('   POST /api/ai/career-advice  (protected)');
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 2f52672af75dde5ac0e373aafb33356dc6a9be01

@@ -12,6 +12,8 @@ const {
   getLatestCareerRoadmapResult,
   getCareerRoadmapResultById,
   requestInterviewSession,
+  getInterviewSessions,
+  generateInterviewQuestionResult,
   uploadInterviewSessionMedia,
   transcribeInterviewSessionMedia,
   getInterviewSessionResult,
@@ -57,6 +59,8 @@ router.get('/cv-review/:id', requireRole('candidate'), getCvReviewResultById);
 router.post('/career-roadmap', requireRole('candidate'), requestCareerRoadmap);
 router.get('/career-roadmap/latest', requireRole('candidate'), getLatestCareerRoadmapResult);
 router.get('/career-roadmap/:id', requireRole('candidate'), getCareerRoadmapResultById);
+router.get('/interviews', requireRole('candidate'), getInterviewSessions);
+router.post('/interviews/generate-question', requireRole('candidate'), generateInterviewQuestionResult);
 router.post('/interviews', requireRole('candidate'), requestInterviewSession);
 router.post(
   '/interviews/:id/media',

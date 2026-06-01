@@ -1,6 +1,20 @@
 //Repository hasil review CV AI.
 const pool = require('../../config/db');
 
+const CV_REVIEW_COLUMNS = `
+  id,
+  user_id,
+  ai_request_id,
+  document_id,
+  target_role,
+  prompt_version,
+  input_hash,
+  overall_score,
+  ats_score,
+  result_json,
+  created_at
+`;
+
 //Simpan review CV hasil validasi AI.
 const create = async ({
   userId,
@@ -39,7 +53,7 @@ const create = async ({
 const getLatestForUser = async (userId) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CV_REVIEW_COLUMNS}
       FROM cv_reviews
       WHERE user_id = $1
       ORDER BY created_at DESC, id DESC
@@ -55,7 +69,7 @@ const getLatestForUser = async (userId) => {
 const getByIdForUser = async (id, userId) => {
   const result = await pool.query(
     `
-      SELECT *
+      SELECT ${CV_REVIEW_COLUMNS}
       FROM cv_reviews
       WHERE id = $1
         AND user_id = $2

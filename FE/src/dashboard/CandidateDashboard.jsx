@@ -252,7 +252,7 @@ export default function CandidateDashboard() {
                   "#666"
               }}
             >
-              You have things to complete.
+              You have 2 items to complete to strengthen your profile.
             </p>
 
           </div>
@@ -313,8 +313,8 @@ export default function CandidateDashboard() {
             icon={
               <FiMic />
             }
-            title="Practice Interview"
-            desc="Practice interview with AI"
+            title="Interview Practice"
+            desc="Get instant feedback on your practice"
             onClick={() =>
               navigate(
                 "/interview-practice"
@@ -357,6 +357,8 @@ export default function CandidateDashboard() {
               <FiFileText />
             }
             title="CV Review"
+            subtitle="Not analyzed yet"
+            subtitleColor="#DC2626"
             button="Upload"
             onClick={() =>
               navigate(
@@ -370,6 +372,8 @@ export default function CandidateDashboard() {
               <FiMap />
             }
             title="Career Plan"
+            subtitle="No roadmap yet"
+            subtitleColor="#94A3B8"
             button="Create"
             onClick={() =>
               navigate(
@@ -383,6 +387,8 @@ export default function CandidateDashboard() {
               <FiMic />
             }
             title="Interview Practice"
+            subtitle="4 sessions done · Avg Score: 76/100"
+            subtitleColor="#0f7c82"
             button="View"
           />
 
@@ -391,6 +397,8 @@ export default function CandidateDashboard() {
               <FiBriefcase />
             }
             title="Applications"
+            subtitle="6 active"
+            subtitleColor="#D97706"
             button="View"
           />
 
@@ -418,7 +426,7 @@ function FeatureCard({
     "Upload Your CV":
       uploadIcon,
 
-    "Practice Interview":
+    "Interview Practice":
       interviewIcon,
 
     "Find Jobs":
@@ -491,6 +499,8 @@ function FeatureCard({
 function SmallCard({
   icon,
   title,
+  subtitle,
+  subtitleColor,
   button,
   onClick
 }) {
@@ -528,9 +538,23 @@ function SmallCard({
           {icon}
         </div>
 
-        <strong>
-          {title}
-        </strong>
+        <div>
+          <strong>
+            {title}
+          </strong>
+          {subtitle && (
+            <div
+              style={{
+                fontSize: 12,
+                marginTop: 4,
+                color: subtitleColor || "#94A3B8",
+                fontWeight: 500
+              }}
+            >
+              {subtitle}
+            </div>
+          )}
+        </div>
 
       </div>
 
@@ -565,7 +589,8 @@ const styles = {
   },
 
   greetingCard: {
-    background: "white",
+    background:
+      "linear-gradient(135deg, #e0f7f5 0%, #f0faf9 100%)",
     margin: 30,
     borderRadius: 20,
     padding: 30,

@@ -22,6 +22,25 @@ const LIMITS = {
   },
 };
 
+const OUTPUT_TOKEN_LIMITS = {
+  cv_review: {
+    env: 'MAX_CV_REVIEW_OUTPUT_TOKENS',
+    fallback: 1200,
+  },
+  career_roadmap: {
+    env: 'MAX_CAREER_ROADMAP_OUTPUT_TOKENS',
+    fallback: 1600,
+  },
+  interview_evaluation: {
+    env: 'MAX_INTERVIEW_EVALUATION_OUTPUT_TOKENS',
+    fallback: 1200,
+  },
+  candidate_evaluation: {
+    env: 'MAX_CANDIDATE_EVALUATION_OUTPUT_TOKENS',
+    fallback: 1000,
+  },
+};
+
 //Error khusus input AI yang melewati budget.
 class AiBudgetError extends Error {
   constructor(message, details) {
@@ -42,6 +61,22 @@ const getLimit = (limitKey) => {
 
   const value = Number(process.env[config.env] || config.fallback);
   return Number.isFinite(value) && value > 0 ? value : config.fallback;
+};
+
+//Batasi output token per fitur agar provider tidak diberi budget terlalu besar.
+const getMaxOutputTokens = (feature) => {
+  const config = OUTPUT_TOKEN_LIMITS[feature];
+  const globalLimit = Number(process.env.MAX_LLM_OUTPUT_TOKENS || 4000);
+
+  if (!config) {
+    return Number.isFinite(globalLimit) && globalLimit > 0 ? globalLimit : 4000;
+  }
+
+  const featureLimit = Number(process.env[config.env] || config.fallback);
+  const safeFeatureLimit = Number.isFinite(featureLimit) && featureLimit > 0 ? featureLimit : config.fallback;
+  const safeGlobalLimit = Number.isFinite(globalLimit) && globalLimit > 0 ? globalLimit : 4000;
+
+  return Math.min(safeGlobalLimit, safeFeatureLimit);
 };
 
 //Validasi panjang input sebelum provider dipanggil.
@@ -68,4 +103,5 @@ module.exports = {
   AiBudgetError,
   assertWithinLimit,
   getLimit,
+  getMaxOutputTokens,
 };

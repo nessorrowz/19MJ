@@ -34,7 +34,10 @@ Expected:
 
 ```json
 {
+  "engine": "faster-whisper",
+  "model_id": "large-v3-turbo",
   "model_exists": true,
+  "dependency_exists": true,
   "command_exists": true
 }
 ```
@@ -44,7 +47,7 @@ Test transkripsi:
 ```bash
 curl -X POST http://127.0.0.1:8001/transcribe \
   -H "Content-Type: application/json" \
-  -d '{"audio_path":"D:/Programming/Capstone/19MJ/AI/tes/tes-mp3.mp3","language":"id"}'
+  -d '{"audio_path":"../BE/storage/interviews/1/media-test.mp3","language":"id"}'
 ```
 
 Expected:
@@ -96,7 +99,7 @@ Upload media:
 ```bash
 curl -X POST http://localhost:3000/api/ai/interviews/1/media \
   -H "Authorization: Bearer $TOKEN" \
-  -F "media=@D:/Programming/Capstone/19MJ/AI/tes/tes-mp3.mp3"
+  -F "media=@../AI/tes/tes-mp3.mp3"
 ```
 
 Transcribe:
