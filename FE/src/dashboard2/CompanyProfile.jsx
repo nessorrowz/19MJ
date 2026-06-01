@@ -46,22 +46,59 @@ export default function CompanyProfile() {
     });
   };
 
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
+const handleLogoUpload = (e) => {
+  const file = e.target.files[0];
 
-    if (!file) return;
+  if (!file) return;
 
-    const reader = new FileReader();
+  // hanya gambar
+  if (!file.type.startsWith("image/")) {
+    alert("Please upload an image");
+    return;
+  }
 
-    reader.onloadend = () => {
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    const img = new Image();
+
+    img.onload = () => {
+      const canvas =
+        document.createElement("canvas");
+
+      const ctx =
+        canvas.getContext("2d");
+
+      const size = 200;
+
+      canvas.width = size;
+      canvas.height = size;
+
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        size,
+        size
+      );
+
+      const resized =
+        canvas.toDataURL(
+          "image/jpeg",
+          0.8
+        );
+
       setCompany((prev) => ({
         ...prev,
-        logo: reader.result,
+        logo: resized,
       }));
     };
 
-    reader.readAsDataURL(file);
+    img.src = event.target.result;
   };
+
+  reader.readAsDataURL(file);
+};
 
   const addTech = () => {
     if (!newTech.trim()) return;
