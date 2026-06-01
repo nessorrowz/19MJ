@@ -37,6 +37,11 @@ import CareerPlannerPage from "./dashboard/CareerPlannerPage";
 import InterviewPracticePage from "./dashboard/InterviewPracticePage";
 import FindJobsPage from "./dashboard/FindJobsPage";
 
+import CompanyDashboard from "./dashboard2/CompanyDashboard";
+import CompanyProfile from "./dashboard2/CompanyProfile";
+//import JobPostings from "./dashboard2/JobPostings";
+//import Recruitment from "./dashboard2/Recruitment";
+//import Recommendations from "./dashboard2/Recommendations";
 
 function PrivateRoute({
   children,
@@ -229,6 +234,52 @@ function AppRoutes() {
             <AuthCallback />
           }
         />
+        {/* Dashboard2 */}
+        
+        <Route
+          path="/company/dashboard"
+          element={
+            <PrivateRoute allowedRole="company">
+              <CompanyDashboard />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company/profile"
+          element={
+            <PrivateRoute allowedRole="company">
+              <CompanyProfile />
+            </PrivateRoute>
+          }
+        />
+{/* 
+        <Route
+          path="/company/job-postings"
+          element={
+            <PrivateRoute allowedRole="company">
+              <JobPostings />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company/recruitment"
+          element={
+            <PrivateRoute allowedRole="company">
+              <Recruitment />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company/recommendations"
+          element={
+            <PrivateRoute allowedRole="company">
+              <Recommendations />
+            </PrivateRoute>
+          }
+        />
 
         {/* Dashboard */}
         <Route
@@ -236,15 +287,6 @@ function AppRoutes() {
           element={
             <PrivateRoute allowedRole="candidate">
               <CandidateDashboard />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/company/dashboard"
-          element={
-            <PrivateRoute allowedRole="company">
-              <Dashboard role="company" />
             </PrivateRoute>
           }
         />
