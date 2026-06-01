@@ -11,13 +11,24 @@ import {
   FiCheckCircle,
 } from "react-icons/fi";
 
+import { useNavigate } from "react-router-dom";
+
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
 import "./Dashboard2.css";
 
 export default function CompanyDashboard() {
+  const navigate = useNavigate();
+
   const [company, setCompany] =
     useState({});
+
+  const [jobs, setJobs] =
+    useState([]);
+
+  /* =========================
+     COMPANY PROFILE
+  ========================= */
 
   useEffect(() => {
     const loadProfile = () => {
@@ -45,61 +56,92 @@ export default function CompanyDashboard() {
     };
   }, []);
 
+  /* =========================
+     JOB POSTINGS
+  ========================= */
+
+  useEffect(() => {
+    const loadJobs = () => {
+      const storedJobs =
+        JSON.parse(
+          localStorage.getItem(
+            "jobPostings"
+          ) || "[]"
+        );
+
+      setJobs(storedJobs);
+    };
+
+    loadJobs();
+
+    window.addEventListener(
+      "jobPostingUpdated",
+      loadJobs
+    );
+
+    return () => {
+      window.removeEventListener(
+        "jobPostingUpdated",
+        loadJobs
+      );
+    };
+  }, []);
+
+  /* =========================
+     COMPUTED VALUES
+  ========================= */
+
   const companyName =
     company.companyName ||
     "PT Pertamina Patra Niaga";
 
+  const activePostings =
+    jobs.length;
+
+  const totalApplicants =
+    jobs.reduce(
+      (total, job) =>
+        total +
+        (job.applicants || 0),
+      0
+    );
+
+  const pendingReview =
+    jobs.filter(
+      (job) =>
+        job.status === "Pending"
+    ).length;
+
+  const positionsFilled =
+    jobs.filter(
+      (job) =>
+        job.status === "Closed"
+    ).length;
+
   const stats = [
     {
       title: "Active Postings",
-      value: 3,
+      value: activePostings,
       icon: <FiBriefcase />,
       color: "#10b981",
     },
     {
       title: "Total Applicants",
-      value: 47,
+      value: totalApplicants,
       icon: <FiUsers />,
       color: "#6366f1",
     },
     {
       title: "Pending Review",
-      value: 12,
+      value: pendingReview,
       icon: <FiClock />,
       color: "#f59e0b",
     },
     {
       title: "Positions Filled",
-      value: 2,
+      value: positionsFilled,
       icon: <FiCheckCircle />,
       color: "#22c55e",
-    },
-  ];
-
-  const jobs = [
-    {
-      title: "Senior Backend Engineer",
-      category: "Engineering",
-      level: "Senior",
-      applicants: 14,
-    },
-    {
-      title: "Product Designer",
-      category: "Design",
-      level: "Mid Level",
-      applicants: 22,
-    },
-    {
-      title: "Marketing Manager",
-      category: "Marketing",
-      level: "Senior",
-      applicants: 11,
-    },
-    {
-      title: "Frontend Developer",
-      category: "Engineering",
-      level: "Junior",
-      applicants: 8,
     },
   ];
 
@@ -134,7 +176,7 @@ export default function CompanyDashboard() {
         <CompanyHeader title="Dashboard" />
 
         <div className="dashboard-content">
-          {/* WELCOME */}
+          {/* HEADER */}
 
           <div className="dashboard-top">
             <div>
@@ -151,13 +193,24 @@ export default function CompanyDashboard() {
                   color: "#64748b",
                 }}
               >
-                You have 3 active job postings
-                and 12 new applicants.
+                You have{" "}
+                {activePostings} active
+                job postings and{" "}
+                {totalApplicants} total
+                applicants.
               </p>
             </div>
 
-            <button className="primary-btn">
+            <button
+              className="primary-btn"
+              onClick={() =>
+                navigate(
+                  "/company/job-postings/create"
+                )
+              }
+            >
               <FiPlusCircle />
+
               <span
                 style={{
                   marginLeft: 8,
@@ -179,9 +232,11 @@ export default function CompanyDashboard() {
                 <div
                   className="stat-icon"
                   style={{
-                    color: item.color,
+                    color:
+                      item.color,
                     background:
-                      item.color + "15",
+                      item.color +
+                      "15",
                   }}
                 >
                   {item.icon}
@@ -203,6 +258,7 @@ export default function CompanyDashboard() {
           {/* CONTENT */}
 
           <div className="content-grid">
+
             {/* ACTIVE JOBS */}
 
             <div>
@@ -211,56 +267,75 @@ export default function CompanyDashboard() {
                   Active Job Postings
                 </h2>
 
-                <span className="section-link">
+                <span
+                  className="section-link"
+                  onClick={() =>
+                    navigate(
+                      "/company/job-postings"
+                    )
+                  }
+                >
                   View All
                 </span>
               </div>
 
-              <div className="jobs-grid">
-                {jobs.map(
-                  (job, index) => (
-                    <div
-                      key={index}
-                      className="job-card"
-                    >
-                      <div className="job-status">
-                        Active
-                      </div>
+              {jobs.length === 0 ? (
+                <div className="empty-jobs">
+                  No active job
+                  postings yet.
+                </div>
+              ) : (
+                <div className="jobs-grid">
+                  {jobs
+                    .slice(0, 4)
+                    .map((job) => (
+                      <div
+                        key={
+                          job.id
+                        }
+                        className="job-card"
+                      >
+                        <div className="job-status">
+                          Active
+                        </div>
 
-                      <h3>
-                        {job.title}
-                      </h3>
-
-                      <div className="job-tags">
-                        <span className="job-tag">
+                        <h3>
                           {
-                            job.category
+                            job.title
                           }
-                        </span>
+                        </h3>
 
-                        <span className="job-tag">
-                          {job.level}
-                        </span>
+                        <div className="job-tags">
+                          <span className="job-tag">
+                            {
+                              job.category
+                            }
+                          </span>
+
+                          <span className="job-tag">
+                            {
+                              job.experienceLevel
+                            }
+                          </span>
+                        </div>
+
+                        <div className="job-footer">
+                          <span>
+                            {job.applicants ||
+                              0}{" "}
+                            Applicants
+                          </span>
+
+                          <span
+                            className="section-link"
+                          >
+                            View →
+                          </span>
+                        </div>
                       </div>
-
-                      <div className="job-footer">
-                        <span>
-                          {
-                            job.applicants
-                          }{" "}
-                          Applicants
-                        </span>
-
-                        <span
-                          className="section-link"
-                        >
-                          View →
-                        </span>
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
+                    ))}
+                </div>
+              )}
             </div>
 
             {/* APPLICANTS */}
@@ -287,7 +362,8 @@ export default function CompanyDashboard() {
                   >
                     <div className="applicant-avatar">
                       {
-                        applicant.name[0]
+                        applicant
+                          .name[0]
                       }
                     </div>
 
@@ -327,15 +403,19 @@ export default function CompanyDashboard() {
 
               <div
                 style={{
-                  textAlign: "center",
+                  textAlign:
+                    "center",
                   marginTop: 20,
-                  color: "#0f7c82",
+                  color:
+                    "#0f7c82",
                   fontWeight: 600,
                 }}
               >
-                Review Pending (12)
+                Review Pending (
+                {pendingReview})
               </div>
             </div>
+
           </div>
         </div>
       </div>

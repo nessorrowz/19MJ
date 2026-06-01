@@ -39,7 +39,8 @@ import FindJobsPage from "./dashboard/FindJobsPage";
 
 import CompanyDashboard from "./dashboard2/CompanyDashboard";
 import CompanyProfile from "./dashboard2/CompanyProfile";
-//import JobPostings from "./dashboard2/JobPostings";
+import JobPostings from "./dashboard2/JobPostings";
+import CreateJobPosting from "./dashboard2/CreateJobPosting";
 //import Recruitment from "./dashboard2/Recruitment";
 //import Recommendations from "./dashboard2/Recommendations";
 
@@ -253,7 +254,7 @@ function AppRoutes() {
             </PrivateRoute>
           }
         />
-{/* 
+ 
         <Route
           path="/company/job-postings"
           element={
@@ -263,6 +264,24 @@ function AppRoutes() {
           }
         />
 
+        <Route
+          path="/company/job-postings"
+          element={
+            <PrivateRoute allowedRole="company">
+              <JobPostings />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/company/job-postings/create"
+          element={
+            <PrivateRoute allowedRole="company">
+              <CreateJobPosting />
+            </PrivateRoute>
+          }
+        />
+{/*
         <Route
           path="/company/recruitment"
           element={
