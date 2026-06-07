@@ -16,10 +16,8 @@ export default function CompanySidebar({
   const navigate = useNavigate();
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-
-    navigate("/login-company");
+    localStorage.clear();
+    navigate("/company/login");
   };
 
   const menuItems = [

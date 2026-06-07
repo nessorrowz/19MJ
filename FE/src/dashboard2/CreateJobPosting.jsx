@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
@@ -95,8 +96,8 @@ export default function CreateJobPosting() {
         form.skipScreening
           ? []
           : form.screeningQuestions.filter(
-              (q) => q.trim()
-            ),
+            (q) => q.trim()
+          ),
 
       videoScreening:
         form.videoScreening,
@@ -136,471 +137,502 @@ export default function CreateJobPosting() {
       <CompanySidebar active="jobs" />
 
       <div className="company-main">
-        <CompanyHeader title="Create Job Posting" />
+        <CompanyHeader title="Create" />
 
         <div className="dashboard-content">
           {/* STEPPER */}
 
-          <div className="stepper">
-            <div
-              className={`step ${
-                step >= 1
-                  ? "active"
-                  : ""
-              }`}
-            >
-              1
+          <div className="create-job-page">
+            <div className="company-hero">
+              <h1 className="company-title">
+                PT Pertamina Patra Niaga
+              </h1>
             </div>
 
-            <div className="step-line" />
+            {/* STEPPER */}
 
-            <div
-              className={`step ${
-                step >= 2
-                  ? "active"
-                  : ""
-              }`}
-            >
-              2
+            <div className="job-stepper">
+              <div className={`job-step ${step >= 1 ? "active" : ""} ${step > 1 ? "completed" : ""}`}>
+                <div className="circle">
+                  {step > 1 ? <FiCheckCircle size={20} /> : "1"}
+                </div>
+                <span>Job Details</span>
+              </div>
+
+              <div className={`line ${step >= 2 ? "active" : ""}`}></div>
+
+              <div className={`job-step ${step >= 2 ? "active" : ""} ${step > 2 ? "completed" : ""}`}>
+                <div className="circle">
+                  {step > 2 ? <FiCheckCircle size={20} /> : "2"}
+                </div>
+                <span>Screening Details</span>
+              </div>
+
+              <div className={`line ${step >= 3 ? "active" : ""}`}></div>
+
+              <div className={`job-step ${step >= 3 ? "active" : ""}`}>
+                <div className="circle">3</div>
+                <span>Publish</span>
+              </div>
             </div>
 
-            <div className="step-line" />
+            {/* STEP 1 */}
 
-            <div
-              className={`step ${
-                step >= 3
-                  ? "active"
-                  : ""
-              }`}
-            >
-              3
-            </div>
-          </div>
+            {step === 1 && (
+              <div className="job-form-card">
+                <div className="form-header">
+                  <h2>Create a Job Posting</h2>
+                </div>
 
-          {/* STEP 1 */}
+                {/* LOCATION */}
 
-          {step === 1 && (
-            <div className="wizard-card">
-              <h2>
-                Job Details
-              </h2>
+                <div className="field-group">
+                  <label>Location</label>
 
-              <div className="form-grid">
-                <div>
-                  <label>
-                    Job Title
-                  </label>
+                  <div className="input-with-icon">
+                    <FiMapPin className="input-icon" size={16} />
+                    <input
+                      type="text"
+                      placeholder="City, Country or 'Remote'"
+                      value={form.location}
+                      onChange={(e) =>
+                        updateField(
+                          "location",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* TITLE */}
+
+                <div className="field-group">
+                  <label>Job Title</label>
 
                   <input
-                    value={
-                      form.title
-                    }
-                    onChange={(
-                      e
-                    ) =>
+                    type="text"
+                    placeholder="e.g. Senior Backend Engineer"
+                    value={form.title}
+                    onChange={(e) =>
                       updateField(
                         "title",
-                        e.target
-                          .value
+                        e.target.value
                       )
                     }
                   />
                 </div>
 
-                <div>
-                  <label>
-                    Location
-                  </label>
+                {/* JOB DESCRIPTION */}
+
+                <div className="field-group">
+                  <label>Job Description</label>
+
+                  <div className="editor-wrapper">
+                    <div className="editor-toolbar">
+                      <button type="button"><FiBold size={16} /></button>
+                      <button type="button"><FiList size={16} /></button>
+                    </div>
+
+                    <textarea
+                      rows={8}
+                      placeholder="Describe the role, the team, and what makes this a great opportunity."
+                      value={form.description}
+                      onChange={(e) =>
+                        updateField(
+                          "description",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* REQUIREMENTS */}
+
+                <div className="field-group">
+                  <label>Requirements</label>
+
+                  <div className="editor-wrapper">
+                    <div className="editor-toolbar">
+                      <button type="button"><FiBold size={16} /></button>
+                      <button type="button"><FiList size={16} /></button>
+                    </div>
+
+                    <textarea
+                      rows={6}
+                      placeholder="List skills, qualifications, and experience required."
+                      value={form.requirements}
+                      onChange={(e) =>
+                        updateField(
+                          "requirements",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* CATEGORY */}
+
+                <div className="field-group">
+                  <label>Field / Category</label>
 
                   <input
-                    value={
-                      form.location
-                    }
-                    onChange={(
-                      e
-                    ) =>
+                    type="text"
+                    placeholder="Technology, Finance, Marketing..."
+                    value={form.category}
+                    onChange={(e) =>
                       updateField(
-                        "location",
-                        e.target
-                          .value
+                        "category",
+                        e.target.value
                       )
                     }
                   />
                 </div>
-              </div>
 
-              <label>
-                Category
-              </label>
+                {/* EXPERIENCE */}
 
-              <input
-                value={
-                  form.category
-                }
-                onChange={(e) =>
-                  updateField(
-                    "category",
-                    e.target.value
-                  )
-                }
-              />
+                <div className="field-group">
+                  <label>Experience Level</label>
 
-              <label>
-                Description
-              </label>
-
-              <textarea
-                rows="6"
-                value={
-                  form.description
-                }
-                onChange={(e) =>
-                  updateField(
-                    "description",
-                    e.target.value
-                  )
-                }
-              />
-
-              <label>
-                Requirements
-              </label>
-
-              <textarea
-                rows="6"
-                value={
-                  form.requirements
-                }
-                onChange={(e) =>
-                  updateField(
-                    "requirements",
-                    e.target.value
-                  )
-                }
-              />
-
-              <div className="form-grid">
-                <div>
-                  <label>
-                    Experience
-                  </label>
-
-                  <select
-                    value={
-                      form.experienceLevel
-                    }
-                    onChange={(
-                      e
-                    ) =>
-                      updateField(
-                        "experienceLevel",
-                        e.target
-                          .value
-                      )
-                    }
-                  >
-                    <option>
-                      Entry Level
-                    </option>
-                    <option>
-                      Mid Level
-                    </option>
-                    <option>
-                      Senior
-                    </option>
-                  </select>
+                  <div className="option-group">
+                    {[
+                      "Entry Level",
+                      "Mid Level",
+                      "Senior",
+                    ].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={`option-btn ${form.experienceLevel === item
+                          ? "selected"
+                          : ""
+                          }`}
+                        onClick={() =>
+                          updateField(
+                            "experienceLevel",
+                            item
+                          )
+                        }
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div>
+                {/* EMPLOYMENT */}
+
+                <div className="field-group">
+                  <label>Employment Type</label>
+
+                  <div className="option-group four">
+                    {[
+                      "Full-Time",
+                      "Part-Time",
+                      "Contract",
+                      "Internship",
+                    ].map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        className={`option-btn ${form.employmentType === item
+                          ? "selected"
+                          : ""
+                          }`}
+                        onClick={() =>
+                          updateField(
+                            "employmentType",
+                            item
+                          )
+                        }
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* DESCRIPTION (OPTIONAL) */}
+
+                <div className="field-group">
                   <label>
-                    Employment Type
+                    Description{" "}
+                    <span className="optional">
+                      (Optional)
+                    </span>
                   </label>
 
-                  <select
-                    value={
-                      form.employmentType
-                    }
-                    onChange={(
-                      e
-                    ) =>
-                      updateField(
-                        "employmentType",
-                        e.target
-                          .value
-                      )
-                    }
+                  <div className="editor-wrapper">
+                    <div className="editor-toolbar">
+                      <button type="button"><FiBold size={16} /></button>
+                      <button type="button"><FiList size={16} /></button>
+                    </div>
+
+                    <textarea
+                      rows={4}
+                      placeholder="Describe the role and your company culture"
+                      value={form.companyCulture || ""}
+                      onChange={(e) =>
+                        updateField(
+                          "companyCulture",
+                          e.target.value
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+
+                {/* ACTION */}
+
+                <div className="wizard-footer">
+                  <button
+                    type="button"
+                    className="continue-btn"
+                    onClick={() => setStep(2)}
                   >
-                    <option>
-                      Full-Time
-                    </option>
-                    <option>
-                      Part-Time
-                    </option>
-                    <option>
-                      Contract
-                    </option>
-                    <option>
-                      Internship
-                    </option>
-                  </select>
+                    Continue &gt;
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div className="wizard-footer">
-                <button
-                  className="primary-btn"
-                  onClick={() =>
-                    setStep(2)
-                  }
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
+            {/* STEP 2 */}
 
-          {/* STEP 2 */}
-
-          {step === 2 && (
-            <div className="screening-container fade-in">
+            {step === 2 && (
+              <div className="job-form-card">
                 <div className="screening-header">
-                <div>
+                  <div>
                     <h2>Add Screening Process</h2>
                     <p>Interview Questions</p>
-                </div>
+                  </div>
 
-                <label className="skip-checkbox">
+                  <label className="skip-checkbox">
                     <input
-                    type="checkbox"
-                    checked={form.skipScreening}
-                    onChange={(e) =>
+                      type="checkbox"
+                      checked={form.skipScreening}
+                      onChange={(e) =>
                         updateField(
-                        "skipScreening",
-                        e.target.checked
+                          "skipScreening",
+                          e.target.checked
                         )
-                    }
+                      }
                     />
 
                     <span>
-                    Skip screening questions
+                      Skip screening questions
                     </span>
-                </label>
+                  </label>
                 </div>
 
                 <div className="screening-info">
-                <ul>
+                  <ul>
                     <li>
-                    Best practice: Ask 2–3 focused
-                    questions. Avoid yes/no
-                    questions to allow candidates
-                    to demonstrate their reasoning.
+                      Best practice: Ask 2–3 focused
+                      questions. Avoid yes/no
+                      questions to allow candidates
+                      to demonstrate their reasoning.
                     </li>
-                </ul>
+                  </ul>
                 </div>
 
                 {!form.skipScreening && (
-                <>
+                  <>
                     {form.screeningQuestions.map(
-                    (question, index) => (
+                      (question, index) => (
                         <div
-                        key={index}
-                        className="question-card"
+                          key={index}
+                          className="question-card"
                         >
-                        <div className="question-top">
+                          <div className="question-top">
                             <div className="question-label">
-                            ⋮⋮ QUESTION {index + 1}
+                              ⋮⋮ QUESTION {index + 1}
                             </div>
 
                             <button
-                            type="button"
-                            className="delete-question"
+                              type="button"
+                              className="delete-question"
                             >
-                            🗑
+                              🗑
                             </button>
-                        </div>
+                          </div>
 
-                        <textarea
+                          <textarea
                             rows="3"
                             placeholder="Enter your screening question here..."
                             value={question}
                             onChange={(e) =>
-                            updateQuestion(
+                              updateQuestion(
                                 index,
                                 e.target.value
-                            )
+                              )
                             }
-                        />
+                          />
                         </div>
-                    )
+                      )
                     )}
 
                     <button
-                    type="button"
-                    className="add-question-btn"
-                    onClick={addQuestion}
+                      type="button"
+                      className="add-question-btn"
+                      onClick={addQuestion}
                     >
-                    + Add another question
+                      + Add another question
                     </button>
-                </>
+                  </>
                 )}
 
                 <div className="video-screening-card">
-                <div>
+                  <div>
                     <div className="video-title">
-                    🎥 Video Screening
+                      🎥 Video Screening
                     </div>
 
                     <div className="video-desc">
-                    Candidates will record a video
-                    response for these questions.
+                      Candidates will record a video
+                      response for these questions.
                     </div>
-                </div>
+                  </div>
 
-                <label className="switch">
+                  <label className="switch">
                     <input
-                    type="checkbox"
-                    checked={form.videoScreening}
-                    onChange={(e) =>
+                      type="checkbox"
+                      checked={form.videoScreening}
+                      onChange={(e) =>
                         updateField(
-                        "videoScreening",
-                        e.target.checked
+                          "videoScreening",
+                          e.target.checked
                         )
-                    }
+                      }
                     />
 
                     <span className="slider"></span>
-                </label>
+                  </label>
                 </div>
 
                 <div className="wizard-footer">
-                <button
+                  <button
                     className="secondary-btn"
                     onClick={() => setStep(1)}
-                >
+                  >
                     ← Back
-                </button>
+                  </button>
 
-                <button
+                  <button
                     className="primary-btn"
                     onClick={() => setStep(3)}
-                >
+                  >
                     Continue →
-                </button>
+                  </button>
                 </div>
-            </div>
+              </div>
             )}
 
-          {/* STEP 3 */}
+            {/* STEP 3 */}
 
-          {step === 3 && (
-            <div className="wizard-card">
-              <h2>
-                Review & Publish
-              </h2>
+            {step === 3 && (
+              <div className="job-form-card">
+                <div className="form-header">
+                  <h2>Review Before Publishing</h2>
+                  <p>Once published, candidates can immediately find and apply for this role.</p>
+                </div>
 
-              <div className="review-card">
-                <h3>
-                  {form.title}
-                </h3>
+                {/* Job Title + Edit */}
+                <div className="review-title-row">
+                  <h3 className="review-job-title">{form.title || "Untitled Position"}</h3>
+                  <button
+                    type="button"
+                    className="edit-link-btn"
+                    onClick={() => setStep(1)}
+                  >
+                    Edit Details
+                  </button>
+                </div>
 
-                <p>
-                  {
-                    form.category
-                  }
-                </p>
+                {/* Tags */}
+                <div className="review-tags">
+                  <span className="review-tag">
+                    <FiBriefcase size={14} />
+                    {form.experienceLevel}
+                  </span>
+                  <span className="review-tag">
+                    <FiCheckCircle size={14} />
+                    {form.category || "Uncategorized"}
+                  </span>
+                  <span className="review-tag">
+                    <FiClock size={14} />
+                    {form.employmentType}
+                  </span>
+                  <span className="review-tag">
+                    <FiMapPin size={14} />
+                    {form.location || "Not specified"}
+                  </span>
+                </div>
 
-                <br />
-
-                <p>
-                  📍{" "}
-                  {
-                    form.location
-                  }
-                </p>
-
-                <p>
-                  💼{" "}
-                  {
-                    form.employmentType
-                  }
-                </p>
-
-                <p>
-                  ⭐{" "}
-                  {
-                    form.experienceLevel
-                  }
-                </p>
-              </div>
-
-              <div className="review-card">
-                <h4>
-                  Description
-                </h4>
-
-                <p>
-                  {
-                    form.description
-                  }
-                </p>
-              </div>
-
-              <div className="review-card">
-                <h4>
-                  Screening
-                </h4>
-
-                {form.skipScreening ? (
-                  <p>
-                    No Screening
-                    Questions
+                {/* About the Role */}
+                <div className="review-section">
+                  <h4 className="review-section-title">About the Role</h4>
+                  <p className="review-section-text">
+                    {form.description || "No description provided."}
                   </p>
-                ) : (
-                  <ul>
-                    {form.screeningQuestions
-                      .filter(
-                        (q) =>
-                          q.trim()
-                      )
-                      .map(
-                        (
-                          q,
-                          index
-                        ) => (
-                          <li
-                            key={
-                              index
-                            }
-                          >
-                            {q}
-                          </li>
-                        )
-                      )}
+                  {form.description && form.description.length > 200 && (
+                    <button type="button" className="read-more-btn">Read more</button>
+                  )}
+                </div>
+
+                {/* Screening Summary */}
+                <div className="review-screening-box">
+                  <div className="review-screening-header">
+                    <div className="review-screening-left">
+                      <span className="screening-icon">📋</span>
+                      <strong>Screening Summary</strong>
+                    </div>
+                    <button
+                      type="button"
+                      className="edit-link-btn"
+                      onClick={() => setStep(2)}
+                    >
+                      Edit Questions
+                    </button>
+                  </div>
+
+                  <ul className="review-screening-list">
+                    {form.skipScreening ? (
+                      <li>No screening questions</li>
+                    ) : (
+                      <li>
+                        {form.screeningQuestions.filter((q) => q.trim()).length} screening questions defined
+                      </li>
+                    )}
+                    <li>
+                      {form.videoScreening
+                        ? "Video responses required"
+                        : "No video screening"}
+                    </li>
                   </ul>
-                )}
-              </div>
+                </div>
 
-              <div className="wizard-footer">
-                <button
-                  className="secondary-btn"
-                  onClick={() =>
-                    setStep(2)
-                  }
-                >
-                  Back
-                </button>
+                {/* Footer */}
+                <div className="wizard-footer">
+                  <button
+                    className="back-btn"
+                    onClick={() => setStep(2)}
+                  >
+                    <FiChevronLeft size={16} />
+                    Back
+                  </button>
 
-                <button
-                  className="primary-btn"
-                  onClick={
-                    publishJob
-                  }
-                >
-                  Publish Job
-                </button>
+                  <button
+                    className="publish-btn"
+                    onClick={publishJob}
+                  >
+                    Publish Job
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
