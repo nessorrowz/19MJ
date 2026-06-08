@@ -1,42 +1,52 @@
 import React, { useEffect, useState } from "react";
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
+import api from "../utils/api";
 import "./Dashboard2.css";
 
 export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
 
   const [company, setCompany] = useState({
-    companyName: "TechCorp Solutions",
+    companyName: "",
     industry: "",
-    headquarters: "Jakarta, Indonesia",
-    employees: "50-200",
-    website: "https://techcorp.solutions",
+    headquarters: "",
+    employees: "",
+    website: "",
     description: "",
-    email: "hr@techcorp.com",
-    phone: "+62 21 555 0123",
-    techStack: [
-      "React",
-      "Node.js",
-      "AWS",
-      "TypeScript",
-      "PostgreSQL",
-    ],
-    logo:
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300",
+    email: "",
+    phone: "",
+    techStack: [],
+    logo: ""
   });
 
-  const [newTech, setNewTech] =
-    useState("");
+  const [newTech, setNewTech] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem(
-      "companyProfile"
-    );
-
-    if (saved) {
-      setCompany(JSON.parse(saved));
-    }
+    const fetchCompany = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        const user = res.user;
+        setCompany({
+          companyName: user.company_name || "",
+          industry: user.industry || "",
+          headquarters: user.location || "",
+          employees: "50-200", // placeholder
+          website: user.website || "",
+          description: user.description || "",
+          email: user.email || "",
+          phone: "+62 21 555 0123", // placeholder
+          techStack: ["React", "Node.js"], // placeholder since companies techStack not in db yet
+          logo: user.logo || ""
+        });
+      } catch (err) {
+        console.error("Failed to load company profile", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCompany();
   }, []);
 
   const handleChange = (e) => {
@@ -124,17 +134,24 @@ const handleLogoUpload = (e) => {
     });
   };
 
-  const handleSave = () => {
-    localStorage.setItem(
-      "companyProfile",
-      JSON.stringify(company)
-    );
-
-    window.dispatchEvent(
-      new Event("companyProfileUpdated")
-    );
-
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      const payload = {
+        company_name: company.companyName,
+        industry: company.industry,
+        website: company.website,
+        description: company.description,
+        logo: company.logo,
+        location: company.headquarters
+      };
+      await api.put('/auth/profile', payload);
+      window.dispatchEvent(new Event("companyProfileUpdated"));
+      setIsEditing(false);
+      alert("Company profile saved to backend!");
+    } catch (err) {
+      console.error("Failed to save company profile", err);
+      alert("Failed to save profile. Please try again.");
+    }
   };
 
   return (

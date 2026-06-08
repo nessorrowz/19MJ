@@ -9,12 +9,14 @@ import {
   FiUsers,
   FiClock,
   FiCheckCircle,
+  FiArrowRight,
 } from "react-icons/fi";
 
 import { useNavigate } from "react-router-dom";
 
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
+import api from "../utils/api";
 import "./Dashboard2.css";
 
 export default function CompanyDashboard() {
@@ -23,8 +25,8 @@ export default function CompanyDashboard() {
   const [company, setCompany] =
     useState({});
 
-  const [jobs, setJobs] =
-    useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [applicants, setApplicants] = useState([]);
 
   /* =========================
      COMPANY PROFILE
@@ -57,33 +59,42 @@ export default function CompanyDashboard() {
   }, []);
 
   /* =========================
-     JOB POSTINGS
+     JOB POSTINGS & APPLICANTS
   ========================= */
 
   useEffect(() => {
-    const loadJobs = () => {
-      const storedJobs =
-        JSON.parse(
-          localStorage.getItem(
-            "jobPostings"
-          ) || "[]"
-        );
+    const loadData = async () => {
+      try {
+        const [jobsRes, appsRes] = await Promise.allSettled([
+          api.get("/jobs/company"),
+          api.get("/jobs/company/applications/recent")
+        ]);
 
-      setJobs(storedJobs);
+        if (jobsRes.status === "fulfilled") {
+          const formattedJobs = jobsRes.value.map(job => ({
+            id: job.id,
+            title: job.title,
+            category: job.type || '',
+            experienceLevel: job.experience_level || '',
+            applicants: parseInt(job.applicants_count) || 0,
+            status: job.status || 'open'
+          }));
+          setJobs(formattedJobs);
+        }
+
+        if (appsRes.status === "fulfilled") {
+          setApplicants(appsRes.value);
+        }
+      } catch (err) {
+        console.error("Failed to load company dashboard data", err);
+      }
     };
 
-    loadJobs();
+    loadData();
 
-    window.addEventListener(
-      "jobPostingUpdated",
-      loadJobs
-    );
-
+    window.addEventListener("jobPostingUpdated", loadData);
     return () => {
-      window.removeEventListener(
-        "jobPostingUpdated",
-        loadJobs
-      );
+      window.removeEventListener("jobPostingUpdated", loadData);
     };
   }, []);
 
@@ -96,7 +107,7 @@ export default function CompanyDashboard() {
     "PT Pertamina Patra Niaga";
 
   const activePostings =
-    jobs.length;
+    jobs.filter(j => j.status === 'open').length;
 
   const totalApplicants =
     jobs.reduce(
@@ -106,16 +117,12 @@ export default function CompanyDashboard() {
       0
     );
 
-  const pendingReview =
-    jobs.filter(
-      (job) =>
-        job.status === "Pending"
-    ).length;
+  const pendingReview = applicants.length;
 
   const positionsFilled =
     jobs.filter(
       (job) =>
-        job.status === "Closed"
+        job.status === "closed"
     ).length;
 
   const stats = [
@@ -145,28 +152,6 @@ export default function CompanyDashboard() {
     },
   ];
 
-  const applicants = [
-    {
-      name: "Muhamad Arrayyan",
-      role: "Backend Engineer",
-      match: 92,
-    },
-    {
-      name: "Sarah Jenkins",
-      role: "Product Designer",
-      match: 85,
-    },
-    {
-      name: "David Chen",
-      role: "Backend Engineer",
-      match: 71,
-    },
-    {
-      name: "Elena Rostova",
-      role: "Marketing Manager",
-      match: 88,
-    },
-  ];
 
   return (
     <div className="company-layout">
@@ -295,8 +280,11 @@ export default function CompanyDashboard() {
                         }
                         className="job-card"
                       >
-                        <div className="job-status">
-                          Active
+                        <div
+                          className="job-status"
+                          style={job.status === 'closed' ? { background: '#fef2f2', color: '#dc2626' } : {}}
+                        >
+                          {job.status === 'closed' ? 'Closed' : 'Active'}
                         </div>
 
                         <h3>
@@ -328,8 +316,10 @@ export default function CompanyDashboard() {
 
                           <span
                             className="section-link"
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                            onClick={() => navigate('/company/job-postings')}
                           >
-                            View →
+                            View <FiArrowRight size={14} />
                           </span>
                         </div>
                       </div>
@@ -351,68 +341,41 @@ export default function CompanyDashboard() {
                 </span>
               </div>
 
-              {applicants.map(
-                (
-                  applicant,
-                  index
-                ) => (
-                  <div
-                    key={index}
-                    className="applicant-card"
-                  >
+              {applicants.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#64748b", padding: "20px 0" }}>No recent applicants.</div>
+              ) : (
+                applicants.map((applicant, index) => (
+                  <div key={index} className="applicant-card">
                     <div className="applicant-avatar">
-                      {
-                        applicant
-                          .name[0]
-                      }
+                      {(applicant.name || "U")[0].toUpperCase()}
                     </div>
 
-                    <div
-                      style={{
-                        flex: 1,
-                      }}
-                    >
-                      <strong>
-                        {
-                          applicant.name
-                        }
-                      </strong>
+                    <div style={{ flex: 1 }}>
+                      <strong>{applicant.name}</strong>
 
-                      <div
-                        style={{
-                          color:
-                            "#64748b",
-                          fontSize: 13,
-                        }}
-                      >
-                        {
-                          applicant.role
-                        }
+                      <div style={{ color: "#64748b", fontSize: 13 }}>
+                        {applicant.role || "Job Seeker"} - Applied for {applicant.job_title}
                       </div>
                     </div>
 
                     <div className="match-badge">
-                      {
-                        applicant.match
-                      }
-                      %
+                      {applicant.match || 0}% Match
                     </div>
                   </div>
-                )
+                ))
               )}
 
               <div
                 style={{
-                  textAlign:
-                    "center",
+                  textAlign: "center",
                   marginTop: 20,
-                  color:
-                    "#0f7c82",
+                  color: "#0f7c82",
                   fontWeight: 600,
+                  cursor: "pointer",
                 }}
+                onClick={() => navigate('/company/job-postings')}
               >
-                Review Pending (
-                {pendingReview})
+                View All Jobs to Review
               </div>
             </div>
 

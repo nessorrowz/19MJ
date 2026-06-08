@@ -9,6 +9,8 @@ import {
 } from "react-icons/fi";
 
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateHeader from "./CandidateHeader";
+import api from "../utils/api";
 
 export default function CandidateProfile() {
 
@@ -16,34 +18,69 @@ export default function CandidateProfile() {
     localStorage.getItem("currentUser") || "{}"
   );
 
-  const profileStorageKey =
-    `candidateProfile_${currentUser.email}`;
+  const CACHE_KEY = "candidateProfileFullCache";
 
-  const savedProfile = JSON.parse(
-    localStorage.getItem(profileStorageKey) || "{}"
-  );
-
-  const [profile, setProfile] = useState({
-    photo: savedProfile.photo || "",
-    fullName: savedProfile.fullName || "",
-    headline: savedProfile.headline || "",
-    location: savedProfile.location || "",
-    about: savedProfile.about || "",
-    education: savedProfile.education || "",
-    experiences: savedProfile.experiences || [],
-    educationList: savedProfile.educationList || [],
-    skills: savedProfile.skills || []
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {
+      console.error(e);
+    }
+    return {
+      photo: "",
+      fullName: currentUser.full_name || currentUser.username || "",
+      headline: currentUser.headline || "",
+      location: currentUser.location || "",
+      about: currentUser.about || "",
+      education: currentUser.education || "",
+      experiences: [],
+      educationList: [],
+      skills: []
+    };
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    localStorage.setItem(
-      profileStorageKey,
-      JSON.stringify(profile)
-    );
-  }, [
-    profile,
-    profileStorageKey
-  ]);
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        const user = res.user;
+        const newProfile = {
+          photo: user.photo || "",
+          fullName: user.full_name || user.username || "",
+          headline: user.headline || "",
+          location: user.location || "",
+          about: user.about || "",
+          education: user.education || "",
+          experiences: user.experiences || [],
+          educationList: user.education_list || [],
+          skills: user.skills || []
+        };
+        setProfile(newProfile);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const formatDateMonthYear = (dateStr) => {
+    if (!dateStr) return "Present";
+    // Check if it's already just a year or text
+    if (!dateStr.includes("-")) return dateStr;
+    
+    // For type="month" it returns YYYY-MM
+    // For type="date" it returns YYYY-MM-DD
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+    
+    return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  };
 
   const [newSkill, setNewSkill] = useState("");
 
@@ -56,7 +93,8 @@ export default function CandidateProfile() {
       company: "",
       startDate: "",
       endDate: "",
-      description: ""
+      description: "",
+      isCurrent: false
     });
   const [showEducationForm, setShowEducationForm] =
     useState(false);
@@ -84,9 +122,9 @@ export default function CandidateProfile() {
     profile.headline,
     profile.location,
     profile.about,
-    profile.education,
-    profile.experiences.length > 0,
-    profile.educationList.length > 0
+    profile.experiences && profile.experiences.length > 0,
+    profile.educationList && profile.educationList.length > 0,
+    profile.skills && profile.skills.length > 0
   ];
 
   const percentage = Math.round(
@@ -153,14 +191,15 @@ export default function CandidateProfile() {
   // =========================
   // SAVE PROFILE
   // =========================
-  const saveProfile = () => {
-
-    localStorage.setItem(
-      profileStorageKey,
-      JSON.stringify(profile)
-    );
-
-    alert("Profile saved!");
+  const saveProfile = async () => {
+    try {
+      await api.put('/auth/profile', profile);
+      window.dispatchEvent(new Event('candidateProfileUpdated'));
+      alert("Profile saved successfully to the backend!");
+    } catch (err) {
+      console.error("Error saving profile", err);
+      alert("Failed to save profile. Please try again.");
+    }
   };
 
 
@@ -250,7 +289,8 @@ export default function CandidateProfile() {
       company: "",
       startDate: "",
       endDate: "",
-      description: ""
+      description: "",
+      isCurrent: false
     });
 
     setEditingExpIndex(null);
@@ -381,95 +421,44 @@ export default function CandidateProfile() {
 
 
         {/* HEADER */}
-        <div style={styles.header}>
+        <CandidateHeader title="Profile" />
 
-          <h2>Profile</h2>
-
-          <div style={styles.headerUser}>
-
-            <FiBell />
-
-            {profile.photo ? (
-
-              <img
-                src={profile.photo}
-                alt=""
-                style={styles.headerPhoto}
-              />
-
-            ) : (
-
-              <div style={styles.avatar}>
-                {(profile.fullName || "U")[0]}
-              </div>
-
-            )}
-
+        <div style={styles.content}>
+          {/* PAGE TOP */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
             <div>
-              <div style={{ fontWeight: 600 }}>
-                {profile.fullName || "User"}
-              </div>
+              <h1 style={{ marginBottom: 8, marginTop: 0, color: "#0f172a" }}>My Profile</h1>
+              <p style={{ color: "#64748b", margin: 0 }}>Complete your profile to showcase your skills and experience to potential employers.</p>
+            </div>
+            <button onClick={saveProfile} style={styles.saveButton}>
+              Save Changes
+            </button>
+          </div>
 
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#666"
-                }}
-              >
-                Job Seeker
+          {/* MODERN BANNER */}
+          <div style={{ position: 'relative', marginBottom: 80, background: 'white', borderRadius: 24, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <div style={{ height: 160, background: 'linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%)' }} />
+            
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 24, padding: '0 40px', bottom: 30 }}>
+              <label style={{ width: 120, height: 120, borderRadius: '50%', border: '4px solid white', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                {profile.photo ? (
+                  <img src={profile.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8' }}>
+                    <FiCamera size={28} />
+                  </div>
+                )}
+                <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+              </label>
+              
+              <div style={{ flex: 1, paddingBottom: 5 }}>
+                <h1 style={{ margin: 0, fontSize: 26, color: '#0f172a', fontWeight: 700 }}>{profile.fullName || "Your Name"}</h1>
+                <p style={{ margin: '4px 0 0', fontSize: 15, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FiBriefcase size={14} /> {profile.headline || "Add your professional headline"}
+                </p>
               </div>
             </div>
-
           </div>
-
-        </div>
-
-
-
-        {/* CONTENT */}
-        {/* PAGE TOP */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "30px 30px 0"
-          }}
-        >
-
-          <div>
-
-            <h1
-              style={{
-                marginBottom: 8
-              }}
-            >
-              My Profile
-            </h1>
-
-            <p
-              style={{
-                color: "#666"
-              }}
-            >
-              Complete your profile to showcase your skills and experience to potential employers.
-            </p>
-
-          </div>
-
-
-          <button
-            onClick={saveProfile}
-            style={styles.saveButton}
-          >
-            Save Changes
-          </button>
-
-        </div>
-
-
-
-        {/* CONTENT */}
         <div style={styles.grid}>
 
 
@@ -490,165 +479,16 @@ export default function CandidateProfile() {
               </h3>
 
 
-              {/* TOP */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: "30px",
-                  marginBottom: "30px"
-                }}
-              >
-
-                {/* PHOTO */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    minWidth: "120px"
-                  }}
-                >
-
-                  <label
-                    style={{
-                      width: "90px",
-                      height: "90px",
-                      borderRadius: "50%",
-                      border:
-                        "2px dashed #14b8a6",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      cursor: "pointer",
-                      overflow: "hidden",
-                      color: "#94a3b8"
-                    }}
-                  >
-
-                    {profile.photo ? (
-
-                      <img
-                        src={profile.photo}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit:
-                            "cover"
-                        }}
-                      />
-
-                    ) : (
-
-                      <FiCamera
-                        size={28}
-                      />
-
-                    )}
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={
-                        handlePhotoUpload
-                      }
-                      style={{
-                        display:
-                          "none"
-                      }}
-                    />
-
-                  </label>
-
-                  <p
-                    style={{
-                      fontSize:
-                        "14px",
-                      marginTop:
-                        "12px",
-                      color:
-                        "#64748b"
-                    }}
-                  >
-                    Change Photo
-                  </p>
-
+              {/* TOP INPUTS (Because Photo is moved to Banner) */}
+              <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Full Name</p>
+                  <input name="fullName" value={profile.fullName} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Budi Santoso" />
                 </div>
-
-
-                {/* INPUTS */}
-                <div
-                  style={{
-                    flex: 1
-                  }}
-                >
-
-                  {/* FULLNAME */}
-                  <div
-                    style={{
-                      marginBottom:
-                        "20px"
-                    }}
-                  >
-
-                    <p
-                      style={{
-                        fontWeight:
-                          500,
-                        marginBottom:
-                          "8px"
-                      }}
-                    >
-                      Full Name
-                    </p>
-
-                    <input
-                      name="fullName"
-                      value={
-                        profile.fullName
-                      }
-                      onChange={
-                        handleChange
-                      }
-                      style={
-                        styles.profileInput
-                      }
-                    />
-
-                  </div>
-
-
-                  {/* HEADLINE */}
-                  <div>
-
-                    <p
-                      style={{
-                        fontWeight:
-                          500,
-                        marginBottom:
-                          "8px"
-                      }}
-                    >
-                      Professional Headline
-                    </p>
-
-                    <input
-                      name="headline"
-                      value={
-                        profile.headline
-                      }
-                      onChange={
-                        handleChange
-                      }
-                      style={
-                        styles.profileInput
-                      }
-                    />
-
-                  </div>
-
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Professional Headline</p>
+                  <input name="headline" value={profile.headline} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Senior Software Engineer" />
                 </div>
-
               </div>
 
 
@@ -770,7 +610,8 @@ export default function CandidateProfile() {
                         company: "",
                         startDate: "",
                         endDate: "",
-                        description: ""
+                        description: "",
+                        isCurrent: false
                       });
 
                     }
@@ -819,37 +660,43 @@ export default function CandidateProfile() {
                     style={styles.input}
                   />
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10
-                    }}
-                  >
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: 13, color: "#64748b", fontWeight: 500 }}>Start Date</p>
+                      <input
+                        type="month"
+                        name="startDate"
+                        value={experienceForm.startDate}
+                        onChange={handleExperienceChange}
+                        style={styles.input}
+                      />
+                    </div>
 
+                    <div style={{ flex: 1, opacity: experienceForm.isCurrent ? 0.5 : 1 }}>
+                      <p style={{ margin: "0 0 6px", fontSize: 13, color: "#64748b", fontWeight: 500 }}>End Date</p>
+                      <input
+                        type="month"
+                        name="endDate"
+                        value={experienceForm.isCurrent ? "" : experienceForm.endDate}
+                        onChange={handleExperienceChange}
+                        disabled={experienceForm.isCurrent}
+                        style={styles.input}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
                     <input
-                      type="date"
-                      name="startDate"
-                      value={
-                        experienceForm.startDate
-                      }
-                      onChange={
-                        handleExperienceChange
-                      }
-                      style={styles.input}
+                      type="checkbox"
+                      id="isCurrent"
+                      name="isCurrent"
+                      checked={experienceForm.isCurrent}
+                      onChange={(e) => setExperienceForm({ ...experienceForm, isCurrent: e.target.checked, endDate: e.target.checked ? "" : experienceForm.endDate })}
+                      style={{ width: 16, height: 16, accentColor: "#0f7c82" }}
                     />
-
-                    <input
-                      type="date"
-                      name="endDate"
-                      value={
-                        experienceForm.endDate
-                      }
-                      onChange={
-                        handleExperienceChange
-                      }
-                      style={styles.input}
-                    />
-
+                    <label htmlFor="isCurrent" style={{ fontSize: 14, color: "#334155", cursor: "pointer" }}>
+                      I am currently working here
+                    </label>
                   </div>
 
 
@@ -956,9 +803,9 @@ export default function CandidateProfile() {
                           color: "#666"
                         }}
                       >
-                        {exp.startDate}
+                        {formatDateMonthYear(exp.startDate)}
                         {" - "}
-                        {exp.endDate}
+                        {exp.isCurrent || !exp.endDate ? "Present" : formatDateMonthYear(exp.endDate)}
                       </div>
 
                     </div>
@@ -1370,6 +1217,26 @@ export default function CandidateProfile() {
             )}
 
           </div>
+
+          <div style={styles.card}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
+              <h3>Documents & Certificates</h3>
+              <p style={{ color: "#0f7c82", cursor: "pointer", fontWeight: 600 }}>+ Add Document</p>
+            </div>
+            
+            <p style={{ color: "#64748b", fontSize: 15, marginBottom: 20 }}>
+              Upload your resume, transcripts, or professional certifications to make your profile stand out.
+            </p>
+
+            <div style={{ ...styles.expCard, minHeight: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', border: '2px dashed #cbd5e1', cursor: 'pointer' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#94a3b8', marginBottom: 16 }}>
+                <FiBookOpen size={28} />
+              </div>
+              <h4 style={{ margin: '0 0 8px', fontSize: 18, color: '#334155' }}>Upload a file</h4>
+              <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>PDF, DOCX, or Image (Max 5MB)</p>
+            </div>
+          </div>
+        </div>
         </div>
 
       </div>
@@ -1389,20 +1256,29 @@ const styles = {
   },
 
   header: {
+    height: 88,
     background: "white",
-    padding: "20px 30px",
+    borderBottom: "1px solid #eee",
     display: "flex",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center"
+    padding: "0 32px",
+    flexShrink: 0
   },
 
-  headerUser: {
+  headerRight: {
     display: "flex",
-    gap: 15,
-    alignItems: "center"
+    alignItems: "center",
+    gap: 16
   },
 
-  avatar: {
+  content: {
+    padding: 32,
+    flex: 1,
+    overflowY: "auto"
+  },
+
+  avatarFallback: {
     width: 40,
     height: 40,
     borderRadius: "50%",
@@ -1424,8 +1300,7 @@ const styles = {
   grid: {
     display: "grid",
     gridTemplateColumns: "2fr 1fr",
-    gap: 20,
-    padding: 30
+    gap: 24
   },
 
   card: {

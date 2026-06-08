@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { FiBell, FiCompass, FiCheckCircle, FiBookOpen, FiClock, FiPlus, FiX, FiAward, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateHeader from "./CandidateHeader";
 
 const API_BASE = "http://localhost:3000/api/ai";
 
 export default function CareerPlannerPage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-  const profileStorageKey = `candidateProfile_${currentUser.email}`;
-  const profile = JSON.parse(localStorage.getItem(profileStorageKey) || "{}");
 
   // State Management
   const [loading, setLoading] = useState(false);
@@ -147,28 +146,7 @@ export default function CareerPlannerPage() {
 
       <div style={styles.main}>
         {/* HEADER */}
-        <div style={styles.header}>
-          <h2 style={styles.pageTitle}>Career Planner</h2>
-
-          <div style={styles.headerRight}>
-            <FiBell size={18} style={styles.bellIcon} />
-
-            {profile.photo ? (
-              <img src={profile.photo} alt="profile" style={styles.avatar} />
-            ) : (
-              <div style={styles.avatarFallback}>
-                {(profile.fullName || "U")[0]}
-              </div>
-            )}
-
-            <div>
-              <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                {profile.fullName || "User"}
-              </div>
-              <div style={styles.roleLabel}>Job Seeker</div>
-            </div>
-          </div>
-        </div>
+        <CandidateHeader title="Career Planner" />
 
         {/* CONTENT */}
         <div style={styles.contentWrapper}>

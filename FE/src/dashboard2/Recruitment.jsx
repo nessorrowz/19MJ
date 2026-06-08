@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FiUsers,
   FiUserPlus,
@@ -19,6 +19,7 @@ import {
 } from "react-icons/fi";
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
+import api from "../utils/api";
 import "./Dashboard2.css";
 
 // ── dummy data ──
@@ -75,16 +76,83 @@ export default function Recruitment() {
   const [privateNote, setPrivateNote] = useState("");
   const [expandedTranscript, setExpandedTranscript] = useState(null);
 
-  const totalCandidates = JOBS.reduce((s, j) => s + j.total, 0);
-  const totalNew = JOBS.reduce((s, j) => s + j.newCount, 0);
-  const totalPending = 14;
+  const [jobs, setJobs] = useState([]);
+  const [applicants, setApplicants] = useState([]);
 
-  const openApplicants = (job) => { setSelectedJob(job); setView("applicants"); setFilter("All"); };
+  const totalCandidates = jobs.reduce((s, j) => s + j.total, 0);
+  const totalNew = jobs.reduce((s, j) => s + j.newCount, 0);
+  const totalPending = 0;
+  
+  useEffect(() => {
+    // Fetch Jobs
+    const fetchJobs = async () => {
+      try {
+        const res = await api.get("/jobs/company");
+        setJobs(res.map(j => ({
+          id: j.id,
+          title: j.title,
+          category: j.type || "General",
+          total: j.applicants_count,
+          newCount: 0, // Mock for now
+          shortlisted: 0, // Mock for now
+        })));
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const openApplicants = async (job) => { 
+    setSelectedJob(job); 
+    setView("applicants"); 
+    setFilter("All"); 
+    
+    // Fetch applicants for this job
+    try {
+      const res = await api.get(`/jobs/${job.id}/applications`);
+      setApplicants(res.map(a => {
+        const parsedSkills = a.candidate_skills ? (typeof a.candidate_skills === 'string' ? JSON.parse(a.candidate_skills || '[]') : a.candidate_skills) : [];
+        const parsedExperiences = a.experiences ? (typeof a.experiences === 'string' ? JSON.parse(a.experiences || '[]') : a.experiences) : [];
+        
+        return {
+          id: a.id,
+          name: a.full_name || a.username,
+          initials: (a.full_name || a.username || "C").substring(0, 2).toUpperCase(),
+          title: a.headline || job.title,
+          role: job.title,
+          date: new Date(a.created_at).toLocaleDateString(),
+          score: a.ai_match_score,
+          status: (a.status || "PENDING REVIEW").toUpperCase(),
+          location: a.candidate_location || "Not specified",
+          remote: "Remote",
+          experience: parsedExperiences.length ? `${parsedExperiences.length} roles` : "Entry Level",
+          email: `${a.username}@email.com`, 
+          phone: "+62 000 0000 0000",
+          summary: a.about || "No summary provided.",
+          experiences: parsedExperiences.map(e => ({ role: e.title, company: e.company, period: e.date })),
+          skills: parsedSkills,
+          coreSkills: parsedSkills,
+          missingKeywords: [],
+          strengthsCandidate: ["Matches requested profile"],
+          concerns: ["Needs technical interview validation"],
+          matchPercent: a.ai_match_score || 0,
+          interviews: [],
+          cvFile: "Resume.pdf",
+          cvDate: new Date(a.created_at).toLocaleDateString()
+        };
+      }));
+    } catch (err) {
+      console.error("Error fetching applicants:", err);
+      setApplicants([]);
+    }
+  };
+
   const openDetail = (c) => { setSelectedCandidate(c); setCandidateStatus(c.status); setCandidateTab("overview"); setView("detail"); };
   const backToOverview = () => { setView("overview"); setSelectedJob(null); };
   const backToApplicants = () => { setView("applicants"); setSelectedCandidate(null); };
 
-  const filteredApplicants = APPLICANTS.filter((a) => {
+  const filteredApplicants = applicants.filter((a) => {
     if (selectedJob && a.role !== selectedJob.title) return false;
     if (filter === "Accepted") return a.status === "ACCEPTED";
     if (filter === "Reviewed") return a.status === "REVIEWED";
@@ -136,7 +204,7 @@ export default function Recruitment() {
                 </div>
               </div>
 
-              {JOBS.filter((j) => j.title.toLowerCase().includes(searchJob.toLowerCase())).map((job) => (
+              {jobs.filter((j) => j.title.toLowerCase().includes(searchJob.toLowerCase())).map((job) => (
                 <div key={job.id} className="recruit-job-row" onClick={() => openApplicants(job)}>
                   <div className="recruit-job-left">
                     <div className="recruit-job-icon">🏢</div>
@@ -164,7 +232,7 @@ export default function Recruitment() {
               <div className="recruit-filter-row">
                 {["All", "Accepted", "Reviewed", "Rejected"].map((f) => (
                   <button key={f} className={`recruit-filter-btn ${filter === f ? "active" : ""}`} onClick={() => setFilter(f)}>
-                    {f} ({f === "All" ? filteredApplicants.length : APPLICANTS.filter((a) => a.status === f.toUpperCase()).length})
+                    {f} ({f === "All" ? filteredApplicants.length : applicants.filter((a) => a.status === f.toUpperCase()).length})
                   </button>
                 ))}
                 <div className="recruit-search-box" style={{ marginLeft: "auto" }}>
@@ -214,19 +282,19 @@ export default function Recruitment() {
                   {/* Profile Card */}
                   <div className="recruit-profile-card">
                     <div className="recruit-profile-top">
-                      <div className="recruit-profile-avatar">{CANDIDATE.initials}</div>
+                      <div className="recruit-profile-avatar">{selectedCandidate?.initials}</div>
                       <div>
-                        <h2 className="recruit-profile-name">{CANDIDATE.name}</h2>
-                        <p className="recruit-profile-title">{CANDIDATE.title}</p>
-                        <p className="recruit-profile-remote">📍 {CANDIDATE.remote}</p>
+                        <h2 className="recruit-profile-name">{selectedCandidate?.name}</h2>
+                        <p className="recruit-profile-title">{selectedCandidate?.title}</p>
+                        <p className="recruit-profile-remote">📍 {selectedCandidate?.remote}</p>
                       </div>
                     </div>
                     <div className="recruit-profile-meta">
-                      <span><FiMapPin size={13} /> {CANDIDATE.location}</span>
-                      <span><FiClock size={13} /> {CANDIDATE.experience}</span>
-                      <span><FiClock size={13} /> {CANDIDATE.experience}</span>
+                      <span><FiMapPin size={13} /> {selectedCandidate?.location}</span>
+                      <span><FiClock size={13} /> {selectedCandidate?.experience}</span>
+                      <span><FiClock size={13} /> {selectedCandidate?.experience}</span>
                     </div>
-                    <div className="recruit-profile-email"><FiMail size={13} /> {CANDIDATE.email}</div>
+                    <div className="recruit-profile-email"><FiMail size={13} /> {selectedCandidate?.email}</div>
                   </div>
 
                   {/* Tabs */}
@@ -244,10 +312,10 @@ export default function Recruitment() {
                   </div>
 
                   {/* Tab Content */}
-                  {candidateTab === "overview" && <OverviewTab candidate={CANDIDATE} />}
-                  {candidateTab === "interview" && <InterviewTab candidate={CANDIDATE} expandedTranscript={expandedTranscript} setExpandedTranscript={setExpandedTranscript} />}
-                  {candidateTab === "cv" && <DocumentTab candidate={CANDIDATE} />}
-                  {candidateTab === "match" && <MatchTab candidate={CANDIDATE} />}
+                  {candidateTab === "overview" && <OverviewTab candidate={selectedCandidate} />}
+                  {candidateTab === "interview" && <InterviewTab candidate={selectedCandidate} expandedTranscript={expandedTranscript} setExpandedTranscript={setExpandedTranscript} />}
+                  {candidateTab === "cv" && <DocumentTab candidate={selectedCandidate} />}
+                  {candidateTab === "match" && <MatchTab candidate={selectedCandidate} />}
                 </div>
 
                 {/* RIGHT COLUMN */}
@@ -271,8 +339,8 @@ export default function Recruitment() {
 
                   <div className="recruit-contact-card">
                     <h4>CONTACT INFORMATION</h4>
-                    <div className="recruit-contact-row"><FiMail size={16} /><div><div className="recruit-contact-label">EMAIL</div><div className="recruit-contact-value">{CANDIDATE.email}</div></div><FiChevronRight size={16} /></div>
-                    <div className="recruit-contact-row"><FiPhone size={16} /><div><div className="recruit-contact-label">TELEPON</div><div className="recruit-contact-value">{CANDIDATE.phone}</div></div></div>
+                    <div className="recruit-contact-row"><FiMail size={16} /><div><div className="recruit-contact-label">EMAIL</div><div className="recruit-contact-value">{selectedCandidate?.email}</div></div><FiChevronRight size={16} /></div>
+
                     <button className="recruit-dm-btn">Send Direct Messages</button>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight, FiArrowRight, FiArrowLeft } from "react-icons/fi";
+import api from "../utils/api";
 
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
@@ -67,69 +68,30 @@ export default function CreateJobPosting() {
     );
   };
 
-  const publishJob = () => {
-    const jobs =
-      JSON.parse(
-        localStorage.getItem(
-          "jobPostings"
-        ) || "[]"
-      );
+  const publishJob = async () => {
+    try {
+      const payload = {
+        title: form.title,
+        category: form.category,
+        location: form.location,
+        description: form.description,
+        requirements: form.requirements,
+        experience_level: form.experienceLevel,
+        type: form.employmentType,
+        skills: [] // Can extract from requirements if needed
+      };
 
-    const newJob = {
-      id: Date.now(),
+      await api.post("/jobs", payload);
 
-      title: form.title,
-      category: form.category,
-      location: form.location,
-      description:
-        form.description,
-      requirements:
-        form.requirements,
+      // Optional: still save screening questions to backend if implemented,
+      // but for now the jobs table only stores basic info.
 
-      experienceLevel:
-        form.experienceLevel,
-
-      employmentType:
-        form.employmentType,
-
-      screeningQuestions:
-        form.skipScreening
-          ? []
-          : form.screeningQuestions.filter(
-            (q) => q.trim()
-          ),
-
-      videoScreening:
-        form.videoScreening,
-
-      skipScreening:
-        form.skipScreening,
-
-      applicants: 0,
-      views: 0,
-
-      status: "Active",
-
-      createdAt:
-        new Date().toISOString(),
-    };
-
-    jobs.unshift(newJob);
-
-    localStorage.setItem(
-      "jobPostings",
-      JSON.stringify(jobs)
-    );
-
-    window.dispatchEvent(
-      new Event(
-        "jobPostingUpdated"
-      )
-    );
-
-    navigate(
-      "/company/job-postings"
-    );
+      window.dispatchEvent(new Event("jobPostingUpdated"));
+      navigate("/company/job-postings");
+    } catch (error) {
+      console.error("Failed to create job:", error);
+      alert("Gagal membuat pekerjaan: " + (error.response?.data?.message || error.message));
+    }
   };
 
   return (
@@ -391,8 +353,9 @@ export default function CreateJobPosting() {
                     type="button"
                     className="continue-btn"
                     onClick={() => setStep(2)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
                   >
-                    Continue &gt;
+                    Continue <FiArrowRight />
                   </button>
                 </div>
               </div>
@@ -515,15 +478,17 @@ export default function CreateJobPosting() {
                   <button
                     className="secondary-btn"
                     onClick={() => setStep(1)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
                   >
-                    ← Back
+                    <FiArrowLeft /> Back
                   </button>
 
                   <button
                     className="primary-btn"
                     onClick={() => setStep(3)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}
                   >
-                    Continue →
+                    Continue <FiArrowRight />
                   </button>
                 </div>
               </div>

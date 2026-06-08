@@ -6,6 +6,8 @@ import React, {
 import { FiBell } from "react-icons/fi";
 import "./Dashboard2.css";
 
+import api from "../utils/api";
+
 export default function CompanyHeader({
   title,
 }) {
@@ -13,14 +15,17 @@ export default function CompanyHeader({
     useState({});
 
   useEffect(() => {
-    const loadProfile = () => {
-      const profile = JSON.parse(
-        localStorage.getItem(
-          "companyProfile"
-        ) || "{}"
-      );
-
-      setCompany(profile);
+    const loadProfile = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        const user = res.user;
+        setCompany({
+          companyName: user.company_name,
+          logo: user.logo
+        });
+      } catch (err) {
+        console.error("Failed to load header profile", err);
+      }
     };
 
     loadProfile();

@@ -43,6 +43,7 @@ import JobPostings from "./dashboard2/JobPostings";
 import CreateJobPosting from "./dashboard2/CreateJobPosting";
 import Recruitment from "./dashboard2/Recruitment";
 import Recommendations from "./dashboard2/Recommendations";
+import MyApplicationsPage from "./dashboard/MyApplicationsPage";
 
 function PrivateRoute({
   children,
@@ -350,6 +351,15 @@ function AppRoutes() {
           element={
             <PrivateRoute allowedRole="candidate">
               <FindJobsPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/my-applications"
+          element={
+            <PrivateRoute allowedRole="candidate">
+              <MyApplicationsPage />
             </PrivateRoute>
           }
         />

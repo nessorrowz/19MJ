@@ -23,11 +23,14 @@ app.use(cors({
   origin: getCorsOrigins(),
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(passport.initialize());
 
-// ── Routes ────────────────────────────────────────────────────────────────────
+const jobRoutes = require('./routes/jobRoutes');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/jobs', jobRoutes);
 mountAiSwaggerDocs(app);
 app.use('/api/ai', aiRoutes);
 

@@ -1,14 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLeft, FiArrowRight, FiPlay, FiSquare, FiEdit3, FiAward, FiVideo } from "react-icons/fi";
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateHeader from "./CandidateHeader";
 
 const API_BASE = "http://localhost:3000/api/ai";
 
 export default function InterviewPracticePage() {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-  const profileStorageKey = `candidateProfile_${currentUser.email}`;
-  const profile = JSON.parse(localStorage.getItem(profileStorageKey) || "{}");
-
   // State Management
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -366,28 +363,7 @@ export default function InterviewPracticePage() {
 
       <div style={styles.main}>
         {/* HEADER */}
-        <div style={styles.header}>
-          <h2 style={styles.pageLabel}>Interview Practice</h2>
-
-          <div style={styles.headerRight}>
-            <FiBell size={18} style={styles.bellIcon} />
-
-            {profile.photo ? (
-              <img src={profile.photo} alt="profile" style={styles.avatar} />
-            ) : (
-              <div style={styles.avatarFallback}>
-                {(profile.fullName || "U")[0]}
-              </div>
-            )}
-
-            <div>
-              <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                {profile.fullName || "User"}
-              </div>
-              <div style={styles.roleLabel}>Job Seeker</div>
-            </div>
-          </div>
-        </div>
+        <CandidateHeader title="Interview Practice" />
 
         {/* CONTENT */}
         <div style={styles.content}>

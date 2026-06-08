@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -12,6 +12,8 @@ import {
 } from "react-icons/fi";
 
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateHeader from "./CandidateHeader";
+import api from "../utils/api";
 
 
 // ====================
@@ -64,47 +66,129 @@ export default function CandidateDashboard() {
   const navigate =
     useNavigate();
 
-  const user = JSON.parse(
-    localStorage.getItem(
-      "currentUser"
-    ) || "{}"
-  );
+  const CACHE_KEY = "candidateDashboardProfileCache";
 
-  const currentUser = JSON.parse(
-    localStorage.getItem("currentUser") || "{}"
-  );
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) return JSON.parse(cached);
+    } catch (e) {
+      console.error(e);
+    }
+    return {
+      fullName: "",
+      photo: "",
+      headline: "",
+      location: "",
+      about: "",
+      experiences: [],
+      educationList: [],
+      skills: []
+    };
+  });
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
-  const profileStorageKey =
-    `candidateProfile_${currentUser.email}`;
+  const [stats, setStats] = useState({
+    cvReview: { analyzed: false, score: null },
+    careerPlan: { created: false },
+    interviews: { count: 0, avgScore: 0 },
+    applications: { count: 0 }
+  });
 
-  const profile = JSON.parse(
-    localStorage.getItem(profileStorageKey) || "{}"
-  );
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [cvRes, planRes, intRes, appRes] = await Promise.allSettled([
+          api.get('/ai/cv-review/latest').catch(() => null),
+          api.get('/ai/career-roadmap/latest').catch(() => null),
+          api.get('/ai/interviews').catch(() => null),
+          api.get('/jobs/candidate/applications').catch(() => null)
+        ]);
 
-  const displayName =
-    profile.fullName ||
-    user.username ||
-    user.email ||
-    "User";
+        const newStats = {
+          cvReview: { analyzed: false, score: null },
+          careerPlan: { created: false },
+          interviews: { count: 0, avgScore: 0 },
+          applications: { count: 0 }
+        };
 
-  const fields = [
+        if (cvRes.status === 'fulfilled' && cvRes.value && cvRes.value.result) {
+          const resJson = cvRes.value.result.result_json || cvRes.value.result;
+          newStats.cvReview = {
+            analyzed: true,
+            score: resJson.overallScore || null
+          };
+        }
+
+        if (planRes.status === 'fulfilled' && planRes.value && planRes.value.result) {
+          newStats.careerPlan = { created: true };
+        }
+
+        if (intRes.status === 'fulfilled' && intRes.value && intRes.value.result) {
+          const sessions = intRes.value.result;
+          const evaluated = sessions.filter(s => s.overall_score !== null);
+          const avg = evaluated.length ? Math.round(evaluated.reduce((acc, curr) => acc + curr.overall_score, 0) / evaluated.length) : 0;
+          newStats.interviews = { count: sessions.length, avgScore: avg };
+        }
+
+        if (appRes.status === 'fulfilled' && appRes.value) {
+          const apps = appRes.value; 
+          newStats.applications = { count: apps.length };
+        }
+
+        setStats(newStats);
+      } catch (err) {
+        console.error("Failed to load dashboard stats", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/auth/me');
+        const user = res.user;
+        const newProfile = {
+          fullName: user.full_name || user.username || "",
+          photo: user.photo || "",
+          headline: user.headline || "",
+          location: user.location || "",
+          about: user.about || "",
+          experiences: user.experiences || [],
+          educationList: user.education_list || [],
+          skills: user.skills || []
+        };
+        setProfile(newProfile);
+        localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    fetchProfile();
+    window.addEventListener("candidateProfileUpdated", fetchProfile);
+    return () => window.removeEventListener("candidateProfileUpdated", fetchProfile);
+  }, []);
+
+  const displayName = profile.fullName || "User";
+
+  const completedFields = [
+    profile.photo,
     profile.fullName,
     profile.headline,
     profile.location,
     profile.about,
-    profile.education,
-    profile.experience
+    profile.experiences && profile.experiences.length > 0,
+    profile.educationList && profile.educationList.length > 0,
+    profile.skills && profile.skills.length > 0
   ];
 
-  const percentage =
-    Math.round(
-      (
-        fields.filter(
-          Boolean
-        ).length /
-        fields.length
-      ) * 100
-    );
+  const percentage = Math.round(
+    (completedFields.filter(Boolean).length / completedFields.length) * 100
+  );
 
   return (
     <div style={styles.container}>
@@ -115,181 +199,42 @@ export default function CandidateDashboard() {
 
 
         {/* HEADER */}
-        <div
-          style={{
-            background:
-              "white",
-            height: "88px",
-            padding:
-              "0 32px",
-            display:
-              "flex",
-            alignItems:
-              "center",
-            justifyContent:
-              "space-between",
-            borderBottom:
-              "1px solid #eee",
-            boxSizing:
-              "border-box"
-          }}
-        >
-
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 28,
-              fontWeight: 700
-            }}
-          >
-            Candidate
-          </h2>
-
-
-          <div
-            style={{
-              display:
-                "flex",
-              alignItems:
-                "center",
-              gap: 16
-            }}
-          >
-
-            <FiBell size={18} />
-
-            {profile.photo ? (
-
-              <img
-                src={
-                  profile.photo
-                }
-                alt="profile"
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius:
-                    "50%",
-                  objectFit:
-                    "cover"
-                }}
-              />
-
-            ) : (
-
-              <div
-                style={{
-                  width: 42,
-                  height: 42,
-                  borderRadius:
-                    "50%",
-                  background:
-                    "#0f7c82",
-                  color:
-                    "white",
-                  display:
-                    "flex",
-                  justifyContent:
-                    "center",
-                  alignItems:
-                    "center",
-                  fontWeight:
-                    700
-                }}
-              >
-                {(
-                  profile.fullName ||
-                  "U"
-                )[0]}
-              </div>
-
-            )}
-
-            <div>
-
-              <div
-                style={{
-                  fontWeight:
-                    600
-                }}
-              >
-                {
-                  profile.fullName ||
-                  "User"
-                }
-              </div>
-
-              <div
-                style={{
-                  fontSize:
-                    12,
-                  color:
-                    "#666"
-                }}
-              >
-                Job Seeker
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
+        <CandidateHeader title="Dashboard" />
 
         {/* GREETING */}
         <div style={styles.greetingCard}>
-
           <div>
-
-            <h1>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
               Good morning, {displayName} 👋
             </h1>
-
-            <p
-              style={{
-                color:
-                  "#666"
-              }}
-            >
-              You have 2 items to complete to strengthen your profile.
+            <p style={{ color: "rgba(255,255,255,0.9)", marginTop: 8, fontSize: 16 }}>
+              {percentage === 100 
+                ? "Your profile is looking great! You are ready to apply for jobs."
+                : "You have a few items to complete to strengthen your profile."}
             </p>
-
           </div>
 
-          <div>
-
-            <p>
+          <div style={{ background: "rgba(255,255,255,0.1)", padding: "16px 24px", borderRadius: 16, border: "1px solid rgba(255,255,255,0.2)" }}>
+            <p style={{ margin: "0 0 8px 0", fontWeight: 600 }}>
               Profile {percentage}% complete
             </p>
-
             <div style={styles.progressBar}>
-
               <div
                 style={{
                   ...styles.progressFill,
-                  width:
-                    `${percentage}%`
+                  width: `${percentage}%`
                 }}
               />
-
             </div>
-
-            <button
-              style={
-                styles.outlineButton
-              }
-              onClick={() =>
-                navigate(
-                  "/my-profile"
-                )
-              }
-            >
-              Complete Profile
-            </button>
-
+            {percentage < 100 && (
+              <button
+                style={styles.outlineButton}
+                onClick={() => navigate("/my-profile")}
+              >
+                Complete Profile
+              </button>
+            )}
           </div>
-
         </div>
 
 
@@ -339,69 +284,46 @@ export default function CandidateDashboard() {
 
 
         {/* PROGRESS */}
-        <h2
-          style={{
-            padding:
-              "0 30px",
-            marginBottom:
-              20
-          }}
-        >
+        <h2 style={{ padding: "0 30px", marginBottom: 20 }}>
           Your Progress
         </h2>
 
         <div style={styles.progressGrid}>
-
           <SmallCard
-            icon={
-              <FiFileText />
-            }
+            icon={<FiFileText />}
             title="CV Review"
-            subtitle="Not analyzed yet"
-            subtitleColor="#DC2626"
-            button="Upload"
-            onClick={() =>
-              navigate(
-                "/cv-review"
-              )
-            }
+            subtitle={stats.cvReview.analyzed ? `Score: ${stats.cvReview.score}/100` : "Not analyzed yet"}
+            subtitleColor={stats.cvReview.analyzed ? "#0f7c82" : "#DC2626"}
+            button={stats.cvReview.analyzed ? "View" : "Upload"}
+            onClick={() => navigate("/cv-review")}
           />
 
           <SmallCard
-            icon={
-              <FiMap />
-            }
+            icon={<FiMap />}
             title="Career Plan"
-            subtitle="No roadmap yet"
-            subtitleColor="#94A3B8"
-            button="Create"
-            onClick={() =>
-              navigate(
-                "/career-planner"
-              )
-            }
+            subtitle={stats.careerPlan.created ? "Roadmap Active" : "No roadmap yet"}
+            subtitleColor={stats.careerPlan.created ? "#0f7c82" : "#94A3B8"}
+            button={stats.careerPlan.created ? "View" : "Create"}
+            onClick={() => navigate("/career-planner")}
           />
 
           <SmallCard
-            icon={
-              <FiMic />
-            }
+            icon={<FiMic />}
             title="Interview Practice"
-            subtitle="4 sessions done · Avg Score: 76/100"
-            subtitleColor="#0f7c82"
-            button="View"
+            subtitle={stats.interviews.count > 0 ? `${stats.interviews.count} sessions · Avg Score: ${stats.interviews.avgScore}/100` : "No sessions yet"}
+            subtitleColor={stats.interviews.count > 0 ? "#0f7c82" : "#94A3B8"}
+            button={stats.interviews.count > 0 ? "View" : "Practice"}
+            onClick={() => navigate("/interview-practice")}
           />
 
           <SmallCard
-            icon={
-              <FiBriefcase />
-            }
+            icon={<FiBriefcase />}
             title="Applications"
-            subtitle="6 active"
-            subtitleColor="#D97706"
+            subtitle={stats.applications.count > 0 ? `${stats.applications.count} active` : "No applications"}
+            subtitleColor={stats.applications.count > 0 ? "#D97706" : "#94A3B8"}
             button="View"
+            onClick={() => navigate("/my-applications")}
           />
-
         </div>
 
       </div>
@@ -480,11 +402,9 @@ function FeatureCard({
 
       <p
         onClick={onClick}
-        style={
-          styles.link
-        }
+        style={styles.link}
       >
-        Get Started →
+        Get Started
       </p>
 
     </div>
@@ -589,43 +509,40 @@ const styles = {
   },
 
   greetingCard: {
-    background:
-      "linear-gradient(135deg, #e0f7f5 0%, #f0faf9 100%)",
+    background: "linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%)",
+    color: "white",
     margin: 30,
-    borderRadius: 20,
-    padding: 30,
+    borderRadius: 24,
+    padding: 32,
     display: "flex",
-    justifyContent:
-      "space-between"
+    justifyContent: "space-between",
+    alignItems: "center",
+    boxShadow: "0 10px 25px -5px rgba(15, 124, 130, 0.4)"
   },
 
   progressBar: {
-    width: 220,
+    width: 200,
     height: 8,
-    background: "#eee",
+    background: "rgba(255,255,255,0.2)",
     borderRadius: 10,
-    margin:
-      "8px 0 15px"
+    margin: "8px 0 16px"
   },
 
   progressFill: {
     height: "100%",
-    background:
-      "#0f7c82",
+    background: "white",
     borderRadius: 10
   },
 
   outlineButton: {
-    border:
-      "1px solid #0f7c82",
-    background:
-      "white",
-    color:
-      "#0f7c82",
-    padding:
-      "8px 16px",
+    border: "none",
+    background: "white",
+    color: "#0f7c82",
+    padding: "8px 16px",
     borderRadius: 10,
-    cursor: "pointer"
+    cursor: "pointer",
+    fontWeight: 600,
+    width: "100%"
   },
 
   featureGrid: {

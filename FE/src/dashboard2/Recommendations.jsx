@@ -3,6 +3,7 @@ import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
 import { FiSearch, FiStar, FiInfo, FiBriefcase, FiMapPin, FiBook, FiCheckCircle, FiFilter } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import api from "../utils/api";
 import "./dashboard2.css";
 
 const candidatesData = [
@@ -61,17 +62,53 @@ const candidatesData = [
 ];
 
 export default function Recommendations() {
+  const [jobs, setJobs] = useState([]);
+  const [candidates, setCandidates] = useState([]);
   const [selectedJob, setSelectedJob] = useState("");
   const [status, setStatus] = useState("initial"); // initial, loading, results
   const [minScore, setMinScore] = useState(80);
   const [experienceLevel, setExperienceLevel] = useState("Mid-level");
   
-  const handleFindMatches = () => {
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await api.get("/jobs/company");
+        setJobs(res);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+      }
+    };
+    fetchJobs();
+  }, []);
+
+  const handleFindMatches = async () => {
     if (!selectedJob) return;
     setStatus("loading");
+    
+    try {
+      const res = await api.get(`/jobs/${selectedJob}/applications`);
+      const formatted = res.map(a => ({
+        id: a.id,
+        name: a.full_name || a.username,
+        initials: (a.full_name || a.username || "C").substring(0, 2).toUpperCase(),
+        score: a.ai_match_score || 0,
+        role: a.headline || "Candidate",
+        verified: true,
+        experience: "Unknown", // Placeholder since we don't have this in db yet
+        location: a.candidate_location || "Unknown",
+        education: "Unknown",
+        skills: [],
+        analysis: a.ai_analysis || "No analysis available."
+      }));
+      setCandidates(formatted);
+    } catch (err) {
+      console.error("Error fetching matches:", err);
+      setCandidates([]);
+    }
+
     setTimeout(() => {
       setStatus("results");
-    }, 2500);
+    }, 1500);
   };
 
   const SkeletonCard = () => (
@@ -113,9 +150,9 @@ export default function Recommendations() {
                     disabled={status === 'loading'}
                   >
                     <option value="" disabled>Search by role...</option>
-                    <option value="Frontend Developer">Frontend Developer</option>
-                    <option value="Project Management">Project Management</option>
-                    <option value="Data Analyst">Data Analyst</option>
+                    {jobs.map(job => (
+                      <option key={job.id} value={job.id}>{job.title}</option>
+                    ))}
                   </select>
                 </div>
                 {status === "loading" ? (
@@ -143,7 +180,7 @@ export default function Recommendations() {
                     <FiStar className="star-icon" />
                   </div>
                   <h3>Finding the best matches...</h3>
-                  <p>Analyzing skills, experience, and screening answers for {selectedJob}...</p>
+                  <p>Analyzing skills, experience, and screening answers for {jobs.find(j => j.id == selectedJob)?.title || "the selected role"}...</p>
                 </div>
                 
                 <div className="skeleton-container">
@@ -162,7 +199,7 @@ export default function Recommendations() {
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="results-header-row">
-                  <p>Displaying <strong>{candidatesData.length}</strong> candidates that match your criteria</p>
+                  <p>Displaying <strong>{candidates.length}</strong> candidates that match your criteria</p>
                   <div className="sort-wrapper">
                     <span className="sort-label">Urutkan:</span>
                     <select className="sort-select">
@@ -173,7 +210,7 @@ export default function Recommendations() {
 
                 <div className="results-layout">
                   <div className="candidate-list">
-                    {candidatesData.map(candidate => (
+                    {candidates.map(candidate => (
                       <div className="candidate-card" key={candidate.id}>
                         <div className="candidate-avatar-wrapper">
                           <div className="candidate-avatar">{candidate.initials}</div>

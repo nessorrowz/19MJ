@@ -9,6 +9,7 @@ const {
   registerCompany,
   login,
   getMe,
+  updateProfile,
   googleTokenLogin,
   requestPasswordReset,
   verifyPasswordResetPin,
@@ -21,6 +22,7 @@ router.post('/register/candidate', registerCandidate);
 router.post('/register/company',   registerCompany);
 router.post('/login',              login);
 router.get('/me', protect,         getMe);
+router.put('/profile', protect,    updateProfile);
 router.post('/forgot-password/request', forgotPasswordRequestLimiter, requestPasswordReset);
 router.post('/forgot-password/verify-pin', verifyPasswordResetPin);
 router.post('/forgot-password/reset', resetPasswordWithPin);

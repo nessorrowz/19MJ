@@ -4,6 +4,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import mammoth from "mammoth";
 import CandidateSidebar from "./CandidateSidebar";
+import CandidateHeader from "./CandidateHeader";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -11,8 +12,6 @@ const API_BASE = "http://localhost:3000/api/ai";
 
 export default function CVReview() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-  const profileKey = `candidateProfile_${currentUser.email}`;
-  const profile = JSON.parse(localStorage.getItem(profileKey) || "{}");
   const cvKey = `candidateCV_${currentUser.email}`;
 
   const [cvList, setCvList] = useState(() => JSON.parse(localStorage.getItem(cvKey) || "[]"));
@@ -189,21 +188,7 @@ export default function CVReview() {
         <CandidateSidebar active="cv" />
         <div style={S.main}>
           {/* Header */}
-          <div style={S.header}>
-            <h2 style={{ margin: 0, fontSize: 18, color: "#1e293b" }}>CV</h2>
-            <div style={S.headerUser}>
-              <FiBell size={18} color="#64748b" />
-              {profile.photo ? (
-                <img src={profile.photo} alt="profile" style={S.profileImg} />
-              ) : (
-                <div style={S.avatar}>{(profile.fullName || "U")[0]}</div>
-              )}
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{profile.fullName || "User"}</div>
-                <div style={{ fontSize: 12, color: "#64748b" }}>Job Seeker</div>
-              </div>
-            </div>
-          </div>
+          <CandidateHeader title="CV" />
 
           <div style={{ padding: "24px 32px" }}>
             {/* Breadcrumb */}
@@ -294,21 +279,7 @@ export default function CVReview() {
       <CandidateSidebar active="cv" />
       <div style={S.main}>
         {/* Header */}
-        <div style={S.header}>
-          <h2 style={{ margin: 0, fontSize: 18, color: "#1e293b" }}>CV</h2>
-          <div style={S.headerUser}>
-            <FiBell size={18} color="#64748b" />
-            {profile.photo ? (
-              <img src={profile.photo} alt="profile" style={S.profileImg} />
-            ) : (
-              <div style={S.avatar}>{(profile.fullName || "U")[0]}</div>
-            )}
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 14 }}>{profile.fullName || "User"}</div>
-              <div style={{ fontSize: 12, color: "#64748b" }}>Job Seeker</div>
-            </div>
-          </div>
-        </div>
+        <CandidateHeader title="CV" />
 
         <div style={{ padding: "24px 32px" }}>
           <h1 style={{ margin: 0, fontSize: 24, color: "#1e293b" }}>CV Review</h1>

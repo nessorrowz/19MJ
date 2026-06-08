@@ -50,6 +50,36 @@ CREATE TABLE IF NOT EXISTS companies (
   updated_at   TIMESTAMP DEFAULT NOW()
 );
 
+-- ── Jobs (linked ke companies/users) ───────────────────────
+CREATE TABLE IF NOT EXISTS jobs (
+  id SERIAL PRIMARY KEY,
+  company_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  location VARCHAR(150),
+  type VARCHAR(100),
+  experience_level VARCHAR(100),
+  salary_range VARCHAR(100),
+  description TEXT,
+  requirements TEXT,
+  skills JSONB DEFAULT '[]'::jsonb,
+  status VARCHAR(50) DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- ── Applications (linked ke jobs dan candidates) ───────────
+CREATE TABLE IF NOT EXISTS applications (
+  id SERIAL PRIMARY KEY,
+  job_id INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  candidate_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(50) DEFAULT 'pending',
+  ai_match_score INTEGER,
+  ai_analysis TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(job_id, candidate_id)
+);
+
 -- ── Index untuk pencarian cepat ────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_users_email        ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role         ON users(role);
@@ -76,6 +106,14 @@ CREATE TRIGGER candidates_updated_at
 
 CREATE TRIGGER companies_updated_at
   BEFORE UPDATE ON companies
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER jobs_updated_at
+  BEFORE UPDATE ON jobs
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER applications_updated_at
+  BEFORE UPDATE ON applications
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- â”€â”€ Permintaan reset password berbasis PIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

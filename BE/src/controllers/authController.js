@@ -376,13 +376,13 @@ const getMe = async (req, res) => {
 
     if (user.role === 'candidate') {
       const r = await pool.query(
-        'SELECT username, full_name, headline, summary FROM candidates WHERE user_id = $1',
+        'SELECT username, full_name, headline, summary, about, photo, experiences, education_list, skills, location FROM candidates WHERE user_id = $1',
         [user.id]
       );
       profile = r.rows[0] || {};
     } else if (user.role === 'company') {
       const r = await pool.query(
-        'SELECT company_name, industry, website, description FROM companies WHERE user_id = $1',
+        'SELECT company_name, industry, website, description, logo, location FROM companies WHERE user_id = $1',
         [user.id]
       );
       profile = r.rows[0] || {};
@@ -391,6 +391,60 @@ const getMe = async (req, res) => {
     res.status(200).json({ user: { ...user, ...profile } });
   } catch (err) {
     console.error('GetMe error:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan server.' });
+  }
+};
+
+// ============================================================
+// PUT /api/auth/profile  (protected)
+// ============================================================
+const updateProfile = async (req, res) => {
+  try {
+    const userRole = req.user.role;
+    const body = req.body;
+    
+    if (userRole === 'candidate') {
+      await pool.query(
+        `UPDATE candidates SET 
+          full_name = COALESCE($1, full_name),
+          headline = COALESCE($2, headline),
+          location = COALESCE($3, location),
+          about = COALESCE($4, about),
+          photo = COALESCE($5, photo),
+          experiences = COALESCE($6, experiences),
+          education_list = COALESCE($7, education_list),
+          skills = COALESCE($8, skills)
+         WHERE user_id = $9`,
+        [
+          body.fullName, 
+          body.headline, 
+          body.location, 
+          body.about, 
+          body.photo, 
+          JSON.stringify(body.experiences || []), 
+          JSON.stringify(body.educationList || []), 
+          JSON.stringify(body.skills || []), 
+          req.user.id
+        ]
+      );
+    } else if (userRole === 'company') {
+      // Company updates (can expand as needed)
+      await pool.query(
+        `UPDATE companies SET 
+          company_name = COALESCE($1, company_name),
+          industry = COALESCE($2, industry),
+          website = COALESCE($3, website),
+          description = COALESCE($4, description),
+          logo = COALESCE($5, logo),
+          location = COALESCE($6, location)
+         WHERE user_id = $7`,
+        [body.company_name, body.industry, body.website, body.description, body.logo, body.location, req.user.id]
+      );
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully' });
+  } catch (err) {
+    console.error('UpdateProfile error:', err);
     res.status(500).json({ message: 'Terjadi kesalahan server.' });
   }
 };
@@ -877,6 +931,7 @@ module.exports = {
   registerCompany,
   login,
   getMe,
+  updateProfile,
   googleTokenLogin,
   requestPasswordReset,
   verifyPasswordResetPin,

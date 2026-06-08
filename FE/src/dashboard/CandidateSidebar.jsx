@@ -85,8 +85,10 @@ export default function CandidateSidebar({
         />
 
         <MenuItem
+          active={active === "applications"}
           icon={<FiBriefcase />}
           text="My Applications"
+          onClick={() => navigate("/my-applications")}
         />
 
       </div>
