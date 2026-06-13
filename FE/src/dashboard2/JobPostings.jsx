@@ -9,8 +9,10 @@ import {
   FiMapPin,
   FiCalendar,
   FiChevronDown,
-  FiMoreHorizontal,
   FiArrowRight,
+  FiCheckCircle,
+  FiAlertCircle,
+  FiMoreHorizontal
 } from "react-icons/fi";
 import api from "../utils/api";
 
@@ -25,6 +27,12 @@ export default function JobPostings() {
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
   const [editingJob, setEditingJob] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
   const [jobToClose, setJobToClose] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [openMenuId, setOpenMenuId] = useState(null);
@@ -34,22 +42,6 @@ export default function JobPostings() {
     const handleClickOutside = () => setOpenMenuId(null);
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
-    loadJobs();
-
-    window.addEventListener(
-      "jobPostingUpdated",
-      loadJobs
-    );
-
-    return () => {
-      window.removeEventListener(
-        "jobPostingUpdated",
-        loadJobs
-      );
-    };
   }, []);
 
   const loadJobs = async () => {
@@ -69,13 +61,30 @@ export default function JobPostings() {
         requirements: job.requirements,
         skills: job.skills ? (typeof job.skills === 'string' ? JSON.parse(job.skills) : job.skills) : [],
         salaryRange: job.salary_range,
-        status: job.status || 'open'
+        status: job.status || 'open',
+        views: job.views || 0
       }));
       setJobs(formattedJobs);
     } catch (error) {
       console.error("Failed to load jobs:", error);
     }
   };
+
+  useEffect(() => {
+    loadJobs();
+
+    window.addEventListener(
+      "jobPostingUpdated",
+      loadJobs
+    );
+
+    return () => {
+      window.removeEventListener(
+        "jobPostingUpdated",
+        loadJobs
+      );
+    };
+  }, []);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) =>
@@ -90,6 +99,11 @@ export default function JobPostings() {
     0
   );
 
+  const totalViews = jobs.reduce(
+    (sum, job) => sum + (job.views || 0),
+    0
+  );
+
   const handleCloseAction = (job) => {
     setJobToClose(job);
     setOpenMenuId(null);
@@ -99,13 +113,15 @@ export default function JobPostings() {
     if (!jobToClose) return;
     try {
       await api.put(`/jobs/${jobToClose.id}/close`);
-      alert("Job posting closed successfully.");
-      loadJobs();
-      if (selectedJob && selectedJob.id === jobToClose.id) {
-        setSelectedJob({ ...selectedJob, status: 'closed' });
-      }
-    } catch(err) {
-      alert("Failed to close job: " + err.message);
+      setJobs(
+        jobs.map((j) =>
+          j.id === jobToClose.id ? { ...j, status: "closed" } : j
+        )
+      );
+      showToast("Job posting closed successfully.", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to close job: " + err.message, "error");
     }
     setJobToClose(null);
   };
@@ -132,7 +148,6 @@ export default function JobPostings() {
         skills: editForm.skills.split(',').map(s => s.trim()).filter(Boolean)
       };
       await api.put(`/jobs/${editingJob.id}`, payload);
-      alert("Job updated successfully.");
       loadJobs();
       if (selectedJob && selectedJob.id === editingJob.id) {
         setSelectedJob({
@@ -144,8 +159,10 @@ export default function JobPostings() {
         });
       }
       setEditingJob(null);
+      showToast("Job updated successfully.", "success");
     } catch(err) {
-      alert("Failed to update job: " + err.message);
+      console.error(err);
+      showToast("Failed to update job: " + err.message, "error");
     }
   };
 
@@ -216,7 +233,7 @@ export default function JobPostings() {
 
               <div>
                 <span>Total Views</span>
-                <h2>1.2k</h2>
+                <h2>{totalViews}</h2>
               </div>
             </div>
           </div>
@@ -535,6 +552,26 @@ export default function JobPostings() {
           </div>
         </div>
       )}
+      {toast.show && (
+        <div style={{
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: toast.type === 'error' ? '#fee2e2' : '#f0fdf4',
+          color: toast.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${toast.type === 'error' ? '#f87171' : '#4ade80'}`,
+          padding: '16px 24px', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex', alignItems: 'center', gap: 12,
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {toast.type === 'error' ? <FiAlertCircle size={20} /> : <FiCheckCircle size={20} />}
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.message}</span>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

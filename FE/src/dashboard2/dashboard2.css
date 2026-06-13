@@ -46,7 +46,8 @@
 ====================== */
 
 .company-sidebar {
-  width: 250px;
+  width: 260px;
+  min-width: 260px;
   background: linear-gradient(180deg,
       #d9edf8 0%,
       #c8e6f0 100%);
@@ -58,24 +59,26 @@
 
 .company-logo {
   width: 120px;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;
+  padding: 14px;
   border-radius: 12px;
+  margin-top: 10px;
   cursor: pointer;
   transition: 0.2s;
   font-size: 14px;
+  font-weight: 500;
+  color: #222;
 }
 
 .sidebar-item:hover {
@@ -83,7 +86,7 @@
 }
 
 .sidebar-item.active {
-  background: #15d1c4;
+  background: #0f7c82;
   color: white;
 }
 
@@ -92,7 +95,7 @@
 ====================== */
 
 .company-header {
-  height: 80px;
+  height: 88px;
   background: white;
   border-bottom: 1px solid #e5e7eb;
   padding: 0 32px;
@@ -145,7 +148,7 @@
 ====================== */
 
 .dashboard-content {
-  padding: 30px;
+  padding: 32px;
 }
 
 .dashboard-top {
@@ -313,7 +316,7 @@
 ====================== */
 
 .profile-container {
-  padding: 30px;
+  padding: 32px;
 }
 
 .profile-card {
@@ -1883,15 +1886,15 @@
 .recruit-status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .recruit-status-header strong { font-size: 15px; color: #2d3436; }
 .recruit-status-current { font-size: 11px; font-weight: 600; border: 1.5px solid; border-radius: 20px; padding: 3px 12px; }
-.recruit-action-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #e8ecef; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 8px; transition: all .2s; }
-.recruit-action-btn.accept { color: #00b894; border-color: #b8e6dc; }
-.recruit-action-btn.accept:hover, .recruit-action-btn.accept.selected { background: #e0f5f0; border-color: #00b894; }
-.recruit-action-btn.pending { color: #636e72; border-color: #dfe6e9; }
-.recruit-action-btn.pending:hover, .recruit-action-btn.pending.selected { background: #f5f6fa; }
-.recruit-action-btn.review { color: #0984e3; border-color: #a3d5ff; }
-.recruit-action-btn.review:hover, .recruit-action-btn.review.selected { background: #e8f4fd; border-color: #0984e3; }
-.recruit-action-btn.reject { color: #e17055; border-color: #fab1a0; }
-.recruit-action-btn.reject:hover, .recruit-action-btn.reject.selected { background: #fef0e6; border-color: #e17055; }
+.recruit-action-btn { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid transparent; background: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 8px; transition: all .2s; }
+.recruit-action-btn.accept { background: #00b894; color: #fff; border-color: #00b894; }
+.recruit-action-btn.accept:hover, .recruit-action-btn.accept.selected { background: #00a080; border-color: #00a080; }
+.recruit-action-btn.pending { background: #f1f5f9; color: #475569; border-color: #e2e8f0; font-weight: 500; }
+.recruit-action-btn.pending:hover, .recruit-action-btn.pending.selected { background: #e2e8f0; border-color: #cbd5e1; }
+.recruit-action-btn.review { background: #0984e3; color: #fff; border-color: #0984e3; }
+.recruit-action-btn.review:hover, .recruit-action-btn.review.selected { background: #0873c4; border-color: #0873c4; }
+.recruit-action-btn.reject { background: #e17055; color: #fff; border-color: #e17055; }
+.recruit-action-btn.reject:hover, .recruit-action-btn.reject.selected { background: #cc6045; border-color: #cc6045; }
 .recruit-notes-section { margin-top: 16px; }
 .recruit-notes-section strong { font-size: 14px; color: #2d3436; display: block; margin-bottom: 8px; }
 .recruit-notes-section textarea { width: 100%; border: 1px solid #e8ecef; border-radius: 10px; padding: 12px; font-size: 13px; resize: none; font-family: inherit; color: #636e72; }

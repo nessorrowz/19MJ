@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FiBell,
   FiCamera,
   FiMapPin,
   FiX,
   FiBriefcase,
-  FiBookOpen
+  FiBookOpen,
+  FiCheckCircle,
+  FiAlertCircle
 } from "react-icons/fi";
 
 import CandidateSidebar from "./CandidateSidebar";
@@ -36,17 +38,67 @@ export default function CandidateProfile() {
       education: currentUser.education || "",
       experiences: [],
       educationList: [],
-      skills: []
+      skills: [],
+      documents: []
     };
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [newSkill, setNewSkill] = useState("");
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [isDirty, setIsDirty] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  const handleSidebarNavigate = (path, executeNavigation) => {
+    if (isDirty) {
+      setPendingNavigation(() => executeNavigation);
+    } else {
+      executeNavigation();
+    }
+  };
+
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      pendingNavigation();
+      setPendingNavigation(null);
+    }
+  };
+
+  const cancelNavigation = () => {
+    setPendingNavigation(null);
+  };
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await api.get('/auth/me');
         const user = res.user;
+        const cachedStr = localStorage.getItem(CACHE_KEY);
+        let cachedDocs = [];
+        if (cachedStr) {
+          try {
+             cachedDocs = JSON.parse(cachedStr).documents || [];
+          } catch(e){}
+        }
+
         const newProfile = {
           photo: user.photo || "",
           fullName: user.full_name || user.username || "",
@@ -56,7 +108,8 @@ export default function CandidateProfile() {
           education: user.education || "",
           experiences: user.experiences || [],
           educationList: user.education_list || [],
-          skills: user.skills || []
+          skills: user.skills || [],
+          documents: user.documents || cachedDocs
         };
         setProfile(newProfile);
         localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
@@ -81,8 +134,6 @@ export default function CandidateProfile() {
     
     return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   };
-
-  const [newSkill, setNewSkill] = useState("");
 
   const [showExperienceForm, setShowExperienceForm] =
     useState(false);
@@ -159,6 +210,7 @@ export default function CandidateProfile() {
   // BASIC INPUT
   // =========================
   const handleChange = (e) => {
+    setIsDirty(true);
     setProfile({
       ...profile,
       [e.target.name]: e.target.value
@@ -178,6 +230,7 @@ export default function CandidateProfile() {
     const reader = new FileReader();
 
     reader.onload = () => {
+      setIsDirty(true);
       setProfile({
         ...profile,
         photo: reader.result
@@ -194,11 +247,12 @@ export default function CandidateProfile() {
   const saveProfile = async () => {
     try {
       await api.put('/auth/profile', profile);
+      setIsDirty(false);
       window.dispatchEvent(new Event('candidateProfileUpdated'));
-      alert("Profile saved successfully to the backend!");
+      showToast("Profile saved successfully!", "success");
     } catch (err) {
       console.error("Error saving profile", err);
-      alert("Failed to save profile. Please try again.");
+      showToast("Failed to save profile. Please try again.", "error");
     }
   };
 
@@ -213,6 +267,7 @@ export default function CandidateProfile() {
       newSkill.trim()
     ) {
 
+      setIsDirty(true);
       setProfile({
         ...profile,
         skills: [
@@ -228,22 +283,31 @@ export default function CandidateProfile() {
 
   const removeSkill = (index) => {
 
+    const updated = [...profile.skills];
+
+    updated.splice(index, 1);
+
+    setIsDirty(true);
     setProfile({
       ...profile,
-      skills:
-        profile.skills.filter(
-          (_, i) => i !== index
-        )
+      skills: updated
     });
 
   };
 
+  const removeDocument = (index) => {
+    const updated = [...profile.documents];
+    updated.splice(index, 1);
+    const newProfile = { ...profile, documents: updated };
+    setProfile(newProfile);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
+  };
 
   // =========================
   // EXPERIENCE
   // =========================
   const handleExperienceChange = (e) => {
-
+    setIsDirty(true);
     setExperienceForm({
       ...experienceForm,
       [e.target.name]: e.target.value
@@ -279,6 +343,7 @@ export default function CandidateProfile() {
 
     }
 
+    setIsDirty(true);
     setProfile({
       ...profile,
       experiences: updated
@@ -314,7 +379,7 @@ export default function CandidateProfile() {
 
 
   const removeExperience = (index) => {
-
+    setIsDirty(true);
     setProfile({
       ...profile,
       experiences:
@@ -329,7 +394,7 @@ export default function CandidateProfile() {
   // EDUCATION
   // =========================
   const handleEducationChange = (e) => {
-
+    setIsDirty(true);
     setEducationForm({
       ...educationForm,
       [e.target.name]: e.target.value
@@ -365,6 +430,7 @@ export default function CandidateProfile() {
 
     }
 
+    setIsDirty(true);
     setProfile({
       ...profile,
       educationList: updated
@@ -398,7 +464,7 @@ export default function CandidateProfile() {
 
 
   const removeEducation = (index) => {
-
+    setIsDirty(true);
     setProfile({
       ...profile,
 
@@ -415,7 +481,7 @@ export default function CandidateProfile() {
   return (
     <div style={styles.container}>
 
-      <CandidateSidebar active="my-profile" />
+      <CandidateSidebar active="my-profile" onNavigate={handleSidebarNavigate} />
 
       <div style={styles.main}>
 
@@ -483,11 +549,11 @@ export default function CandidateProfile() {
               <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Full Name</p>
-                  <input name="fullName" value={profile.fullName} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Budi Santoso" />
+                  <input name="fullName" value={profile.fullName || ""} onChange={handleChange} style={styles.input} placeholder="e.g. Budi Santoso" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Professional Headline</p>
-                  <input name="headline" value={profile.headline} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Senior Software Engineer" />
+                  <input name="headline" value={profile.headline || ""} onChange={handleChange} style={styles.input} placeholder="e.g. Senior Software Engineer" />
                 </div>
               </div>
 
@@ -1228,18 +1294,125 @@ export default function CandidateProfile() {
               Upload your resume, transcripts, or professional certifications to make your profile stand out.
             </p>
 
-            <div style={{ ...styles.expCard, minHeight: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', border: '2px dashed #cbd5e1', cursor: 'pointer' }}>
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              style={{ ...styles.expCard, minHeight: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', border: '2px dashed #cbd5e1', cursor: 'pointer' }}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                style={{ display: 'none' }} 
+                accept=".pdf,.docx,.jpg,.jpeg,.png"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    const docInfo = {
+                      name: file.name,
+                      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
+                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                      url: URL.createObjectURL(file)
+                    };
+                    const updatedDocs = [...(profile.documents || []), docInfo];
+                    const newProfile = { ...profile, documents: updatedDocs };
+                    setProfile(newProfile);
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
+                    // Reset input
+                    e.target.value = null;
+                  }
+                }}
+              />
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#94a3b8', marginBottom: 16 }}>
                 <FiBookOpen size={28} />
               </div>
               <h4 style={{ margin: '0 0 8px', fontSize: 18, color: '#334155' }}>Upload a file</h4>
               <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>PDF, DOCX, or Image (Max 5MB)</p>
             </div>
+
+            {/* DOCUMENT LIST */}
+            {profile.documents && profile.documents.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ fontSize: 14, color: '#64748b', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Uploaded Documents</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {profile.documents.map((doc, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 8, background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FiBookOpen size={20} />
+                        </div>
+                        <div>
+                          <strong style={{ display: 'block', fontSize: 15, color: '#1e293b', marginBottom: 4 }}>{doc.name}</strong>
+                          <span style={{ fontSize: 13, color: '#64748b' }}>{doc.date} • {doc.size}</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button onClick={() => {
+                          if (doc.url) window.open(doc.url, '_blank');
+                          else showToast('This document is not available for preview.', 'error');
+                        }} style={{ background: 'none', border: 'none', color: '#0f7c82', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>View</button>
+                        <button onClick={() => removeDocument(index)} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         </div>
 
       </div>
+
+      {/* UNSAVED CHANGES MODAL */}
+      {pendingNavigation && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'white', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                <FiAlertCircle />
+              </div>
+            </div>
+            <h3 style={{ textAlign: 'center', margin: '0 0 12px 0', color: '#0f172a', fontSize: 20 }}>Unsaved Changes</h3>
+            <p style={{ textAlign: 'center', color: '#64748b', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+              You have made changes to your profile that haven't been saved. Are you sure you want to leave this page?
+            </p>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button 
+                onClick={cancelNavigation}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Keep Editing
+              </button>
+              <button 
+                onClick={confirmNavigation}
+                style={{ flex: 1, padding: '12px 0', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast.show && (
+        <div style={{
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: toast.type === 'error' ? '#fee2e2' : '#f0fdf4',
+          color: toast.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${toast.type === 'error' ? '#f87171' : '#4ade80'}`,
+          padding: '16px 24px', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex', alignItems: 'center', gap: 12,
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {toast.type === 'error' ? <FiAlertCircle size={20} /> : <FiCheckCircle size={20} />}
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.message}</span>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -27,6 +27,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(passport.initialize());
 
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 const jobRoutes = require('./routes/jobRoutes');
 
 app.use('/api/auth', authRoutes);

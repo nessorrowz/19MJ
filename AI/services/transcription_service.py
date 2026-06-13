@@ -60,10 +60,10 @@ def validate_audio_path(audio_path: str) -> Path:
         raise FileNotFoundError("File audio tidak ditemukan.")
 
     if not path.is_file():
-        raise ValueError("Path audio bukan file.")
+        raise ValueError(f"Path audio bukan file: {path}")
 
     if not path.is_relative_to(allowed_root):
-        raise ValueError("Path audio berada di luar direktori yang diizinkan.")
+        raise ValueError(f"Path audio {path} berada di luar direktori yang diizinkan {allowed_root}")
 
     return path
 

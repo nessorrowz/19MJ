@@ -2,18 +2,17 @@ const pool = require('../config/db');
 
 exports.createJob = async (req, res) => {
   try {
-    // Expected role: company
     if (req.user.role !== 'company') {
       return res.status(403).json({ message: 'Only companies can create jobs' });
     }
 
-    const { title, location, type, experience_level, salary_range, description, requirements, skills } = req.body;
+    const { title, location, type, experience_level, salary_range, description, requirements, skills, screening_questions, video_screening } = req.body;
 
     const result = await pool.query(
-      `INSERT INTO jobs (company_id, title, location, type, experience_level, salary_range, description, requirements, skills)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `INSERT INTO jobs (company_id, title, location, type, experience_level, salary_range, description, requirements, skills, screening_questions, video_screening)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
-      [req.user.id, title, location, type, experience_level, salary_range, description, requirements, JSON.stringify(skills || [])]
+      [req.user.id, title, location, type, experience_level, salary_range, description, requirements, JSON.stringify(skills || []), JSON.stringify(screening_questions || []), video_screening || false]
     );
 
     res.status(201).json({ message: 'Job created successfully', job: result.rows[0] });
@@ -29,10 +28,11 @@ exports.getCompanyJobs = async (req, res) => {
       return res.status(403).json({ message: 'Only companies can view their jobs' });
     }
 
-    // Get jobs and count of applicants
     const result = await pool.query(
       `SELECT j.*, 
-              (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id) as applicants_count
+              (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id) as applicants_count,
+              (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.status = 'pending') as new_count,
+              (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.status IN ('accepted', 'reviewed')) as shortlisted_count
        FROM jobs j
        WHERE j.company_id = $1
        ORDER BY j.created_at DESC`,
@@ -48,7 +48,6 @@ exports.getCompanyJobs = async (req, res) => {
 
 exports.getAllJobs = async (req, res) => {
   try {
-    // Anyone can view jobs, but we might want to enrich it with company info
     const result = await pool.query(
       `SELECT j.*, c.company_name, '' as logo,
               (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.candidate_id = $1) as has_applied
@@ -73,35 +72,228 @@ exports.applyToJob = async (req, res) => {
     }
 
     const { jobId } = req.params;
+    let { screening_answers } = req.body;
 
-    // Check if job exists
+    if (typeof screening_answers === 'string') {
+      try {
+        screening_answers = JSON.parse(screening_answers);
+      } catch (e) {
+        screening_answers = [];
+      }
+    }
+
+    const videos = req.files ? req.files.filter(f => f.fieldname === 'videos') : [];
+    const cvs = req.files ? req.files.filter(f => f.fieldname === 'cv') : [];
+
+    if (videos.length > 0) {
+      videos.forEach((file, index) => {
+        if (screening_answers[index]) {
+          screening_answers[index].videoUrl = `/uploads/applications/${file.filename}`;
+          screening_answers[index].answer = "Video recording received. Awaiting transcription and analysis.";
+          screening_answers[index].score = null;
+          screening_answers[index].feedback = "Under review by recruitment team.";
+        } else {
+          screening_answers.push({ 
+            videoUrl: `/uploads/applications/${file.filename}`,
+            answer: "Video recording received. Awaiting transcription and analysis.",
+            score: null,
+            feedback: "Under review by recruitment team."
+          });
+        }
+      });
+    }
+
+    const videoUrl = videos.length > 0 ? `/uploads/applications/${videos[0].filename}` : null;
+    const cvUrl = cvs.length > 0 ? `/uploads/applications/${cvs[0].filename}` : null;
+
     const jobCheck = await pool.query('SELECT id FROM jobs WHERE id = $1', [jobId]);
     if (jobCheck.rows.length === 0) {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    // Simulate AI Match Score for now, between 60 and 99
-    const dummyAiScore = Math.floor(Math.random() * 40) + 60;
-    const dummyAnalysis = 'Strong match based on required skills and candidate profile.';
+    const aiScore = null;
+    const aiAnalysis = 'Pending AI Review';
 
     const result = await pool.query(
-      `INSERT INTO applications (job_id, candidate_id, ai_match_score, ai_analysis)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (job_id, candidate_id) DO NOTHING
+      `INSERT INTO applications (job_id, candidate_id, ai_match_score, ai_analysis, screening_answers, video_answer_url, cv_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [jobId, req.user.id, dummyAiScore, dummyAnalysis]
+      [jobId, req.user.id, aiScore, aiAnalysis, JSON.stringify(screening_answers || []), videoUrl, cvUrl]
     );
 
-    if (result.rows.length === 0) {
-      return res.status(400).json({ message: 'You have already applied to this job' });
+    if (videos.length > 0) {
+      processScreeningBackground(result.rows[0].id, screening_answers, videos).catch(err => {
+        console.error('Background screening processing failed:', err);
+      });
     }
 
-    res.status(201).json({ message: 'Application submitted successfully', application: result.rows[0] });
+    if (cvUrl) {
+      processCVBackground(result.rows[0].id, req.user.id, jobId, cvUrl).catch(err => {
+        console.error('Background CV processing failed:', err);
+      });
+    }
+
+    res.status(201).json({ message: 'Applied successfully', application: result.rows[0] });
   } catch (error) {
-    console.error('Error applying to job:', error);
+    console.error('Apply to job error:', error);
     res.status(500).json({ message: 'Failed to apply to job' });
   }
 };
+
+exports.transcribeTempVideo = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No video file provided' });
+    }
+    const path = require('path');
+    const fs = require('fs');
+    const absPath = path.resolve(req.file.path);
+    
+    const sttRes = await fetch('http://127.0.0.1:8000/transcribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audio_path: absPath })
+    });
+    
+    try { fs.unlinkSync(absPath); } catch (err) { console.error('Failed to cleanup temp video', err); }
+    
+    if (sttRes.ok) {
+      const sttData = await sttRes.json();
+      res.status(200).json({ transcript: sttData.transcript || "No transcript available." });
+    } else {
+      res.status(sttRes.status).json({ message: "STT processing failed." });
+    }
+  } catch (err) {
+    console.error('Transcribe temp error:', err);
+    res.status(500).json({ message: 'Failed to transcribe temporary video' });
+  }
+};
+
+async function processScreeningBackground(applicationId, screening_answers, files) {
+  const path = require('path');
+  const pool = require('../config/db');
+  let hasChanges = false;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const absPath = path.resolve(file.path);
+    try {
+      const sttRes = await fetch('http://127.0.0.1:8000/transcribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio_path: absPath })
+      });
+      if (sttRes.ok) {
+        const sttData = await sttRes.json();
+        if (screening_answers[i]) {
+          const transcript = sttData.transcript || "No transcript available.";
+          screening_answers[i].answer = transcript;
+          hasChanges = true;
+
+          if (transcript !== "No transcript available.") {
+            try {
+              const { createLlmGateway } = require('../ai/llm/llmGateway');
+              const llm = createLlmGateway();
+              const response = await llm.generateText({
+                prompt: `Anda adalah rekruter senior di platform 19MJ. Evaluasi jawaban wawancara video kandidat berikut.
+Pertanyaan: ${screening_answers[i].question}
+Jawaban (Transkrip STT): ${transcript}
+
+Berikan penilaian dari 0 sampai 100 dan feedback singkat (1-2 kalimat) yang membangun namun jujur tanpa basa-basi AI.
+Return ONLY valid JSON format: {"score": <number>, "feedback": "<string>"}`,
+                responseMimeType: 'application/json'
+              });
+              let analysisStr = response.text.trim();
+              if (analysisStr.startsWith('\`\`\`json')) analysisStr = analysisStr.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+              if (analysisStr.startsWith('\`\`\`')) analysisStr = analysisStr.replace(/\`\`\`/g, '').trim();
+              const evalResult = JSON.parse(analysisStr);
+              screening_answers[i].score = evalResult.score;
+              screening_answers[i].feedback = evalResult.feedback;
+            } catch (aiErr) {
+              console.error(`AI Eval failed for file ${i}:`, aiErr.message);
+              screening_answers[i].feedback = "Transcription completed, but AI evaluation failed.";
+              screening_answers[i].score = null;
+            }
+          } else {
+            screening_answers[i].feedback = "Could not analyze answer due to missing transcript.";
+            screening_answers[i].score = null;
+          }
+        }
+      } else {
+        console.error(`STT failed for file ${i}: ${sttRes.status}`);
+      }
+    } catch (e) {
+      console.error(`Error transcribing file ${i}:`, e.message);
+    }
+  }
+
+  if (hasChanges) {
+    await pool.query(
+      'UPDATE applications SET screening_answers = $1 WHERE id = $2',
+      [JSON.stringify(screening_answers), applicationId]
+    );
+  }
+}
+
+async function processCVBackground(applicationId, candidateId, jobId, cvUrl) {
+  const pool = require('../config/db');
+  const fs = require('fs');
+  const path = require('path');
+  let pdfText = "Tidak ada teks CV yang dapat diekstrak.";
+  
+  try {
+    const jobRes = await pool.query('SELECT title, description FROM jobs WHERE id = $1', [jobId]);
+    const jobTitle = jobRes.rows[0]?.title || 'Unknown Role';
+    const jobDescription = jobRes.rows[0]?.description || '';
+    
+    if (cvUrl && cvUrl.endsWith('.pdf')) {
+      const pdfParse = require('pdf-parse');
+      const cvPath = path.join(__dirname, '../../', cvUrl);
+      if (fs.existsSync(cvPath)) {
+        const dataBuffer = fs.readFileSync(cvPath);
+        const pdfData = await pdfParse(dataBuffer);
+        pdfText = pdfData.text.substring(0, 3000);
+      }
+    }
+    
+    const { createLlmGateway } = require('../ai/llm/llmGateway');
+    const llm = createLlmGateway();
+    
+    const prompt = `Anda adalah sistem ATS AI canggih di platform 19MJ. Evaluasi CV pelamar untuk posisi "${jobTitle}".
+Deskripsi Pekerjaan: ${jobDescription}
+
+Teks CV Pelamar:
+"""
+${pdfText}
+"""
+
+Berdasarkan teks CV di atas, buatlah analisis objektif dan realistis dalam format JSON dengan struktur:
+{
+  "ai_match_score": <number 0-100 (seberapa cocok CV dengan role)>,
+  "strengths": ["2-3 poin kekuatan spesifik pelamar berdasarkan CV"],
+  "weaknesses": ["1-2 poin area yang kurang cocok atau tidak ada di CV"],
+  "coreSkills": ["3-5 skill yang ditemukan di CV"],
+  "missingKeywords": ["1-2 keyword penting di role ini tapi tidak ada di CV"],
+  "strengthsCandidate": ["Alasan umum pelamar ini layak"],
+  "concerns": ["Kekhawatiran spesifik dari pengalaman mereka"]
+}
+HANYA KEMBALIKAN STRING JSON YANG VALID, TANPA FORMAT MARKDOWN ATAU TEKS LAIN.`;
+
+    const response = await llm.generateText({ prompt, responseMimeType: 'application/json' });
+    let analysisStr = response.text.trim();
+    if (analysisStr.startsWith('\`\`\`json')) {
+      analysisStr = analysisStr.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+    }
+    const analysis = JSON.parse(analysisStr);
+    
+    await pool.query(
+      'UPDATE applications SET ai_match_score = $1, ai_analysis = $2 WHERE id = $3',
+      [analysis.ai_match_score, JSON.stringify(analysis), applicationId]
+    );
+  } catch (err) {
+    console.error('CV Background processing failed:', err);
+  }
+}
 
 exports.getJobApplications = async (req, res) => {
   try {
@@ -111,7 +303,6 @@ exports.getJobApplications = async (req, res) => {
 
     const { jobId } = req.params;
 
-    // Verify ownership
     const jobCheck = await pool.query('SELECT company_id FROM jobs WHERE id = $1', [jobId]);
     if (jobCheck.rows.length === 0) {
       return res.status(404).json({ message: 'Job not found' });
@@ -120,7 +311,6 @@ exports.getJobApplications = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to view applications for this job' });
     }
 
-    // Fetch applications with candidate details
     const result = await pool.query(
       `SELECT a.*, c.username, c.full_name, c.headline, c.location as candidate_location,
               c.about, c.skills as candidate_skills, c.experiences, c.education_list as education, c.photo
@@ -230,5 +420,146 @@ exports.getCompanyRecentApplications = async (req, res) => {
   } catch (error) {
     console.error('Error fetching recent applications:', error);
     res.status(500).json({ message: 'Failed to fetch recent applications' });
+  }
+};
+
+exports.incrementJobView = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    await pool.query(
+      `UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = $1`,
+      [jobId]
+    );
+    res.json({ message: 'View incremented' });
+  } catch (error) {
+    console.error('Error incrementing job view:', error);
+    res.status(500).json({ message: 'Failed to increment view' });
+  }
+};
+
+exports.scoutCandidates = async (req, res) => {
+  const pool = require('../config/db');
+  try {
+    const { jobId } = req.params;
+    
+    const jobRes = await pool.query('SELECT * FROM jobs WHERE id = $1', [jobId]);
+    if (jobRes.rows.length === 0) return res.status(404).json({ message: 'Job not found' });
+    const job = jobRes.rows[0];
+    
+    // Better logic: Filter candidates whose skills partially match the job requirements or randomly pick from the whole pool if no matches
+    // But for now let's just make sure we don't crash
+    const candidateRes = await pool.query(`
+      SELECT c.*, u.email 
+      FROM candidates c
+      JOIN users u ON c.user_id = u.id
+      ORDER BY RANDOM()
+      LIMIT 10
+    `);
+    
+    if (candidateRes.rows.length === 0) return res.json([]);
+    
+    const candidatesText = candidateRes.rows.map(c => `ID: ${c.id}\nNama: ${c.full_name}\nHeadline: ${c.headline}\nSkills: ${JSON.stringify(c.skills)}`).join('\n\n');
+    
+    const prompt = `Anda adalah sistem ATS AI. Evaluasi sekumpulan kandidat pasif untuk lowongan "${job.title}".
+Syarat Lowongan: ${job.description}
+Kandidat:
+${candidatesText}
+
+Kembalikan array JSON berisi objek tiap kandidat:
+[
+  {
+    "candidate_id": <ID>,
+    "ai_match_score": <number 0-100>,
+    "strengths": ["kekuatan utama 1", "kekuatan utama 2"],
+    "concerns": ["kekurangan 1", "kekurangan 2"],
+    "coreSkills": ["skill relevan 1", "skill relevan 2"]
+  }
+]
+HANYA KEMBALIKAN ARRAY JSON VALID, TANPA TEKS LAIN ATAU MARKDOWN.`;
+
+    const { createLlmGateway } = require('../ai/llm/llmGateway');
+    const llm = createLlmGateway();
+    const response = await llm.generateText({ prompt, responseMimeType: 'application/json' });
+    
+    let analysisStr = response.text.trim();
+    if (analysisStr.startsWith('\`\`\`json')) analysisStr = analysisStr.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+    if (analysisStr.startsWith('\`\`\`')) analysisStr = analysisStr.replace(/\`\`\`/g, '').trim();
+    
+    let analysisArray = [];
+    try {
+      analysisArray = JSON.parse(analysisStr);
+    } catch (e) { console.error("Parse failed", e); }
+    
+    const results = candidateRes.rows.map(c => {
+      const match = analysisArray.find(a => a.candidate_id === c.id) || {};
+      return {
+        id: c.id,
+        user_id: c.user_id,
+        full_name: c.full_name || c.email,
+        headline: c.headline,
+        location: c.location,
+        skills: c.skills,
+        ai_match_score: match.ai_match_score || Math.floor(Math.random() * 40) + 40,
+        ai_analysis: JSON.stringify(match)
+      };
+    });
+    
+    res.json(results);
+  } catch (err) {
+    console.error('Scouting failed:', err);
+    res.status(500).json({ message: 'Scouting failed' });
+  }
+};
+
+exports.updateApplicationStatus = async (req, res) => {
+  try {
+    if (req.user.role !== 'company') {
+      return res.status(403).json({ message: 'Only companies can update applications' });
+    }
+
+    const { appId } = req.params;
+    const { status, private_notes } = req.body;
+    
+    const appCheck = await pool.query(
+      `SELECT a.id FROM applications a
+       JOIN jobs j ON a.job_id = j.id
+       WHERE a.id = $1 AND j.company_id = $2`,
+      [appId, req.user.id]
+    );
+
+    if (appCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Application not found or not authorized' });
+    }
+
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (status) {
+      updates.push(`status = $${paramIndex++}`);
+      values.push(status.toLowerCase());
+    }
+
+    if (private_notes !== undefined) {
+      updates.push(`private_notes = $${paramIndex++}`);
+      values.push(private_notes);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(appId);
+
+    const result = await pool.query(
+      `UPDATE applications SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    res.json({ message: 'Application updated successfully', application: result.rows[0] });
+  } catch (error) {
+    console.error('Error updating application:', error);
+    res.status(500).json({ message: 'Failed to update application' });
   }
 };

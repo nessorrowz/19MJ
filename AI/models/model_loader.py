@@ -82,7 +82,7 @@ def get_allowed_audio_root() -> Path:
 
 def workspace_default_audio_root(current_dir: Path) -> Path:
     workspace_dir = current_dir.parent
-    return workspace_dir / "BE" / "storage" / "interviews"
+    return workspace_dir / "BE"
 
 
 def parse_bool_env(name: str, default: bool) -> bool:

@@ -17,52 +17,16 @@ import {
   FiArrowRight,
   FiChevronDown,
 } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
 import api from "../utils/api";
 import "./Dashboard2.css";
 
-// ── dummy data ──
-const JOBS = [
-  { id: 1, title: "Senior Backend Engineer", category: "Engineering", total: 18, newCount: 6, shortlisted: 3 },
-  { id: 2, title: "Product Designer", category: "Design", total: 42, newCount: 12, shortlisted: 5 },
-  { id: 3, title: "Marketing Manager", category: "Marketing", total: 9, newCount: 2, shortlisted: 1 },
-];
-
-const APPLICANTS = [
-  { id: 1, name: "Sarah Jenkins", initials: "SJ", role: "Senior Backend Engineer", date: "Oct 24, 2026", score: 92, status: "ACCEPTED" },
-  { id: 2, name: "Malik Thomas", initials: "MT", role: "Senior Backend Engineer", date: "Oct 23, 2026", score: 85, status: "REVIEWED" },
-  { id: 3, name: "Elena Dina", initials: "ED", role: "Senior Backend Engineer", date: "Oct 22, 2026", score: 74, status: "PENDING REVIEW" },
-  { id: 4, name: "Kevin Solio", initials: "KS", role: "Product Designer", date: "Oct 21, 2026", score: 58, status: "REVIEWED" },
-  { id: 5, name: "Latif Mario", initials: "LM", role: "Product Designer", date: "Oct 20, 2026", score: null, status: "PENDING REVIEW" },
-];
-
-const CANDIDATE = {
-  name: "Budi Santoso", initials: "BS", title: "Senior Backend Engineer | Node.js & AWS",
-  location: "Jakarta, ID", remote: "Remote", experience: "5 years Exp.",
-  email: "budi.santoso@email.com", phone: "+62 812 3456 7890",
-  summary: "I am a passionate backend engineer with 8+ years of experience building scalable microservices and APIs. I enjoy tackling complex architectural challenges and optimizing database performance. I've led transitions from monolith to microservices at my previous two companies, improving system latency by 40%. Looking for a fast-paced team building impactful products.",
-  scoreCV: 85, scoreInterview: 90, totalScore: 87.5,
-  experiences: [
-    { role: "Backend Lead", company: "TechCorp", period: "2023 - Present" },
-    { role: "Software Engineer", company: "Innovate Inc", period: "2019 - 2023" },
-  ],
-  skills: ["Node.js", "AWS", "System Design", "Microservices", "TypeScript"],
-  coreSkills: ["Node.js", "AWS", "System Design", "Microservices", "TypeScript", "PostgreSQL", "Redis"],
-  missingKeywords: ["GraphQL", "Docker", "Kubernetes"],
-  strengths: ["Strong backend framework experience", "Clear microservices architecture skills"],
-  weaknesses: ["Lacks front-end frameworks", "Short tenure at previous role"],
-  strengthsCandidate: ["Exceeds required years of experience", "Perfect skill overlap (Node.js, AWS)", "Excellent communication in screening", "Strong backend framework experience", "Clear microservices architecture skills"],
-  concerns: ["No experience with your specific CI/CD tool (GitHub Actions)", "High salary expectations based on profile", "Lacks front-end frameworks", "Short tenure at previous role"],
-  matchPercent: 93,
-  interviews: [
-    { question: "Tell me about a time you had to design a scalable architecture.", score: 95, feedback: "Exceptional answer. Provided a clear example using the STAR method and demonstrated deep technical knowledge.", transcript: "In my last role at TechCorp, we were transitioning from a monolithic architecture to microservices. I led the design of the new user authentication service. We used Node.js with Redis for session management and PostgreSQL for persistent data. The challenge was ensuring low latency during peak load times..." },
-    { question: "How do you handle performance bottlenecks in a Node.js application?", score: 88, feedback: "Strong technical understanding. Accurately identified tools and strategies for both CPU and I/O bound issues.", transcript: "" },
-  ],
-  cvFile: "Sarah_Jenkins_CV_2026.pdf", cvDate: "Oct 24, 2026",
-};
+// No dummy data needed, everything is fetched from API.
 
 export default function Recruitment() {
+  const navigate = useNavigate();
   const [view, setView] = useState("overview"); // overview | applicants | detail
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
@@ -92,9 +56,9 @@ export default function Recruitment() {
           id: j.id,
           title: j.title,
           category: j.type || "General",
-          total: j.applicants_count,
-          newCount: 0, // Mock for now
-          shortlisted: 0, // Mock for now
+          total: Number(j.applicants_count) || 0,
+          newCount: Number(j.new_count) || 0,
+          shortlisted: Number(j.shortlisted_count) || 0,
         })));
       } catch (err) {
         console.error("Error fetching jobs:", err);
@@ -115,8 +79,14 @@ export default function Recruitment() {
         const parsedSkills = a.candidate_skills ? (typeof a.candidate_skills === 'string' ? JSON.parse(a.candidate_skills || '[]') : a.candidate_skills) : [];
         const parsedExperiences = a.experiences ? (typeof a.experiences === 'string' ? JSON.parse(a.experiences || '[]') : a.experiences) : [];
         
+        let cvAnalysis = {};
+        try {
+          cvAnalysis = a.ai_analysis && a.ai_analysis.startsWith('{') ? JSON.parse(a.ai_analysis) : {};
+        } catch(e) {}
+        
         return {
           id: a.id,
+          candidateId: a.candidate_id,
           name: a.full_name || a.username,
           initials: (a.full_name || a.username || "C").substring(0, 2).toUpperCase(),
           title: a.headline || job.title,
@@ -129,17 +99,40 @@ export default function Recruitment() {
           experience: parsedExperiences.length ? `${parsedExperiences.length} roles` : "Entry Level",
           email: `${a.username}@email.com`, 
           phone: "+62 000 0000 0000",
-          summary: a.about || "No summary provided.",
+          summary: a.ai_analysis && a.ai_analysis.startsWith('{') ? "System Review Completed" : (a.ai_analysis || "Pending System Analysis."),
           experiences: parsedExperiences.map(e => ({ role: e.title, company: e.company, period: e.date })),
           skills: parsedSkills,
-          coreSkills: parsedSkills,
-          missingKeywords: [],
-          strengthsCandidate: ["Matches requested profile"],
-          concerns: ["Needs technical interview validation"],
-          matchPercent: a.ai_match_score || 0,
-          interviews: [],
-          cvFile: "Resume.pdf",
-          cvDate: new Date(a.created_at).toLocaleDateString()
+          strengths: cvAnalysis.strengths || [],
+          weaknesses: cvAnalysis.weaknesses || [],
+          coreSkills: cvAnalysis.coreSkills || [],
+          missingKeywords: cvAnalysis.missingKeywords || [],
+          strengthsCandidate: cvAnalysis.strengthsCandidate || [],
+          concerns: cvAnalysis.concerns || [],
+          scoreCV: a.ai_match_score || null,
+          scoreInterview: null,
+          totalScore: a.ai_match_score || null,
+          matchPercent: a.ai_match_score || null,
+          interviews: (() => {
+            try {
+              let answers = a.screening_answers;
+              if (typeof answers === 'string') answers = JSON.parse(answers);
+              if (!Array.isArray(answers)) return [];
+              return answers.map((ans, i) => ({
+                 question: ans.question || `Screening Question ${i+1}`,
+                 score: ans.score || null,
+                 feedback: ans.feedback || "Screening response",
+                 transcript: ans.answer || "-",
+                 videoUrl: ans.videoUrl
+              }));
+            } catch (e) {
+              return [];
+            }
+          })(),
+          cvFile: a.cv_url ? a.cv_url.split('/').pop() : null,
+          cv_url: a.cv_url,
+          cvDate: new Date(a.created_at).toLocaleDateString(),
+          videoUrl: a.video_answer_url,
+          privateNote: a.private_notes || ""
         };
       }));
     } catch (err) {
@@ -148,7 +141,13 @@ export default function Recruitment() {
     }
   };
 
-  const openDetail = (c) => { setSelectedCandidate(c); setCandidateStatus(c.status); setCandidateTab("overview"); setView("detail"); };
+  const openDetail = (c) => { 
+    setSelectedCandidate(c); 
+    setCandidateStatus(c.status); 
+    setPrivateNote(c.privateNote); 
+    setCandidateTab("overview"); 
+    setView("detail"); 
+  };
   const backToOverview = () => { setView("overview"); setSelectedJob(null); };
   const backToApplicants = () => { setView("applicants"); setSelectedCandidate(null); };
 
@@ -159,6 +158,27 @@ export default function Recruitment() {
     if (filter === "Rejected") return a.status === "REJECTED";
     return true;
   }).filter((a) => a.name.toLowerCase().includes(searchApplicant.toLowerCase()));
+
+  const updateStatus = async (newStatus) => {
+    try {
+      setCandidateStatus(newStatus);
+      await api.patch(`/jobs/applications/${selectedCandidate.id}/status`, { status: newStatus.toLowerCase() });
+      
+      // Update local applicants list
+      setApplicants(prev => prev.map(a => a.id === selectedCandidate.id ? { ...a, status: newStatus } : a));
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
+
+  const updateNotes = async () => {
+    try {
+      await api.patch(`/jobs/applications/${selectedCandidate.id}/status`, { private_notes: privateNote });
+      alert("Private note saved successfully!");
+    } catch (err) {
+      console.error("Failed to save note", err);
+    }
+  };
 
   const statusColor = (s) => {
     if (s === "ACCEPTED") return "#00b894";
@@ -257,10 +277,20 @@ export default function Recruitment() {
                 </div>
                 {filteredApplicants.map((a) => (
                   <div key={a.id} className="recruit-table-row">
-                    <span className="recruit-candidate-cell"><span className="recruit-avatar" style={{ background: "#e0f5f0", color: "#00b894" }}>{a.initials}</span>{a.name}</span>
+                    <span 
+                      className="recruit-candidate-cell" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (a.candidateId) navigate(`/profile/${a.candidateId}`);
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <span className="recruit-avatar" style={{ background: "#e0f5f0", color: "#00b894" }}>{a.initials}</span>
+                      <span style={{ color: '#0f7c82', fontWeight: 600 }}>{a.name}</span>
+                    </span>
                     <span>{a.role}</span>
-                    <span>📅 {a.date}</span>
-                    <span><span className="recruit-score-badge" style={{ color: a.score >= 80 ? "#00b894" : a.score >= 60 ? "#fdcb6e" : "#e17055" }}>✨ {a.score ?? "Pending"}</span></span>
+                    <span><FiClock style={{marginRight: 4, verticalAlign: 'middle'}}/> {a.date}</span>
+                    <span><span className="recruit-score-badge" style={{ color: a.score >= 80 ? "#00b894" : a.score >= 60 ? "#fdcb6e" : "#e17055" }}>{a.score ?? "Pending"}</span></span>
                     <span><span className="recruit-status-pill" style={{ color: statusColor(a.status), borderColor: statusColor(a.status) }}>{a.status}</span></span>
                     <span><button className="recruit-review-link" onClick={() => openDetail(a)}>Review <FiArrowRight size={14} /></button></span>
                   </div>
@@ -284,9 +314,15 @@ export default function Recruitment() {
                     <div className="recruit-profile-top">
                       <div className="recruit-profile-avatar">{selectedCandidate?.initials}</div>
                       <div>
-                        <h2 className="recruit-profile-name">{selectedCandidate?.name}</h2>
+                        <h2 
+                          className="recruit-profile-name"
+                          onClick={() => selectedCandidate?.candidateId && navigate(`/profile/${selectedCandidate.candidateId}`)}
+                          style={{ cursor: 'pointer', color: '#0f7c82' }}
+                        >
+                          {selectedCandidate?.name}
+                        </h2>
                         <p className="recruit-profile-title">{selectedCandidate?.title}</p>
-                        <p className="recruit-profile-remote">📍 {selectedCandidate?.remote}</p>
+                        <p className="recruit-profile-remote"><FiMapPin style={{marginRight: 4, verticalAlign: 'middle'}}/> {selectedCandidate?.remote}</p>
                       </div>
                     </div>
                     <div className="recruit-profile-meta">
@@ -325,15 +361,15 @@ export default function Recruitment() {
                       <strong>STATUS</strong>
                       <span className="recruit-status-current" style={{ color: statusColor(candidateStatus), borderColor: statusColor(candidateStatus) }}>{candidateStatus}</span>
                     </div>
-                    <button className={`recruit-action-btn accept ${candidateStatus === "ACCEPTED" ? "selected" : ""}`} onClick={() => setCandidateStatus("ACCEPTED")}>{candidateStatus === "ACCEPTED" && "✓ "}Accept Candidate</button>
-                    <button className={`recruit-action-btn pending ${candidateStatus === "PENDING REVIEW" ? "selected" : ""}`} onClick={() => setCandidateStatus("PENDING REVIEW")}>{candidateStatus === "PENDING REVIEW" && "✓ "}Pending Reviewed</button>
-                    <button className={`recruit-action-btn review ${candidateStatus === "REVIEWED" ? "selected" : ""}`} onClick={() => setCandidateStatus("REVIEWED")}>{candidateStatus === "REVIEWED" && "✓ "}Mark as Reviewed</button>
-                    <button className={`recruit-action-btn reject ${candidateStatus === "REJECTED" ? "selected" : ""}`} onClick={() => setCandidateStatus("REJECTED")}>{candidateStatus === "REJECTED" && "✓ "}Reject Candidate</button>
+                    <button className={`recruit-action-btn accept ${candidateStatus === "ACCEPTED" ? "selected" : ""}`} onClick={() => updateStatus("ACCEPTED")}>{candidateStatus === "ACCEPTED" && "✓ "}Accept Candidate</button>
+                    <button className={`recruit-action-btn pending ${candidateStatus === "PENDING REVIEW" ? "selected" : ""}`} onClick={() => updateStatus("PENDING REVIEW")}>{candidateStatus === "PENDING REVIEW" && "✓ "}Pending Reviewed</button>
+                    <button className={`recruit-action-btn review ${candidateStatus === "REVIEWED" ? "selected" : ""}`} onClick={() => updateStatus("REVIEWED")}>{candidateStatus === "REVIEWED" && "✓ "}Mark as Reviewed</button>
+                    <button className={`recruit-action-btn reject ${candidateStatus === "REJECTED" ? "selected" : ""}`} onClick={() => updateStatus("REJECTED")}>{candidateStatus === "REJECTED" && "✓ "}Reject Candidate</button>
 
                     <div className="recruit-notes-section">
                       <strong>Private Notes</strong>
                       <textarea placeholder="Add a private note about this candidate... (only visible to your team)" value={privateNote} onChange={(e) => setPrivateNote(e.target.value)} rows={3} />
-                      <button className="recruit-enter-btn">Enter</button>
+                      <button className="recruit-enter-btn" onClick={updateNotes}>Enter</button>
                     </div>
                   </div>
 
@@ -379,17 +415,27 @@ function OverviewTab({ candidate }) {
 function InterviewTab({ candidate, expandedTranscript, setExpandedTranscript }) {
   return (
     <div className="recruit-card">
-      <h3>🎬 Screening Interview</h3>
+      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><FiVideo /> Screening Interview</h3>
       {candidate.interviews.map((iv, i) => (
         <div key={i} className="recruit-interview-block">
           <div className="recruit-q-num">{i + 1}</div>
           <h4>{iv.question}</h4>
-          <div className="recruit-video-placeholder"><div className="recruit-play-btn">▶</div><span className="recruit-duration">1:{i === 0 ? "45" : "20"}</span></div>
-          <div className="recruit-iv-score"><span className="recruit-iv-badge">✨ {iv.score}/100</span><p>{iv.feedback}</p></div>
+          {iv.videoUrl ? (
+            <div style={{ marginTop: 12, marginBottom: 12 }}>
+              <video controls src={`http://localhost:3000${iv.videoUrl}`} style={{ width: '100%', borderRadius: 12, background: 'black', maxHeight: 300 }} />
+            </div>
+          ) : (
+            <div className="recruit-video-placeholder"><div className="recruit-play-btn">▶</div><span className="recruit-duration">1:{i === 0 ? "45" : "20"}</span></div>
+          )}
+          {iv.score !== null && iv.score !== undefined ? (
+            <div className="recruit-iv-score"><span className="recruit-iv-badge">{iv.score}/100 Score</span><p>{iv.feedback}</p></div>
+          ) : (
+            <div className="recruit-iv-score" style={{ background: '#f8fafc', border: '1px dashed #cbd5e1' }}><p style={{ margin: 0, fontStyle: 'italic', color: '#64748b' }}>{iv.feedback}</p></div>
+          )}
           {iv.transcript && (
             <div className="recruit-transcript">
-              <div className="recruit-transcript-header"><span>📄 AUTO-TRANSCRIPT</span><button onClick={() => setExpandedTranscript(expandedTranscript === i ? null : i)}>{expandedTranscript === i ? "Collapse ▲" : "Read ▼"}</button></div>
-              {expandedTranscript === i && <pre className="recruit-transcript-text">{iv.transcript}</pre>}
+              <div className="recruit-transcript-header"><span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><FiFileText /> TRANSCRIPT</span><button onClick={() => setExpandedTranscript(expandedTranscript === i ? null : i)}>{expandedTranscript === i ? "Collapse ▲" : "Read ▼"}</button></div>
+              {expandedTranscript === i && <pre className="recruit-transcript-text" style={{ fontStyle: iv.score !== null && iv.score !== undefined ? 'normal' : 'italic', color: iv.score !== null && iv.score !== undefined ? '#334155' : '#94a3b8' }}>{iv.transcript}</pre>}
             </div>
           )}
         </div>
@@ -402,19 +448,37 @@ function DocumentTab({ candidate }) {
   return (
     <div className="recruit-card">
       <div className="recruit-cv-header"><h3>Curriculum Vitae</h3><button className="recruit-full-report">Full Report</button></div>
-      <div className="recruit-cv-file-row">
-        <div className="recruit-cv-file"><span className="recruit-cv-icon">📄</span><div><strong>{candidate.cvFile}</strong><span className="recruit-cv-meta">PDF Document • Uploaded {candidate.cvDate}</span></div></div>
-        <button className="recruit-download-btn">Download PDF</button>
-      </div>
+      {candidate.cvFile ? (
+        <div className="recruit-cv-file-row">
+          <div className="recruit-cv-file"><span className="recruit-cv-icon"><FiFileText size={24} color="#64748b" /></span><div><strong>{candidate.cvFile}</strong><span className="recruit-cv-meta">PDF Document • Uploaded {candidate.cvDate}</span></div></div>
+          <button className="recruit-download-btn" onClick={() => window.open(`http://localhost:3000${candidate.cv_url}`, '_blank')}>Download PDF</button>
+        </div>
+      ) : (
+        <div className="recruit-cv-file-row" style={{ justifyContent: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
+          <span style={{ color: '#64748b', fontStyle: 'italic' }}>No CV document attached to this application.</span>
+        </div>
+      )}
       <div className="recruit-cv-analysis">
-        <div className="recruit-cv-col"><h4><FiCheckCircle size={14} /> STRENGTHS</h4><ul>{candidate.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
-        <div className="recruit-cv-col"><h4><FiAlertCircle size={14} /> WEAKNESSES</h4><ul>{candidate.weaknesses.map((w, i) => <li key={i}>{w}</li>)}</ul></div>
+        <div className="recruit-cv-col"><h4><FiCheckCircle size={14} /> STRENGTHS</h4><ul>{candidate.strengths.length > 0 ? candidate.strengths.map((s, i) => <li key={i}>{s}</li>) : <li style={{color: '#94a3b8', fontStyle: 'italic', listStyle: 'none'}}>Pending analysis...</li>}</ul></div>
+        <div className="recruit-cv-col"><h4><FiAlertCircle size={14} /> WEAKNESSES</h4><ul>{candidate.weaknesses.length > 0 ? candidate.weaknesses.map((w, i) => <li key={i}>{w}</li>) : <li style={{color: '#94a3b8', fontStyle: 'italic', listStyle: 'none'}}>Pending analysis...</li>}</ul></div>
       </div>
       <div className="recruit-cv-bottom">
-        <div className="recruit-cv-preview"></div>
+        <div className="recruit-cv-preview">
+          {candidate.cv_url ? (
+            <iframe 
+              src={`http://localhost:3000${candidate.cv_url}#toolbar=0`} 
+              width="100%" 
+              height="100%" 
+              style={{ border: 'none', borderRadius: '8px', minHeight: '400px' }}
+              title="CV Preview"
+            />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontStyle: 'italic' }}>No preview available</div>
+          )}
+        </div>
         <div>
-          <div className="recruit-skills-box"><h4><FiCheckCircle size={14} /> CORE SKILLS FOUND</h4><div className="recruit-skills">{candidate.coreSkills.map((s, i) => <span key={i} className="recruit-skill-tag">{s}</span>)}</div></div>
-          <div className="recruit-missing-box"><h4><FiAlertCircle size={14} /> MISSING KEYWORDS</h4><div className="recruit-skills">{candidate.missingKeywords.map((s, i) => <span key={i} className="recruit-skill-tag warning">{s}</span>)}</div><p className="recruit-missing-note">The candidate's resume does not explicitly mention these preferred technologies.</p></div>
+          <div className="recruit-skills-box"><h4><FiCheckCircle size={14} /> CORE SKILLS FOUND</h4><div className="recruit-skills">{candidate.coreSkills.length > 0 ? candidate.coreSkills.map((s, i) => <span key={i} className="recruit-skill-tag">{s}</span>) : <span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: 13}}>Pending analysis...</span>}</div></div>
+          <div className="recruit-missing-box"><h4><FiAlertCircle size={14} /> MISSING KEYWORDS</h4><div className="recruit-skills">{candidate.missingKeywords.length > 0 ? candidate.missingKeywords.map((s, i) => <span key={i} className="recruit-skill-tag warning">{s}</span>) : <span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: 13}}>Pending analysis...</span>}</div><p className="recruit-missing-note">The candidate's resume does not explicitly mention these preferred technologies.</p></div>
         </div>
       </div>
     </div>
@@ -425,12 +489,12 @@ function MatchTab({ candidate }) {
   return (
     <>
       <div className="recruit-match-card">
-        <div className="recruit-match-circle"><svg viewBox="0 0 120 120" className="recruit-match-svg"><circle cx="60" cy="60" r="52" fill="none" stroke="#e0e0e0" strokeWidth="10" /><circle cx="60" cy="60" r="52" fill="none" stroke="#00b894" strokeWidth="10" strokeDasharray={`${(candidate.matchPercent / 100) * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" /></svg><span className="recruit-match-pct">{candidate.matchPercent}%</span></div>
-        <div><div className="recruit-match-label">✨ OVERALL MATCH EVALUATION</div><h2>Strong Match for this Role</h2><p>Based on a comprehensive analysis of the candidate's CV and answers provided during the screening interview.</p></div>
+        <div className="recruit-match-circle"><svg viewBox="0 0 120 120" className="recruit-match-svg"><circle cx="60" cy="60" r="52" fill="none" stroke="#e0e0e0" strokeWidth="10" /><circle cx="60" cy="60" r="52" fill="none" stroke={candidate.matchPercent ? "#00b894" : "#e0e0e0"} strokeWidth="10" strokeDasharray={`${(candidate.matchPercent || 0) / 100 * 327} 327`} strokeLinecap="round" transform="rotate(-90 60 60)" /></svg><span className="recruit-match-pct">{candidate.matchPercent ? `${candidate.matchPercent}%` : "TBD"}</span></div>
+        <div><div className="recruit-match-label">OVERALL MATCH EVALUATION</div><h2>{candidate.matchPercent ? "Strong Match for this Role" : "Pending Evaluation"}</h2><p>{candidate.matchPercent ? "Based on a comprehensive analysis of the candidate's CV and answers provided during the screening interview." : "We are currently processing the candidate's resume and screening answers. Check back later."}</p></div>
       </div>
       <div className="recruit-match-cols">
-        <div className="recruit-match-col green"><h4><FiCheckCircle size={14} /> STRENGTHS AS CANDIDATE</h4><ul>{candidate.strengthsCandidate.map((s, i) => <li key={i}>{s}</li>)}</ul></div>
-        <div className="recruit-match-col red"><h4><FiAlertCircle size={14} /> AREAS OF CONCERN</h4><ul>{candidate.concerns.map((c, i) => <li key={i}>{c}</li>)}</ul></div>
+        <div className="recruit-match-col green"><h4><FiCheckCircle size={14} /> STRENGTHS AS CANDIDATE</h4><ul>{candidate.strengthsCandidate.length > 0 ? candidate.strengthsCandidate.map((s, i) => <li key={i}>{s}</li>) : <li style={{color: '#94a3b8', fontStyle: 'italic', listStyle: 'none'}}>Pending analysis...</li>}</ul></div>
+        <div className="recruit-match-col red"><h4><FiAlertCircle size={14} /> AREAS OF CONCERN</h4><ul>{candidate.concerns.length > 0 ? candidate.concerns.map((c, i) => <li key={i}>{c}</li>) : <li style={{color: '#94a3b8', fontStyle: 'italic', listStyle: 'none'}}>Pending analysis...</li>}</ul></div>
       </div>
     </>
   );

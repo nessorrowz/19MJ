@@ -392,7 +392,7 @@ export default function InterviewPracticePage() {
               </div>
 
               <p style={styles.subtitle}>
-                Practice answering real interview questions and get AI feedback on every answer.
+                Practice answering real interview questions and get automated feedback on every answer.
               </p>
 
               {/* STATS */}

@@ -15,6 +15,9 @@ export default function MyApplicationsPage() {
   const [selectedApp, setSelectedApp] = useState(null);
   const [activeTab, setActiveTab] = useState("Doc"); // "Doc" or "Jobdetail"
 
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  const userName = currentUser.full_name || currentUser.username || "User";
+
   useEffect(() => {
     const fetchApplications = async () => {
       try {
@@ -177,20 +180,23 @@ export default function MyApplicationsPage() {
                         <div style={styles.docIcon}><FiFileText size={24} color="#0f7c82" /></div>
                         <div style={{flex: 1}}>
                           <h4>Resume / CV</h4>
-                          <p>Uploaded from profile • {(profile.fullName || 'User').replace(/\s+/g, '_')}_Resume.pdf</p>
+                          <p>Uploaded from profile • {userName.replace(/\s+/g, '_')}_Resume.pdf</p>
                         </div>
                         <button style={styles.viewDocBtn}>View</button>
                       </div>
 
-                      <div style={styles.aiAnalysisBox}>
-                        <h4>AI Match Analysis</h4>
-                        <div style={{display: 'flex', alignItems: 'center', gap: 15, marginTop: 10}}>
-                          <div style={styles.scoreCircle}>
-                            {selectedApp.ai_match_score || '--'}%
-                          </div>
-                          <p style={{flex: 1, fontSize: 14, color: '#475569', lineHeight: 1.5}}>
-                            {selectedApp.ai_analysis || 'No AI analysis available for this application yet.'}
-                          </p>
+                      <div style={styles.analysisBox}>
+                        <h4>Match Analysis</h4>
+                        <div className="analysis-box">
+                          {selectedApp.ai_analysis && selectedApp.ai_analysis.startsWith('{') ? (
+                            <div className="formatted-analysis">
+                              {/* Display specific fields if it's JSON */}
+                              <div className="analysis-row"><strong>Strengths:</strong> {JSON.parse(selectedApp.ai_analysis).strengths?.join(', ')}</div>
+                              <div className="analysis-row"><strong>Concerns:</strong> {JSON.parse(selectedApp.ai_analysis).concerns?.join(', ')}</div>
+                            </div>
+                          ) : (
+                            selectedApp.ai_analysis || 'No analysis available for this application yet.'
+                          )}
                         </div>
                       </div>
                     </div>
@@ -302,7 +308,7 @@ const styles = {
     padding: "8px 16px", background: "white", border: "1px solid #cbd5e1", 
     borderRadius: 8, fontWeight: 500, cursor: "pointer", color: "#334155" 
   },
-  aiAnalysisBox: {
+  analysisBox: {
     marginTop: 10, padding: 24, background: "linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)", borderRadius: 12, border: "1px solid #99f6e4"
   },
   scoreCircle: {

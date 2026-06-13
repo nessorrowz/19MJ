@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight, FiArrowRight, FiArrowLeft } from "react-icons/fi";
+import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight, FiArrowRight, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
 import api from "../utils/api";
 
 import CompanySidebar from "./CompanySidebar";
@@ -11,6 +11,12 @@ export default function CreateJobPosting() {
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const [form, setForm] = useState({
     title: "",
@@ -78,19 +84,23 @@ export default function CreateJobPosting() {
         requirements: form.requirements,
         experience_level: form.experienceLevel,
         type: form.employmentType,
-        skills: [] // Can extract from requirements if needed
+        skills: [], // Can extract from requirements if needed
+        screening_questions: form.skipScreening ? [] : form.screeningQuestions.filter(q => q.trim() !== ""),
+        video_screening: form.videoScreening || false
       };
 
-      await api.post("/jobs", payload);
+      const response = await api.post("/jobs", payload);
 
       // Optional: still save screening questions to backend if implemented,
       // but for now the jobs table only stores basic info.
 
       window.dispatchEvent(new Event("jobPostingUpdated"));
-      navigate("/company/job-postings");
+      setForm({ ...form, id: response.data.job.id });
+      showToast("Pekerjaan berhasil dibuat! Anda sekarang dapat menambahkan pertanyaan screening (opsional).", "success");
+      setStep(4);
     } catch (error) {
-      console.error("Failed to create job:", error);
-      alert("Gagal membuat pekerjaan: " + (error.response?.data?.message || error.message));
+      console.error(error);
+      showToast("Gagal membuat pekerjaan: " + (error.response?.data?.message || error.message), "error");
     }
   };
 
@@ -107,7 +117,7 @@ export default function CreateJobPosting() {
           <div className="create-job-page">
             <div className="company-hero">
               <h1 className="company-title">
-                PT Pertamina Patra Niaga
+                {JSON.parse(localStorage.getItem('currentUser') || '{}').company_name || "Your Company"}
               </h1>
             </div>
 
@@ -316,35 +326,6 @@ export default function CreateJobPosting() {
                   </div>
                 </div>
 
-                {/* DESCRIPTION (OPTIONAL) */}
-
-                <div className="field-group">
-                  <label>
-                    Description{" "}
-                    <span className="optional">
-                      (Optional)
-                    </span>
-                  </label>
-
-                  <div className="editor-wrapper">
-                    <div className="editor-toolbar">
-                      <button type="button"><FiBold size={16} /></button>
-                      <button type="button"><FiList size={16} /></button>
-                    </div>
-
-                    <textarea
-                      rows={4}
-                      placeholder="Describe the role and your company culture"
-                      value={form.companyCulture || ""}
-                      onChange={(e) =>
-                        updateField(
-                          "companyCulture",
-                          e.target.value
-                        )
-                      }
-                    />
-                  </div>
-                </div>
 
                 {/* ACTION */}
 
@@ -600,6 +581,27 @@ export default function CreateJobPosting() {
           </div>
         </div>
       </div>
+      
+      {toast.show && (
+        <div style={{
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: toast.type === 'error' ? '#fee2e2' : '#f0fdf4',
+          color: toast.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${toast.type === 'error' ? '#f87171' : '#4ade80'}`,
+          padding: '16px 24px', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex', alignItems: 'center', gap: 12,
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {toast.type === 'error' ? <FiAlertCircle size={20} /> : <FiCheckCircle size={20} />}
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.message}</span>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -3,16 +3,29 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 const getToken = () => localStorage.getItem('token');
 
 const api = {
-  post: async (path, body) => {
+  post: async (path, body, customHeaders = {}) => {
     const token = getToken();
-    const headers = { 'Content-Type': 'application/json' };
+    const isFormData = body instanceof FormData;
+    const headers = { ...customHeaders };
+    
+    if (!isFormData && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_BASE_URL}${path}`, {
+    const options = {
       method: 'POST',
       headers,
-      body: JSON.stringify(body),
-    });
+      body: isFormData ? body : JSON.stringify(body),
+    };
+    
+    // If headers['Content-Type'] was set to multipart/form-data by caller, delete it so fetch generates it with boundary
+    if (isFormData && headers['Content-Type'] === 'multipart/form-data') {
+      delete headers['Content-Type'];
+    }
+
+    const res = await fetch(`${API_BASE_URL}${path}`, options);
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Terjadi kesalahan');
     return data;

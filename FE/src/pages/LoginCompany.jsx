@@ -158,30 +158,26 @@ export default function LoginCompany() {
       credentialResponse
     ) => {
       try {
-        const userInfo =
-          jwtDecode(
-            credentialResponse.credential
+        setLoading(true);
+
+        const data =
+          await api.post(
+            "/auth/google/token",
+            {
+              credential: credentialResponse.credential,
+              role: "company"
+            }
           );
 
-        const googleUser =
-        {
-          username:
-            userInfo.name,
-
-          email:
-            userInfo.email,
-
-          photo:
-            userInfo.picture,
-
-          role:
-            "company"
-        };
+        localStorage.setItem(
+          "token",
+          data.token
+        );
 
         localStorage.setItem(
           "currentUser",
           JSON.stringify(
-            googleUser
+            data.user
           )
         );
 

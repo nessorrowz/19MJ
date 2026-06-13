@@ -12,12 +12,28 @@ import {
 
 export default function CandidateSidebar({
   active,
+  onNavigate
 }) {
   const navigate = useNavigate();
 
+  const handleNav = (path) => {
+    if (onNavigate) {
+      onNavigate(path, () => navigate(path));
+    } else {
+      navigate(path);
+    }
+  };
+
   const logout = () => {
-    localStorage.clear();
-    navigate("/login");
+    if (onNavigate) {
+      onNavigate("/login", () => {
+        localStorage.clear();
+        navigate("/login");
+      });
+    } else {
+      localStorage.clear();
+      navigate("/login");
+    }
   };
 
   return (
@@ -35,60 +51,52 @@ export default function CandidateSidebar({
         />
 
         <MenuItem
-          active={
-            active === "dashboard"
-          }
+          active={active === "dashboard"}
           icon={<FiGrid />}
           text="Dashboard"
-          onClick={() =>
-            navigate("/dashboard")
-          }
+          onClick={() => handleNav("/dashboard")}
         />
 
         <MenuItem
-          active={
-            active === "my-profile"
-          }
+          active={active === "my-profile"}
           icon={<FiUser />}
           text="My Profile"
-          onClick={() =>
-            navigate("/my-profile")
-          }
+          onClick={() => handleNav("/my-profile")}
         />
 
         <MenuItem
           active={active === "cv"}
           icon={<FiFileText />}
           text="CV Review"
-          onClick={() => navigate("/cv-review")}
+          onClick={() => handleNav("/cv-review")}
         />
 
         <MenuItem
           active={active === "career"}
           icon={<FiMap />}
           text="Career Planner"
-          onClick={() => navigate("/career-planner")}
+          onClick={() => handleNav("/career-planner")}
         />
 
         <MenuItem
           active={active === "practice"}
           icon={<FiMic />}
           text="Interview Practice"
-          onClick={() => navigate("/interview-practice")}
+          onClick={() => handleNav("/interview-practice")}
         />
 
         <MenuItem
           active={active === "jobs"}
           icon={<FiSearch />}
           text="Find Jobs"
-          onClick={() => navigate("/find-jobs")}
+          onClick={() => handleNav("/find-jobs")}
         />
 
         <MenuItem
           active={active === "applications"}
           icon={<FiBriefcase />}
           text="My Applications"
-          onClick={() => navigate("/my-applications")}
+          onClick={() => handleNav("/my-applications")}
         />
 
       </div>

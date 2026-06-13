@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { FiBell, FiUpload, FiFileText, FiTrash2, FiArrowLeft, FiChevronRight, FiZap } from "react-icons/fi";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -11,6 +12,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 const API_BASE = "http://localhost:3000/api/ai";
 
 export default function CVReview() {
+  const navigate = useNavigate();
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
   const cvKey = `candidateCV_${currentUser.email}`;
 
@@ -60,7 +62,7 @@ export default function CVReview() {
     const res = await fetch(`${API_BASE}/cv-review`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ cvText, targetRole: "Software Engineer" }),
+      body: JSON.stringify({ cvText }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -91,6 +93,8 @@ export default function CVReview() {
 
     try {
       const cvText = await extractText(file);
+      updated[0] = { ...updated[0], cvText }; // Save text so we can re-analyze later
+      
       const result = await callCvReview(cvText);
       const review = result.result || result.data || result;
       updated[0] = { ...updated[0], status: "reviewed", review, reviewId: result.reviewId };
@@ -99,7 +103,7 @@ export default function CVReview() {
       console.error(err);
       updated[0] = { ...updated[0], status: "not_analyzed" };
       saveCvList([...updated]);
-      setError(err.message || "AI analysis failed. Please try again.");
+      setError(err.message || "System evaluation failed. Please try again.");
     } finally {
       setLoading(false);
       setAnalyzingIdx(null);
@@ -118,24 +122,20 @@ export default function CVReview() {
     saveCvList(updated);
 
     try {
-      // We don't have the file anymore, so try fetching latest review
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/cv-review/latest`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        updated[idx] = { ...cv, status: "reviewed", review: data.result?.result_json || data.result };
-        saveCvList([...updated]);
-      } else {
-        updated[idx] = { ...cv, status: "not_analyzed" };
-        saveCvList([...updated]);
-        setError("Please re-upload the file to analyze.");
+      if (!cv.cvText) {
+        throw new Error("Teks CV tidak ditemukan di browser. Silakan hapus dan unggah ulang file Anda.");
       }
-    } catch {
+      
+      // Kirim ulang teks ke backend untuk dianalisis (tanpa hardcoded targetRole)
+      const result = await callCvReview(cv.cvText);
+      const review = result.result || result.data || result;
+      
+      updated[idx] = { ...cv, status: "reviewed", review, reviewId: result.reviewId };
+      saveCvList([...updated]);
+    } catch (err) {
       updated[idx] = { ...cv, status: "not_analyzed" };
       saveCvList([...updated]);
-      setError("Failed to fetch review.");
+      setError(err.message || "Failed to analyze CV.");
     } finally {
       setAnalyzingIdx(null);
     }
@@ -193,7 +193,7 @@ export default function CVReview() {
           <div style={{ padding: "24px 32px" }}>
             {/* Breadcrumb */}
             <div style={S.breadcrumb}>
-              <span onClick={goBack} style={S.breadLink}>Dashboard</span>
+              <span onClick={() => navigate("/dashboard")} style={S.breadLink}>Dashboard</span>
               <FiChevronRight size={14} color="#94a3b8" />
               <span onClick={goBack} style={S.breadLink}>CV & Review</span>
               <FiChevronRight size={14} color="#94a3b8" />
@@ -203,7 +203,6 @@ export default function CVReview() {
             {/* Title */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
               <h1 style={{ margin: 0, fontSize: 24, color: "#1e293b" }}>CV Review</h1>
-              <span style={S.aiBadge}><FiZap size={12} /> AI-Powered</span>
             </div>
             <p style={{ color: "#64748b", fontSize: 14, marginTop: 4 }}>{selectedCV.name}</p>
 

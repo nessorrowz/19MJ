@@ -1,73 +1,28 @@
 import React, { useState, useEffect } from "react";
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
-import { FiSearch, FiStar, FiInfo, FiBriefcase, FiMapPin, FiBook, FiCheckCircle, FiFilter } from "react-icons/fi";
+import { FiSearch, FiStar, FiInfo, FiBriefcase, FiMapPin, FiBook, FiCheckCircle, FiFilter, FiAlertCircle } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import api from "../utils/api";
 import "./dashboard2.css";
 
-const candidatesData = [
-  {
-    id: 1,
-    name: "Anies Sulistyo",
-    initials: "AS",
-    score: 92,
-    role: "Senior Frontend Developer",
-    verified: true,
-    experience: "6 years",
-    location: "Bandung, ID",
-    education: "Sarjana Komputer",
-    skills: ["REACT", "TYPESCRIPT", "NODE.JS", "TAILWIND CSS"],
-    analysis: "Perfect alignment with React/TS requirements and senior leadership experience."
-  },
-  {
-    id: 2,
-    name: "Lala Widya",
-    initials: "LW",
-    score: 90,
-    role: "Frontend Developer",
-    verified: true,
-    experience: "4 years",
-    location: "Jakarta, ID",
-    education: "Sarjana Komputer",
-    skills: ["REACT", "VUE.JS", "JAVASCRIPT", "TAILWIND CSS"],
-    analysis: "Strong frontend fundamentals with consistent performance in interview simulations."
-  },
-  {
-    id: 3,
-    name: "Kevin Vernando",
-    initials: "KV",
-    score: 85,
-    role: "Fullstack Developer",
-    verified: true,
-    experience: "5 years",
-    location: "Surabaya, ID",
-    education: "Sarjana Komputer",
-    skills: ["REACT", "PYTHON", "AWS", "TYPESCRIPT"],
-    analysis: "Versatile skill set with cloud certification, suitable for scale-up environment."
-  },
-  {
-    id: 4,
-    name: "Siti Arimbi",
-    initials: "SA",
-    score: 80,
-    role: "UI/UX Designer",
-    verified: true,
-    experience: "3 years",
-    location: "Yogyakarta, ID",
-    education: "Sarjana Komputer",
-    skills: ["REACT", "FIGMA", "TAILWIND CSS", "MOTION"],
-    analysis: "Strong design-to-code capabilities and attention to detail in visual interactions."
-  }
-];
+// Dummy data removed, candidates are generated based on applications and match scores.
 
 export default function Recommendations() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [selectedJob, setSelectedJob] = useState("");
   const [status, setStatus] = useState("initial"); // initial, loading, results
   const [minScore, setMinScore] = useState(80);
   const [experienceLevel, setExperienceLevel] = useState("Mid-level");
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
   
   useEffect(() => {
     const fetchJobs = async () => {
@@ -86,20 +41,31 @@ export default function Recommendations() {
     setStatus("loading");
     
     try {
-      const res = await api.get(`/jobs/${selectedJob}/applications`);
-      const formatted = res.map(a => ({
-        id: a.id,
-        name: a.full_name || a.username,
-        initials: (a.full_name || a.username || "C").substring(0, 2).toUpperCase(),
-        score: a.ai_match_score || 0,
-        role: a.headline || "Candidate",
-        verified: true,
-        experience: "Unknown", // Placeholder since we don't have this in db yet
-        location: a.candidate_location || "Unknown",
-        education: "Unknown",
-        skills: [],
-        analysis: a.ai_analysis || "No analysis available."
-      }));
+      const res = await api.get(`/jobs/${selectedJob}/scouting`);
+      const formatted = res.map(a => {
+        let analysisObj = null;
+        try {
+          if (a.ai_analysis && a.ai_analysis.startsWith('{')) {
+            analysisObj = JSON.parse(a.ai_analysis);
+          }
+        } catch(e) {}
+
+        return {
+          id: a.id,
+          candidateId: a.user_id,
+          name: a.full_name || a.username,
+          initials: (a.full_name || a.username || "C").substring(0, 2).toUpperCase(),
+          score: a.ai_match_score || 0,
+          role: a.headline || "Candidate",
+          verified: true,
+          experience: "Unknown", // Placeholder since we don't have this in db yet
+          location: a.candidate_location || "Unknown",
+          education: "Unknown",
+          skills: analysisObj ? (analysisObj.coreSkills || []) : [],
+          analysis: a.ai_analysis || "No analysis available.",
+          analysisObj
+        };
+      });
       setCandidates(formatted);
     } catch (err) {
       console.error("Error fetching matches:", err);
@@ -138,7 +104,7 @@ export default function Recommendations() {
               <div className="recommendation-header-text">
                 <h2>Find the right person, faster.</h2>
                 <p>
-                  Our AI analyzes candidate profiles and screening answers to rank the best matches for your open roles. Select a job to see your personalized recommendations.
+                  Our system evaluates candidate profiles and screening answers to rank the best matches for your open roles. Select a job to see your personalized recommendations.
                 </p>
               </div>
               <div className="recommendation-header-actions">
@@ -199,7 +165,7 @@ export default function Recommendations() {
                 animate={{ opacity: 1, y: 0 }}
               >
                 <div className="results-header-row">
-                  <p>Displaying <strong>{candidates.length}</strong> candidates that match your criteria</p>
+                  <p>Displaying <strong>{candidates.filter(c => c.score >= minScore).length}</strong> candidates that match your criteria</p>
                   <div className="sort-wrapper">
                     <span className="sort-label">Urutkan:</span>
                     <select className="sort-select">
@@ -210,7 +176,7 @@ export default function Recommendations() {
 
                 <div className="results-layout">
                   <div className="candidate-list">
-                    {candidates.map(candidate => (
+                    {candidates.filter(c => c.score >= minScore).map(candidate => (
                       <div className="candidate-card" key={candidate.id}>
                         <div className="candidate-avatar-wrapper">
                           <div className="candidate-avatar">{candidate.initials}</div>
@@ -241,20 +207,49 @@ export default function Recommendations() {
                           </div>
                           
                           <div className="candidate-skills">
-                            {candidate.skills.map(skill => (
+                            {candidate.skills.slice(0, 4).map(skill => (
                               <span key={skill} className="skill-pill">{skill}</span>
                             ))}
                           </div>
                           
-                          <div className="candidate-analysis-box">
-                            <span className="analysis-label">ANALYZE</span>
-                            <p className="analysis-text">"{candidate.analysis}"</p>
-                          </div>
+                          {candidate.analysisObj ? (
+                            <div className="candidate-analysis-box formatted" style={{ padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', marginTop: 12 }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                                <div>
+                                  <h4 style={{ color: '#10b981', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8, marginTop: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <FiCheckCircle /> STRENGTHS
+                                  </h4>
+                                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, color: '#334155', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {candidate.analysisObj.strengths?.slice(0, 2).map((s, i) => <li key={i}>{s}</li>)}
+                                  </ul>
+                                </div>
+                                <div>
+                                  <h4 style={{ color: '#ef4444', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8, marginTop: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                    <FiAlertCircle /> CONCERNS
+                                  </h4>
+                                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 13, color: '#334155', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {candidate.analysisObj.concerns?.slice(0, 2).map((c, i) => <li key={i}>{c}</li>)}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="candidate-analysis-box">
+                              <span className="analysis-label">ANALYZE</span>
+                              <p className="analysis-text">"{candidate.analysis}"</p>
+                            </div>
+                          )}
                         </div>
-                        
                         <div className="candidate-actions">
-                          <button className="btn-view-profile">View Profile</button>
-                          <button className="btn-invite-interview">Invite an Interview</button>
+                          <button 
+                            className="btn-view-profile" 
+                            onClick={() => {
+                              if (candidate.candidateId) navigate(`/profile/${candidate.candidateId}`);
+                            }}
+                          >
+                            View Profile
+                          </button>
+                          <button className="btn-invite-interview" onClick={() => showToast("Fitur pengiriman undangan otomatis akan segera hadir!", "success")}>Invite an Interview</button>
                         </div>
                       </div>
                     ))}
@@ -318,6 +313,26 @@ export default function Recommendations() {
           </div>
         </div>
       </div>
+      {toast.show && (
+        <div style={{
+          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
+          background: toast.type === 'error' ? '#fee2e2' : '#f0fdf4',
+          color: toast.type === 'error' ? '#991b1b' : '#166534',
+          border: `1px solid ${toast.type === 'error' ? '#f87171' : '#4ade80'}`,
+          padding: '16px 24px', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          display: 'flex', alignItems: 'center', gap: 12,
+          animation: 'slideDown 0.3s ease-out'
+        }}>
+          {toast.type === 'error' ? <FiAlertCircle size={20} /> : <FiCheckCircle size={20} />}
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.message}</span>
+        </div>
+      )}
+      <style>{`
+        @keyframes slideDown {
+          from { transform: translate(-50%, -100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

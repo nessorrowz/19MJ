@@ -114,7 +114,7 @@ export default function RegisterCandidate() {
         setLoading(true);
 
         await api.post(
-          "/auth/register",
+          "/auth/register/candidate",
           {
             fullname:
               form.fullname,

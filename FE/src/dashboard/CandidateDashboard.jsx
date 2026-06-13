@@ -190,6 +190,11 @@ export default function CandidateDashboard() {
     (completedFields.filter(Boolean).length / completedFields.length) * 100
   );
 
+  const currentHour = new Date().getHours();
+  let greeting = "Good evening";
+  if (currentHour < 12) greeting = "Good morning";
+  else if (currentHour < 18) greeting = "Good afternoon";
+
   return (
     <div style={styles.container}>
 
@@ -205,7 +210,7 @@ export default function CandidateDashboard() {
         <div style={styles.greetingCard}>
           <div>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
-              Good morning, {displayName} 👋
+              {greeting}, {displayName}
             </h1>
             <p style={{ color: "rgba(255,255,255,0.9)", marginTop: 8, fontSize: 16 }}>
               {percentage === 100 

@@ -44,6 +44,7 @@ import CreateJobPosting from "./dashboard2/CreateJobPosting";
 import Recruitment from "./dashboard2/Recruitment";
 import Recommendations from "./dashboard2/Recommendations";
 import MyApplicationsPage from "./dashboard/MyApplicationsPage";
+import PublicProfile from "./pages/PublicProfile";
 
 function PrivateRoute({
   children,
@@ -362,6 +363,12 @@ function AppRoutes() {
               <MyApplicationsPage />
             </PrivateRoute>
           }
+        />
+
+        {/* Public Profile View */}
+        <Route
+          path="/profile/:id"
+          element={<PublicProfile />}
         />
 
         {/* Root */}

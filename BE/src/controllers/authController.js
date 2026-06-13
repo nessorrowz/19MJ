@@ -450,6 +450,50 @@ const updateProfile = async (req, res) => {
 };
 
 // ============================================================
+// GET /api/auth/profile/:id  (public)
+// ============================================================
+const getPublicProfile = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const userResult = await pool.query(
+      'SELECT id, role, created_at FROM users WHERE id = $1',
+      [id]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan.' });
+    }
+
+    const user = userResult.rows[0];
+    let profile = {};
+
+    if (user.role === 'candidate') {
+      const r = await pool.query(
+        'SELECT username, full_name, headline, summary, about, photo, experiences, education_list, skills, location FROM candidates WHERE user_id = $1',
+        [id]
+      );
+      profile = r.rows[0] || {};
+    } else if (user.role === 'company') {
+      const r = await pool.query(
+        'SELECT company_name, industry, website, description, logo, location FROM companies WHERE user_id = $1',
+        [id]
+      );
+      profile = r.rows[0] || {};
+    }
+
+    // Hanya kembalikan data public yang aman
+    res.status(200).json({
+      id: user.id,
+      role: user.role,
+      joined_at: user.created_at,
+      ...profile
+    });
+  } catch (err) {
+    console.error('getPublicProfile error:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan server.' });
+  }
+};
+
+// ============================================================
 // Forgot Password: Request PIN
 // POST /api/auth/forgot-password/request
 // ============================================================
@@ -818,7 +862,7 @@ const resetPasswordWithPin = async (req, res) => {
 // Body: { credential: string }
 // ============================================================
 const googleTokenLogin = async (req, res) => {
-  const { credential } = req.body;
+  const { credential, role } = req.body;
 
   if (!credential) {
     return res.status(400).json({ message: 'Google credential wajib dikirim.' });
@@ -849,32 +893,40 @@ const googleTokenLogin = async (req, res) => {
     );
 
     if (userResult.rows.length === 0) {
-      // New user — auto-register as candidate
+      // New user — auto-register as candidate or company based on requested role
+      const assignedRole = role === 'company' ? 'company' : 'candidate';
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
 
         const newUser = await client.query(
           `INSERT INTO users (email, password, role)
-           VALUES ($1, 'GOOGLE_AUTH', 'candidate')
+           VALUES ($1, 'GOOGLE_AUTH', $2)
            RETURNING id, email, role`,
-          [email]
+          [email, assignedRole]
         );
         const user = newUser.rows[0];
 
-        const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
-        let username = baseUsername;
-        let check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
-        let counter = 1;
-        while (check.rows.length > 0) {
-          username = `${baseUsername}${counter++}`;
-          check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
-        }
+        if (assignedRole === 'company') {
+          await client.query(
+            'INSERT INTO companies (user_id, company_name) VALUES ($1, $2)',
+            [user.id, fullName]
+          );
+        } else {
+          const baseUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+          let username = baseUsername;
+          let check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
+          let counter = 1;
+          while (check.rows.length > 0) {
+            username = `${baseUsername}${counter++}`;
+            check = await client.query('SELECT id FROM candidates WHERE username = $1', [username]);
+          }
 
-        await client.query(
-          'INSERT INTO candidates (user_id, username, full_name) VALUES ($1, $2, $3)',
-          [user.id, username, fullName]
-        );
+          await client.query(
+            'INSERT INTO candidates (user_id, username, full_name) VALUES ($1, $2, $3)',
+            [user.id, username, fullName]
+          );
+        }
 
         await client.query('COMMIT');
         userResult = await pool.query(
@@ -932,6 +984,7 @@ module.exports = {
   login,
   getMe,
   updateProfile,
+  getPublicProfile,
   googleTokenLogin,
   requestPasswordReset,
   verifyPasswordResetPin,

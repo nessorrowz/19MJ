@@ -12,12 +12,28 @@ import "./Dashboard2.css";
 
 export default function CompanySidebar({
   active,
+  onNavigate
 }) {
   const navigate = useNavigate();
 
+  const handleNav = (path) => {
+    if (onNavigate) {
+      onNavigate(path, () => navigate(path));
+    } else {
+      navigate(path);
+    }
+  };
+
   const logout = () => {
-    localStorage.clear();
-    navigate("/company/login");
+    if (onNavigate) {
+      onNavigate("/company/login", () => {
+        localStorage.clear();
+        navigate("/company/login");
+      });
+    } else {
+      localStorage.clear();
+      navigate("/company/login");
+    }
   };
 
   const menuItems = [
@@ -56,20 +72,14 @@ export default function CompanySidebar({
   return (
     <div className="company-sidebar">
       <div>
-        <div
+        <img
+          src="/gambar/19mj.png"
+          alt="logo"
           style={{
-            marginBottom: "30px",
+            width: 120,
+            marginBottom: 20,
           }}
-        >
-          <h2
-            style={{
-              color: "#0f7c82",
-              fontWeight: "700",
-            }}
-          >
-            19MJ
-          </h2>
-        </div>
+        />
 
         <div className="sidebar-menu">
           {menuItems.map((item) => (
@@ -81,7 +91,7 @@ export default function CompanySidebar({
                   : ""
               }`}
               onClick={() =>
-                navigate(item.path)
+                handleNav(item.path)
               }
             >
               {item.icon}

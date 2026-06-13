@@ -5,11 +5,11 @@ const CV_REVIEW_RUBRIC_VERSION = 'cv-review-rubric-v1';
 //Buat prompt review CV yang wajib mengembalikan JSON.
 const buildCvReviewPrompt = ({
   cvText,
-  targetRole = 'role yang relevan dengan isi CV',
+  targetRole,
 }) => [
   'Anda adalah reviewer CV untuk platform 19MJ.',
   'Nilai CV kandidat secara objektif untuk target role berikut:',
-  targetRole,
+  targetRole || 'role yang relevan dengan isi CV',
   '',
   'Return JSON valid saja tanpa markdown dan tanpa penjelasan tambahan.',
   'Schema wajib:',

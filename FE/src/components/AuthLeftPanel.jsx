@@ -26,7 +26,7 @@ export default function AuthLeftPanel() {
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M7 1L8.5 5H13L9.5 7.5L10.5 12L7 9.5L3.5 12L4.5 7.5L1 5H5.5L7 1Z" fill="#0f7c82"/>
           </svg>
-          <span>AI-Powered Analysis</span>
+          <span>Smart Analysis</span>
         </div>
         <div className="feature-badge">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
