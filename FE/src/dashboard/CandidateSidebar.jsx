@@ -37,7 +37,7 @@ export default function CandidateSidebar({
   };
 
   return (
-    <div style={styles.sidebar}>
+    <div className="candidate-sidebar">
 
       <div>
 
@@ -107,6 +107,72 @@ export default function CandidateSidebar({
         onClick={logout}
       />
 
+      <style>{`
+        .candidate-sidebar {
+          width: 260px;
+          background: linear-gradient(180deg, #d9edf8 0%, #c8e6f0 100%);
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          flex-shrink: 0;
+        }
+
+        .candidate-sidebar-menu {
+          display: flex;
+          gap: 12px;
+          padding: 14px;
+          border-radius: 12px;
+          margin-top: 10px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          color: #222;
+          background: transparent;
+          align-items: center;
+          white-space: nowrap;
+        }
+
+        .candidate-sidebar-menu.active {
+          background: #0f7c82;
+          color: white;
+        }
+
+        @media (max-width: 768px) {
+          .candidate-sidebar {
+            width: 100%;
+            padding: 10px;
+            flex-direction: row;
+            overflow-x: auto;
+            align-items: center;
+            height: 70px;
+          }
+          
+          .candidate-sidebar > div:first-child {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .candidate-sidebar img {
+            display: none; /* Hide logo on mobile sidebar to save space */
+          }
+
+          .candidate-sidebar-menu {
+            margin-top: 0;
+            padding: 8px 12px;
+          }
+
+          /* Hide logout on mobile topbar, or keep it small */
+          .candidate-sidebar > div:last-child {
+            margin-left: 10px;
+          }
+          
+          .menu-text {
+            display: none; /* Hide text on mobile, just show icons */
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -120,41 +186,12 @@ function MenuItem({
   return (
     <div
       onClick={onClick}
-      style={{
-        ...styles.menu,
-        background: active
-          ? "#0f7c82"
-          : "transparent",
-        color: active
-          ? "white"
-          : "#222",
-      }}
+      className={`candidate-sidebar-menu ${active ? "active" : ""}`}
     >
       {icon}
-      {text}
+      <span className="menu-text">{text}</span>
     </div>
   );
 }
 
-const styles = {
-  sidebar: {
-    width: 260,
-    background:
-      "linear-gradient(180deg, #d9edf8 0%, #c8e6f0 100%)",
-    padding: 20,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-
-  menu: {
-    display: "flex",
-    gap: 12,
-    padding: 14,
-    borderRadius: 12,
-    marginTop: 10,
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 500,
-  },
-};
+const styles = {};

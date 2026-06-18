@@ -422,7 +422,7 @@ function InterviewTab({ candidate, expandedTranscript, setExpandedTranscript }) 
           <h4>{iv.question}</h4>
           {iv.videoUrl ? (
             <div style={{ marginTop: 12, marginBottom: 12 }}>
-              <video controls src={`http://localhost:3000${iv.videoUrl}`} style={{ width: '100%', borderRadius: 12, background: 'black', maxHeight: 300 }} />
+              <video controls src={iv.videoUrl} style={{ width: '100%', borderRadius: 12, background: 'black', maxHeight: 300 }} />
             </div>
           ) : (
             <div className="recruit-video-placeholder"><div className="recruit-play-btn">▶</div><span className="recruit-duration">1:{i === 0 ? "45" : "20"}</span></div>
@@ -451,7 +451,7 @@ function DocumentTab({ candidate }) {
       {candidate.cvFile ? (
         <div className="recruit-cv-file-row">
           <div className="recruit-cv-file"><span className="recruit-cv-icon"><FiFileText size={24} color="#64748b" /></span><div><strong>{candidate.cvFile}</strong><span className="recruit-cv-meta">PDF Document • Uploaded {candidate.cvDate}</span></div></div>
-          <button className="recruit-download-btn" onClick={() => window.open(`http://localhost:3000${candidate.cv_url}`, '_blank')}>Download PDF</button>
+          <button className="recruit-download-btn" onClick={() => window.open(candidate.cv_url, '_blank')}>Download PDF</button>
         </div>
       ) : (
         <div className="recruit-cv-file-row" style={{ justifyContent: 'center', background: '#f8fafc', border: '1px dashed #cbd5e1' }}>
@@ -466,7 +466,7 @@ function DocumentTab({ candidate }) {
         <div className="recruit-cv-preview">
           {candidate.cv_url ? (
             <iframe 
-              src={`http://localhost:3000${candidate.cv_url}#toolbar=0`} 
+              src={`${candidate.cv_url}#toolbar=0`} 
               width="100%" 
               height="100%" 
               style={{ border: 'none', borderRadius: '8px', minHeight: '400px' }}

@@ -9,7 +9,7 @@ import CandidateHeader from "./CandidateHeader";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-const API_BASE = "http://localhost:3000/api/ai";
+const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL + '/ai' : '/api/ai';
 
 export default function CVReview() {
   const navigate = useNavigate();

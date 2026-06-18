@@ -3,7 +3,7 @@ import { FiBell, FiMic, FiZap, FiCheckCircle, FiClock, FiAlertCircle, FiArrowLef
 import CandidateSidebar from "./CandidateSidebar";
 import CandidateHeader from "./CandidateHeader";
 
-const API_BASE = "http://localhost:3000/api/ai";
+const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL + '/ai' : '/api/ai';
 
 export default function InterviewPracticePage() {
   // State Management
@@ -441,9 +441,9 @@ export default function InterviewPracticePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map((sess) => (
+                      {sessions.map((sess, index) => (
                         <tr key={sess.id} style={styles.tableRow}>
-                          <td style={styles.td}>#{sess.id}</td>
+                          <td style={styles.td}>Session {sessions.length - index}</td>
                           <td style={styles.td}>
                             {new Date(sess.created_at).toLocaleDateString("en-US", {
                               day: "numeric",
@@ -734,7 +734,9 @@ export default function InterviewPracticePage() {
 
               <div style={styles.reviewHeader}>
                 <span style={styles.reviewBadge}>EVALUATION REVIEW RESULTS</span>
-                <h1 style={{ margin: "12px 0 6px", color: "#1e293b" }}>Simulation #{selectedSession.id}</h1>
+                <h1 style={{ margin: "12px 0 6px", color: "#1e293b" }}>
+                  Simulation Session {sessions.length - sessions.findIndex(s => s.id === selectedSession.id)}
+                </h1>
                 <p style={{ color: "#64748b", margin: 0 }}>
                   Question: <span style={{ fontStyle: "italic" }}>"{selectedSession.question_text}"</span>
                 </p>

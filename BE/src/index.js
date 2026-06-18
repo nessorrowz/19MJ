@@ -41,8 +41,15 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '19MJ Backend is running' });
 });
 
-app.use((req, res) => {
-  res.status(404).json({ message: `Route ${req.method} ${req.path} tidak ditemukan.` });
+// Serve Frontend Static Files
+app.use(express.static(path.join(__dirname, '../../FE/dist')));
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    res.status(404).json({ message: `Route ${req.method} ${req.path} tidak ditemukan.` });
+  } else {
+    res.sendFile(path.join(__dirname, '../../FE/dist/index.html'));
+  }
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────

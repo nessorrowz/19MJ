@@ -95,7 +95,7 @@ export default function CreateJobPosting() {
       // but for now the jobs table only stores basic info.
 
       window.dispatchEvent(new Event("jobPostingUpdated"));
-      setForm({ ...form, id: response.data.job.id });
+      setForm({ ...form, id: response.job.id });
       showToast("Pekerjaan berhasil dibuat! Anda sekarang dapat menambahkan pertanyaan screening (opsional).", "success");
       setStep(4);
     } catch (error) {

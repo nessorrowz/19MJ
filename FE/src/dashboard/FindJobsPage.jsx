@@ -151,7 +151,7 @@ export default function FindJobsPage() {
         const formData = new FormData();
         formData.append('video', blob, 'temp.webm');
         const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:3000/api/jobs/transcribe-temp', {
+        const res = await fetch((import.meta.env.VITE_API_URL || '/api') + '/jobs/transcribe-temp', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData

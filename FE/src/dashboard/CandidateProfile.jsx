@@ -7,7 +7,8 @@ import {
   FiBriefcase,
   FiBookOpen,
   FiCheckCircle,
-  FiAlertCircle
+  FiAlertCircle,
+  FiEdit3
 } from "react-icons/fi";
 
 import CandidateSidebar from "./CandidateSidebar";
@@ -479,19 +480,19 @@ export default function CandidateProfile() {
 
 
   return (
-    <div style={styles.container}>
+    <div className="profile-container">
 
       <CandidateSidebar active="my-profile" onNavigate={handleSidebarNavigate} />
 
-      <div style={styles.main}>
+      <div className="profile-main">
 
 
         {/* HEADER */}
         <CandidateHeader title="Profile" />
 
-        <div style={styles.content}>
+        <div className="profile-content">
           {/* PAGE TOP */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
+          <div className="header-section">
             <div>
               <h1 style={{ marginBottom: 8, marginTop: 0, color: "#0f172a" }}>My Profile</h1>
               <p style={{ color: "#64748b", margin: 0 }}>Complete your profile to showcase your skills and experience to potential employers.</p>
@@ -502,30 +503,36 @@ export default function CandidateProfile() {
           </div>
 
           {/* MODERN BANNER */}
-          <div style={{ position: 'relative', marginBottom: 80, background: 'white', borderRadius: 24, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <div style={{ height: 160, background: 'linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%)' }} />
+          <div className="profile-banner-v2">
+            <div className="banner-bg-v2" />
             
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 24, padding: '0 40px', bottom: 30 }}>
-              <label style={{ width: 120, height: 120, borderRadius: '50%', border: '4px solid white', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <div className="banner-content-v2">
+              <label className="banner-photo-upload-v2">
                 {profile.photo ? (
-                  <img src={profile.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <>
+                    <img src={profile.photo} alt="" />
+                    <div className="photo-edit-overlay-v2">
+                      <FiEdit3 size={16} />
+                    </div>
+                  </>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8' }}>
+                  <div className="banner-photo-placeholder-v2">
                     <FiCamera size={28} />
+                    <span style={{ fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>Edit</span>
                   </div>
                 )}
                 <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
               </label>
               
-              <div style={{ flex: 1, paddingBottom: 5 }}>
-                <h1 style={{ margin: 0, fontSize: 26, color: '#0f172a', fontWeight: 700 }}>{profile.fullName || "Your Name"}</h1>
-                <p style={{ margin: '4px 0 0', fontSize: 15, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="banner-text-v2">
+                <h1>{profile.fullName || "Your Name"}</h1>
+                <p>
                   <FiBriefcase size={14} /> {profile.headline || "Add your professional headline"}
                 </p>
               </div>
             </div>
           </div>
-        <div style={styles.grid}>
+        <div className="profile-grid">
 
 
           {/* LEFT */}
@@ -546,7 +553,7 @@ export default function CandidateProfile() {
 
 
               {/* TOP INPUTS (Because Photo is moved to Banner) */}
-              <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
+              <div className="basic-section">
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Full Name</p>
                   <input name="fullName" value={profile.fullName || ""} onChange={handleChange} style={styles.input} placeholder="e.g. Budi Santoso" />
@@ -1287,7 +1294,7 @@ export default function CandidateProfile() {
           <div style={styles.card}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
               <h3>Documents & Certificates</h3>
-              <p style={{ color: "#0f7c82", cursor: "pointer", fontWeight: 600 }}>+ Add Document</p>
+
             </div>
             
             <p style={{ color: "#64748b", fontSize: 15, marginBottom: 20 }}>
@@ -1411,6 +1418,196 @@ export default function CandidateProfile() {
         @keyframes slideDown {
           from { transform: translate(-50%, -100%); opacity: 0; }
           to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        
+        /* RESPONSIVENESS */
+        .profile-container {
+          display: flex;
+          min-height: 100vh;
+          background: #f5f7fa;
+        }
+        
+        .profile-main {
+          flex: 1;
+          width: 100%;
+        }
+
+        .profile-header-bar {
+          height: 88px;
+          background: white;
+          border-bottom: 1px solid #eee;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 32px;
+          flex-shrink: 0;
+        }
+
+        .profile-content {
+          padding: 32px;
+          flex: 1;
+          overflow-y: auto;
+        }
+        
+        .profile-banner-v2 {
+          position: relative;
+          margin-bottom: 80px;
+          background: white;
+          border-radius: 24px;
+          border: 1px solid #e2e8f0;
+        }
+
+        .banner-bg-v2 {
+          height: 160px;
+          background: linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%);
+          border-top-left-radius: 23px;
+          border-top-right-radius: 23px;
+        }
+
+        .banner-content-v2 {
+          position: relative;
+          z-index: 10;
+          display: flex;
+          align-items: flex-end;
+          gap: 24px;
+          padding: 0 40px;
+          margin-top: -30px;
+          padding-bottom: 24px;
+        }
+
+        .banner-photo-upload-v2 {
+          position: relative;
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 4px solid white;
+          background: #f8fafc;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
+          overflow: hidden;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+          flex-shrink: 0;
+        }
+        
+        .banner-photo-upload-v2 img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: filter 0.2s;
+        }
+
+        .banner-photo-upload-v2:hover img {
+          filter: brightness(0.7);
+        }
+
+        .photo-edit-overlay-v2 {
+          position: absolute;
+          background: rgba(15, 124, 130, 0.9);
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          opacity: 0;
+          transition: opacity 0.2s;
+          pointer-events: none;
+        }
+
+        .banner-photo-upload-v2:hover .photo-edit-overlay-v2 {
+          opacity: 1;
+        }
+
+        .banner-photo-placeholder-v2 {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: #94a3b8;
+        }
+
+        .banner-text-v2 {
+          flex: 1;
+          padding-bottom: 5px;
+        }
+
+        .banner-text-v2 h1 {
+          margin: 0;
+          font-size: 26px;
+          color: #0f172a;
+          font-weight: 700;
+        }
+
+        .banner-text-v2 p {
+          margin: 4px 0 0;
+          font-size: 15px;
+          color: #475569;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        
+        .profile-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 24px;
+        }
+        
+        .basic-section {
+          display: flex;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .header-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+          .profile-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .profile-container {
+            flex-direction: column;
+          }
+          .profile-header-bar {
+            padding: 0 16px;
+          }
+          .profile-content {
+            padding: 16px;
+          }
+          .header-section {
+            flex-direction: column;
+            gap: 16px;
+          }
+          .basic-section {
+            flex-direction: column;
+          }
+          .profile-banner-v2 {
+            margin-bottom: 20px;
+          }
+          .banner-content-v2 {
+            flex-direction: column;
+            align-items: center;
+            padding: 0 16px;
+            margin-top: -60px;
+            gap: 12px;
+          }
+          .banner-text-v2 {
+            text-align: center;
+          }
+          .banner-text-v2 p {
+            justify-content: center;
+          }
         }
       `}</style>
     </div>

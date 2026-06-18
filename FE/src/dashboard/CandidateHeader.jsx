@@ -40,7 +40,7 @@ export default function CandidateHeader({ title }) {
   }, []);
 
   return (
-    <div style={styles.header}>
+    <div className="candidate-header">
       <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: "#0f172a" }}>{title}</h2>
 
       <div style={styles.headerRight}>
@@ -67,22 +67,34 @@ export default function CandidateHeader({ title }) {
           </div>
         </div>
       </div>
+      <style>{`
+        .candidate-header {
+          height: 88px;
+          background: white;
+          border-bottom: 1px solid #eee;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 32px;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+          .candidate-header {
+            padding: 0 16px;
+            flex-direction: column;
+            height: auto;
+            padding-top: 16px;
+            padding-bottom: 16px;
+            gap: 12px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
 
 const styles = {
-  header: {
-    height: 88,
-    background: "white",
-    borderBottom: "1px solid #eee",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 32px",
-    flexShrink: 0,
-    boxSizing: "border-box"
-  },
   headerRight: {
     display: "flex",
     alignItems: "center",

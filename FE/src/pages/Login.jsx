@@ -313,7 +313,7 @@ export default function Login() {
                     "8px"
                 }}
               >
-                Welcome back
+                Welcome to 19MJ
               </h1>
 
               <p

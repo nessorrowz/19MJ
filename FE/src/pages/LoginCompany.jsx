@@ -307,7 +307,7 @@ export default function LoginCompany() {
                     "8px"
                 }}
               >
-                Welcome back
+                Welcome to 19MJ
               </h1>
 
               <p

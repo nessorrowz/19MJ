@@ -3,7 +3,7 @@ import { FiBell, FiCompass, FiCheckCircle, FiBookOpen, FiClock, FiPlus, FiX, FiA
 import CandidateSidebar from "./CandidateSidebar";
 import CandidateHeader from "./CandidateHeader";
 
-const API_BASE = "http://localhost:3000/api/ai";
+const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL + '/ai' : '/api/ai';
 
 export default function CareerPlannerPage() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
