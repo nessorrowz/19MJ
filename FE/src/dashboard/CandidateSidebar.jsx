@@ -116,6 +116,9 @@ export default function CandidateSidebar({
           flex-direction: column;
           justify-content: space-between;
           flex-shrink: 0;
+          position: sticky;
+          top: 0;
+          height: 100vh;
         }
 
         .candidate-sidebar-menu {
@@ -163,13 +166,14 @@ export default function CandidateSidebar({
             padding: 8px 12px;
           }
 
-          /* Hide logout on mobile topbar, or keep it small */
+          /* Ensure logout and other items are visible */
           .candidate-sidebar > div:last-child {
-            margin-left: 10px;
+            margin-left: auto; /* Push logout to the right edge */
           }
           
           .menu-text {
-            display: none; /* Hide text on mobile, just show icons */
+            display: inline; /* Show text on mobile */
+            font-size: 13px;
           }
         }
       `}</style>

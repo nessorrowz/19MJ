@@ -1,0 +1,267 @@
+/* ============================================================
+   GLOBAL RESPONSIVE CSS — 19MJ Recruitment System
+   All rules use !important to override React inline styles.
+   ============================================================ */
+
+/* ── BASE ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { overflow-x: hidden; min-width: 0; }
+img, video { max-width: 100%; height: auto; }
+
+/* ── TEXT OVERFLOW PROTECTION ─────────────────────────────── */
+h1, h2, h3, h4, p, span, td, th, label, div {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* ── TABLET: ≤1024px ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Filter row: 2 columns */
+  .filter-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Jobs grid: 1 column */
+  .jobs-grid-candidate {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* CV card grid: 1 column */
+  .cv-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Roadmap header: stack */
+  .roadmap-header {
+    flex-direction: column !important;
+    text-align: center !important;
+  }
+}
+
+/* ── MOBILE: ≤768px ──────────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* --- ALL PAGE CONTAINERS: sidebar on top --- */
+  .page-container, .company-layout {
+    flex-direction: column !important;
+  }
+
+  /* --- MAIN CONTENT AREA --- */
+  .page-main, .company-main {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* --- CONTENT PADDING --- */
+  .page-content, .dashboard-content {
+    padding: 16px !important;
+  }
+
+  /* --- FILTER ROW: stack vertically --- */
+  .filter-row, .form-row-2 {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  /* --- JOBS GRID: single column --- */
+  .jobs-grid-candidate, .jobs-grid-company, .jobs-grid, .content-grid, .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .company-banner-content {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+
+  /* --- CV CARD GRID: single column --- */
+  .cv-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* --- ROADMAP HEADER: stack --- */
+  .roadmap-header {
+    flex-direction: column !important;
+    padding: 20px !important;
+    gap: 20px !important;
+    text-align: center !important;
+  }
+
+  /* --- CANDIDATE & COMPANY SIDEBAR --- */
+  .candidate-sidebar, .company-sidebar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+  }
+
+  .company-sidebar {
+    width: 100% !important;
+    min-width: unset !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    align-items: center !important;
+    padding: 10px 20px !important;
+    height: 70px !important;
+    background: #e0f2fe !important;
+    justify-content: space-between !important;
+  }
+
+  .company-sidebar > div:first-child {
+    display: contents !important;
+  }
+
+  .company-sidebar img {
+    display: none !important;
+  }
+
+  .company-sidebar .sidebar-menu {
+    display: contents !important;
+  }
+
+  .company-sidebar .sidebar-item {
+    margin-top: 0 !important;
+    padding: 10px 14px !important;
+    white-space: nowrap !important;
+    font-size: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: transparent !important;
+  }
+  
+  .company-sidebar .sidebar-item.active {
+    background: #0f7c82 !important;
+    color: white !important;
+    border-radius: 12px !important;
+  }
+
+  .company-sidebar .sidebar-item span {
+    display: inline !important;
+    font-size: 13px !important;
+    margin-left: 5px !important;
+  }
+
+  .company-sidebar > div:last-child {
+    margin-left: auto !important; /* Push logout to the right edge */
+  }
+
+  .company-header {
+    padding: 0 16px !important;
+    gap: 12px !important;
+  }
+
+  .company-header-title {
+    font-size: 18px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .company-header-right {
+    gap: 12px !important;
+  }
+
+  .company-header-right > div > div:nth-child(2) {
+    display: none !important; /* Hide the "Company" text under the name to save space */
+  }
+
+  /* --- PROFILE PAGE --- */
+  .profile-container {
+    flex-direction: column !important;
+  }
+
+  .profile-main {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .profile-content {
+    padding: 16px !important;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- INTERVIEW PRACTICE --- */
+  .evaluation-scoreboard {
+    flex-direction: column !important;
+    gap: 20px !important;
+    padding: 20px !important;
+    text-align: center !important;
+  }
+
+  .bullet-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- RECOMMENDATIONS PAGE --- */
+  .recommendation-header-card {
+    flex-direction: column !important;
+    gap: 16px !important;
+    text-align: center !important;
+  }
+
+  .recommendation-header-text {
+    max-width: 100% !important;
+  }
+
+  .recommendation-header-actions {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .job-select-wrapper, .job-select-wrapper select, .btn-find-matches {
+    width: 100% !important;
+  }
+
+  .results-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .results-header-row {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: flex-start !important;
+  }
+
+  .candidate-card {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* --- TABLES: horizontal scroll --- */
+  table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── SMALL MOBILE: ≤480px ────────────────────────────────── */
+@media (max-width: 480px) {
+  .page-content {
+    padding: 10px !important;
+  }
+
+  .profile-content {
+    padding: 10px !important;
+  }
+
+  /* Smaller modal padding */
+  .modal-content {
+    padding: 16px !important;
+  }
+}
