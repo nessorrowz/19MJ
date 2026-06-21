@@ -52,16 +52,10 @@ Kredensial ini digunakan untuk layanan pengiriman email sistem.
 ![Ilustrasi Halaman API Key Resend](path/to/gambar_resend.png)
 
 ### 2.5. Ngrok (Tunneling)
-Layanan ini digunakan untuk mempublikasikan port lokal (localhost) ke internet secara aman tanpa memerlukan VPS.
+Layanan ini digunakan untuk mempublikasikan port lokal (localhost) ke internet secara aman tanpa memerlukan VPS. Karena Anda sudah menginstal Node.js pada Langkah 1, kita akan menggunakan fitur bawaan `npx` agar sistem selalu mengunduh Ngrok versi terbaru secara otomatis tanpa perlu instalasi manual.
 1. Akses Ngrok.com (https://ngrok.com/) dan daftarkan akun.
-2. Pasang perangkat lunak Ngrok secara global melalui terminal bawaan Windows menggunakan perintah:
-   ```bash
-   winget install Ngrok.Ngrok
-   ```
-3. Buka dasbor Ngrok pada browser Anda dan arahkan ke menu Your Authtoken.
-4. Salin perintah otentikasi yang diberikan (misal: `ngrok config add-authtoken <TOKEN_ANDA>`) dan jalankan pada terminal baru untuk mengautentikasi perangkat lokal Anda.
-
-*(Penting: Jika terminal menampilkan pesan error bahwa perintah `ngrok` tidak dikenali, tutup terminal tersebut dan buka terminal baru agar Windows dapat memuat ulang daftar program yang baru saja diinstal).*
+2. Buka dasbor Ngrok pada browser Anda dan arahkan ke menu Your Authtoken.
+3. Salin perintah otentikasi yang diberikan, lalu jalankan pada terminal baru dengan menambahkan awalan `npx` (misal: `npx ngrok config add-authtoken <TOKEN_ANDA>`) untuk mengautentikasi perangkat lokal Anda.
 
 ![Ilustrasi Halaman Authtoken Ngrok](path/to/gambar_ngrok_authtoken.png)
 
@@ -93,9 +87,9 @@ Layanan backend beroperasi pada port 3000 dan harus dipublikasikan ke internet m
    npm install
    ```
 
-2. Buka terminal baru khusus untuk menjalankan tunneling Ngrok:
+2. Buka terminal baru khusus untuk menjalankan tunneling Ngrok menggunakan perintah `npx`:
    ```bash
-   ngrok http 3000
+   npx ngrok http 3000
    ```
    Salin Forwarding URL yang diberikan oleh Ngrok (misal: `https://backend-xyz.ngrok-free.app`).
 
@@ -169,9 +163,9 @@ Layanan Speech-to-Text dijalankan secara terpisah menggunakan FastAPI dan faster
 ## 6. Konfigurasi dan Deployment Frontend (React/Vite)
 Layanan frontend beroperasi pada port 5173 dan harus di-ekspos melalui Ngrok agar dapat diakses oleh publik.
 
-1. Buka terminal baru khusus untuk menjalankan tunneling Ngrok:
+1. Buka terminal baru khusus untuk menjalankan tunneling Ngrok menggunakan perintah `npx`:
    ```bash
-   ngrok http 5173
+   npx ngrok http 5173
    ```
    Salin Forwarding URL yang diberikan oleh Ngrok (misal: `https://frontend-xyz.ngrok-free.app`).
 
