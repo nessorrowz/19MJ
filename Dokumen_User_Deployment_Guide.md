@@ -54,9 +54,14 @@ Kredensial ini digunakan untuk layanan pengiriman email sistem.
 ### 2.5. Ngrok (Tunneling)
 Layanan ini digunakan untuk mempublikasikan port lokal (localhost) ke internet secara aman tanpa memerlukan VPS.
 1. Akses Ngrok.com (https://ngrok.com/) dan daftarkan akun.
-2. Unduh perangkat lunak Ngrok sesuai dengan sistem operasi komputer target instalasi.
-3. Ekstrak berkas tersebut, kemudian buka dasbor Ngrok pada browser dan arahkan ke menu Your Authtoken.
-4. Salin perintah otentikasi yang diberikan (misal: `ngrok config add-authtoken <TOKEN_ANDA>`) dan jalankan pada terminal untuk mengautentikasi perangkat lokal Anda.
+2. Pasang perangkat lunak Ngrok secara global melalui terminal bawaan Windows menggunakan perintah:
+   ```bash
+   winget install Ngrok.Ngrok
+   ```
+3. Buka dasbor Ngrok pada browser Anda dan arahkan ke menu Your Authtoken.
+4. Salin perintah otentikasi yang diberikan (misal: `ngrok config add-authtoken <TOKEN_ANDA>`) dan jalankan pada terminal baru untuk mengautentikasi perangkat lokal Anda.
+
+*(Penting: Jika terminal menampilkan pesan error bahwa perintah `ngrok` tidak dikenali, tutup terminal tersebut dan buka terminal baru agar Windows dapat memuat ulang daftar program yang baru saja diinstal).*
 
 ![Ilustrasi Halaman Authtoken Ngrok](path/to/gambar_ngrok_authtoken.png)
 
