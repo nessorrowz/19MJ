@@ -207,7 +207,7 @@ export default function CandidateDashboard() {
         <CandidateHeader title="Dashboard" />
 
         {/* GREETING */}
-        <div style={styles.greetingCard}>
+        <div className="dashboard-greeting" style={styles.greetingCard}>
           <div>
             <h1 style={{ margin: 0, fontSize: 28, fontWeight: 700 }}>
               {greeting}, {displayName}
@@ -244,7 +244,7 @@ export default function CandidateDashboard() {
 
 
         {/* FEATURE */}
-        <div style={styles.featureGrid}>
+        <div className="dashboard-features" style={styles.featureGrid}>
 
           <FeatureCard
             icon={
@@ -293,7 +293,7 @@ export default function CandidateDashboard() {
           Your Progress
         </h2>
 
-        <div style={styles.progressGrid}>
+        <div className="dashboard-progress" style={styles.progressGrid}>
           <SmallCard
             icon={<FiFileText />}
             title="CV Review"

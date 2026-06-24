@@ -66,9 +66,20 @@ h1, h2, h3, h4, p, span, td, th, label, div {
   }
 
   /* --- JOBS GRID: single column --- */
-  .jobs-grid-candidate, .jobs-grid-company, .jobs-grid, .content-grid, .stats-grid {
+  .jobs-grid-candidate, .jobs-grid-company, .jobs-grid, .content-grid, .stats-grid, .dashboard-features, .dashboard-progress {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
+  }
+
+  .dashboard-greeting {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 20px !important;
+    padding: 20px !important;
+  }
+
+  .dashboard-greeting > div {
+    width: 100% !important;
   }
 
   .company-banner-content {
