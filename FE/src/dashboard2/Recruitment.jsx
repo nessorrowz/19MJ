@@ -162,12 +162,14 @@ export default function Recruitment() {
   const updateStatus = async (newStatus) => {
     try {
       setCandidateStatus(newStatus);
-      await api.patch(`/jobs/applications/${selectedCandidate.id}/status`, { status: newStatus.toLowerCase() });
+      const apiStatus = newStatus === "PENDING REVIEW" ? "pending" : newStatus.toLowerCase();
+      await api.patch(`/jobs/applications/${selectedCandidate.id}/status`, { status: apiStatus });
       
       // Update local applicants list
       setApplicants(prev => prev.map(a => a.id === selectedCandidate.id ? { ...a, status: newStatus } : a));
     } catch (err) {
       console.error("Failed to update status", err);
+      alert("Failed to update status: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -373,12 +375,7 @@ export default function Recruitment() {
                     </div>
                   </div>
 
-                  <div className="recruit-contact-card">
-                    <h4>CONTACT INFORMATION</h4>
-                    <div className="recruit-contact-row"><FiMail size={16} /><div><div className="recruit-contact-label">EMAIL</div><div className="recruit-contact-value">{selectedCandidate?.email}</div></div><FiChevronRight size={16} /></div>
 
-                    <button className="recruit-dm-btn">Send Direct Messages</button>
-                  </div>
                 </div>
               </div>
             </div>
