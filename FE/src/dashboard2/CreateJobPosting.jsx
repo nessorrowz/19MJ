@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiBold, FiList, FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight, FiArrowRight, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
+import { FiMapPin, FiCheckCircle, FiBriefcase, FiClock, FiChevronLeft, FiChevronRight, FiArrowRight, FiArrowLeft, FiAlertCircle } from "react-icons/fi";
 import api from "../utils/api";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 import CompanySidebar from "./CompanySidebar";
 import CompanyHeader from "./CompanyHeader";
@@ -74,25 +76,12 @@ export default function CreateJobPosting() {
     );
   };
 
-  const insertTag = (field, tagStart, tagEnd) => {
-    const textarea = document.getElementById(field + "-textarea");
-    if (!textarea) return;
-    
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const value = form[field];
-    
-    const textBefore = value.substring(0, start);
-    const selectedText = value.substring(start, end);
-    const textAfter = value.substring(end);
-    
-    const newValue = textBefore + tagStart + selectedText + tagEnd + textAfter;
-    updateField(field, newValue);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + tagStart.length, end + tagStart.length);
-    }, 0);
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic', 'underline'],
+      [{'list': 'ordered'}, {'list': 'bullet'}],
+      ['clean']
+    ]
   };
 
   const publishJob = async () => {
@@ -221,23 +210,14 @@ export default function CreateJobPosting() {
                 <div className="field-group">
                   <label>Job Description</label>
 
-                  <div className="editor-wrapper">
-                    <div className="editor-toolbar">
-                      <button type="button" onClick={() => insertTag("description", "<b>", "</b>")}><FiBold size={16} /></button>
-                      <button type="button" onClick={() => insertTag("description", "<ol><li>", "</li></ol>")}><FiList size={16} /></button>
-                    </div>
-
-                    <textarea
-                      id="description-textarea"
-                      rows={8}
+                  <div className="editor-wrapper" style={{ border: 'none', padding: 0 }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      value={form.description} 
+                      onChange={(val) => updateField("description", val)}
+                      modules={quillModules}
                       placeholder="Describe the role, the team, and what makes this a great opportunity."
-                      value={form.description}
-                      onChange={(e) =>
-                        updateField(
-                          "description",
-                          e.target.value
-                        )
-                      }
+                      style={{ height: '200px', marginBottom: '50px' }}
                     />
                   </div>
                 </div>
@@ -247,23 +227,14 @@ export default function CreateJobPosting() {
                 <div className="field-group">
                   <label>Requirements</label>
 
-                  <div className="editor-wrapper">
-                    <div className="editor-toolbar">
-                      <button type="button" onClick={() => insertTag("requirements", "<b>", "</b>")}><FiBold size={16} /></button>
-                      <button type="button" onClick={() => insertTag("requirements", "<ol><li>", "</li></ol>")}><FiList size={16} /></button>
-                    </div>
-
-                    <textarea
-                      id="requirements-textarea"
-                      rows={6}
+                  <div className="editor-wrapper" style={{ border: 'none', padding: 0 }}>
+                    <ReactQuill 
+                      theme="snow" 
+                      value={form.requirements} 
+                      onChange={(val) => updateField("requirements", val)}
+                      modules={quillModules}
                       placeholder="List skills, qualifications, and experience required."
-                      value={form.requirements}
-                      onChange={(e) =>
-                        updateField(
-                          "requirements",
-                          e.target.value
-                        )
-                      }
+                      style={{ height: '150px', marginBottom: '50px' }}
                     />
                   </div>
                 </div>
