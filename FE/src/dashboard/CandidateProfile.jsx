@@ -1,14 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   FiBell,
   FiCamera,
   FiMapPin,
   FiX,
   FiBriefcase,
-  FiBookOpen,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiEdit3
+  FiBookOpen
 } from "react-icons/fi";
 
 import CandidateSidebar from "./CandidateSidebar";
@@ -39,67 +36,17 @@ export default function CandidateProfile() {
       education: currentUser.education || "",
       experiences: [],
       educationList: [],
-      skills: [],
-      documents: []
+      skills: []
     };
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  const [newSkill, setNewSkill] = useState("");
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  const [isDirty, setIsDirty] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState(null);
-
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isDirty]);
-
-  const handleSidebarNavigate = (path, executeNavigation) => {
-    if (isDirty) {
-      setPendingNavigation(() => executeNavigation);
-    } else {
-      executeNavigation();
-    }
-  };
-
-  const confirmNavigation = () => {
-    if (pendingNavigation) {
-      pendingNavigation();
-      setPendingNavigation(null);
-    }
-  };
-
-  const cancelNavigation = () => {
-    setPendingNavigation(null);
-  };
-
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await api.get('/auth/me');
         const user = res.user;
-        const cachedStr = localStorage.getItem(CACHE_KEY);
-        let cachedDocs = [];
-        if (cachedStr) {
-          try {
-             cachedDocs = JSON.parse(cachedStr).documents || [];
-          } catch(e){}
-        }
-
         const newProfile = {
           photo: user.photo || "",
           fullName: user.full_name || user.username || "",
@@ -109,8 +56,7 @@ export default function CandidateProfile() {
           education: user.education || "",
           experiences: user.experiences || [],
           educationList: user.education_list || [],
-          skills: user.skills || [],
-          documents: user.documents || cachedDocs
+          skills: user.skills || []
         };
         setProfile(newProfile);
         localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
@@ -135,6 +81,8 @@ export default function CandidateProfile() {
     
     return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
   };
+
+  const [newSkill, setNewSkill] = useState("");
 
   const [showExperienceForm, setShowExperienceForm] =
     useState(false);
@@ -211,7 +159,6 @@ export default function CandidateProfile() {
   // BASIC INPUT
   // =========================
   const handleChange = (e) => {
-    setIsDirty(true);
     setProfile({
       ...profile,
       [e.target.name]: e.target.value
@@ -231,7 +178,6 @@ export default function CandidateProfile() {
     const reader = new FileReader();
 
     reader.onload = () => {
-      setIsDirty(true);
       setProfile({
         ...profile,
         photo: reader.result
@@ -248,12 +194,11 @@ export default function CandidateProfile() {
   const saveProfile = async () => {
     try {
       await api.put('/auth/profile', profile);
-      setIsDirty(false);
       window.dispatchEvent(new Event('candidateProfileUpdated'));
-      showToast("Profile saved successfully!", "success");
+      alert("Profile saved successfully to the backend!");
     } catch (err) {
       console.error("Error saving profile", err);
-      showToast("Failed to save profile. Please try again.", "error");
+      alert("Failed to save profile. Please try again.");
     }
   };
 
@@ -268,7 +213,6 @@ export default function CandidateProfile() {
       newSkill.trim()
     ) {
 
-      setIsDirty(true);
       setProfile({
         ...profile,
         skills: [
@@ -284,31 +228,22 @@ export default function CandidateProfile() {
 
   const removeSkill = (index) => {
 
-    const updated = [...profile.skills];
-
-    updated.splice(index, 1);
-
-    setIsDirty(true);
     setProfile({
       ...profile,
-      skills: updated
+      skills:
+        profile.skills.filter(
+          (_, i) => i !== index
+        )
     });
 
   };
 
-  const removeDocument = (index) => {
-    const updated = [...profile.documents];
-    updated.splice(index, 1);
-    const newProfile = { ...profile, documents: updated };
-    setProfile(newProfile);
-    localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
-  };
 
   // =========================
   // EXPERIENCE
   // =========================
   const handleExperienceChange = (e) => {
-    setIsDirty(true);
+
     setExperienceForm({
       ...experienceForm,
       [e.target.name]: e.target.value
@@ -344,7 +279,6 @@ export default function CandidateProfile() {
 
     }
 
-    setIsDirty(true);
     setProfile({
       ...profile,
       experiences: updated
@@ -380,7 +314,7 @@ export default function CandidateProfile() {
 
 
   const removeExperience = (index) => {
-    setIsDirty(true);
+
     setProfile({
       ...profile,
       experiences:
@@ -395,7 +329,7 @@ export default function CandidateProfile() {
   // EDUCATION
   // =========================
   const handleEducationChange = (e) => {
-    setIsDirty(true);
+
     setEducationForm({
       ...educationForm,
       [e.target.name]: e.target.value
@@ -431,7 +365,6 @@ export default function CandidateProfile() {
 
     }
 
-    setIsDirty(true);
     setProfile({
       ...profile,
       educationList: updated
@@ -465,7 +398,7 @@ export default function CandidateProfile() {
 
 
   const removeEducation = (index) => {
-    setIsDirty(true);
+
     setProfile({
       ...profile,
 
@@ -480,19 +413,19 @@ export default function CandidateProfile() {
 
 
   return (
-    <div className="profile-container">
+    <div style={styles.container}>
 
-      <CandidateSidebar active="my-profile" onNavigate={handleSidebarNavigate} />
+      <CandidateSidebar active="my-profile" />
 
-      <div className="profile-main">
+      <div style={styles.main}>
 
 
         {/* HEADER */}
         <CandidateHeader title="Profile" />
 
-        <div className="profile-content">
+        <div style={styles.content}>
           {/* PAGE TOP */}
-          <div className="header-section">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
             <div>
               <h1 style={{ marginBottom: 8, marginTop: 0, color: "#0f172a" }}>My Profile</h1>
               <p style={{ color: "#64748b", margin: 0 }}>Complete your profile to showcase your skills and experience to potential employers.</p>
@@ -503,36 +436,30 @@ export default function CandidateProfile() {
           </div>
 
           {/* MODERN BANNER */}
-          <div className="profile-banner-v2">
-            <div className="banner-bg-v2" />
+          <div style={{ position: 'relative', marginBottom: 80, background: 'white', borderRadius: 24, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+            <div style={{ height: 160, background: 'linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%)' }} />
             
-            <div className="banner-content-v2">
-              <label className="banner-photo-upload-v2">
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-end', gap: 24, padding: '0 40px', bottom: 30 }}>
+              <label style={{ width: 120, height: 120, borderRadius: '50%', border: '4px solid white', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                 {profile.photo ? (
-                  <>
-                    <img src={profile.photo} alt="" />
-                    <div className="photo-edit-overlay-v2">
-                      <FiEdit3 size={16} />
-                    </div>
-                  </>
+                  <img src={profile.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                  <div className="banner-photo-placeholder-v2">
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#94a3b8' }}>
                     <FiCamera size={28} />
-                    <span style={{ fontSize: '12px', marginTop: '4px', fontWeight: 600 }}>Edit</span>
                   </div>
                 )}
                 <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
               </label>
               
-              <div className="banner-text-v2">
-                <h1>{profile.fullName || "Your Name"}</h1>
-                <p>
+              <div style={{ flex: 1, paddingBottom: 5 }}>
+                <h1 style={{ margin: 0, fontSize: 26, color: '#0f172a', fontWeight: 700 }}>{profile.fullName || "Your Name"}</h1>
+                <p style={{ margin: '4px 0 0', fontSize: 15, color: '#475569', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <FiBriefcase size={14} /> {profile.headline || "Add your professional headline"}
                 </p>
               </div>
             </div>
           </div>
-        <div className="profile-grid">
+        <div style={styles.grid}>
 
 
           {/* LEFT */}
@@ -553,14 +480,14 @@ export default function CandidateProfile() {
 
 
               {/* TOP INPUTS (Because Photo is moved to Banner) */}
-              <div className="basic-section">
+              <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Full Name</p>
-                  <input name="fullName" value={profile.fullName || ""} onChange={handleChange} style={styles.input} placeholder="e.g. Budi Santoso" />
+                  <input name="fullName" value={profile.fullName} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Budi Santoso" />
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontWeight: 500, marginBottom: "8px", color: "#334155" }}>Professional Headline</p>
-                  <input name="headline" value={profile.headline || ""} onChange={handleChange} style={styles.input} placeholder="e.g. Senior Software Engineer" />
+                  <input name="headline" value={profile.headline} onChange={handleChange} style={styles.profileInput} placeholder="e.g. Senior Software Engineer" />
                 </div>
               </div>
 
@@ -1294,322 +1221,25 @@ export default function CandidateProfile() {
           <div style={styles.card}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20 }}>
               <h3>Documents & Certificates</h3>
-
+              <p style={{ color: "#0f7c82", cursor: "pointer", fontWeight: 600 }}>+ Add Document</p>
             </div>
             
             <p style={{ color: "#64748b", fontSize: 15, marginBottom: 20 }}>
               Upload your resume, transcripts, or professional certifications to make your profile stand out.
             </p>
 
-            <div 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ ...styles.expCard, minHeight: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', border: '2px dashed #cbd5e1', cursor: 'pointer' }}
-            >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                style={{ display: 'none' }} 
-                accept=".pdf,.docx,.jpg,.jpeg,.png"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    const file = e.target.files[0];
-                    const docInfo = {
-                      name: file.name,
-                      size: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-                      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                      url: URL.createObjectURL(file)
-                    };
-                    const updatedDocs = [...(profile.documents || []), docInfo];
-                    const newProfile = { ...profile, documents: updatedDocs };
-                    setProfile(newProfile);
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(newProfile));
-                    // Reset input
-                    e.target.value = null;
-                  }
-                }}
-              />
+            <div style={{ ...styles.expCard, minHeight: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', border: '2px dashed #cbd5e1', cursor: 'pointer' }}>
               <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f1f5f9', display: 'flex', justifyContent: 'center', alignItems: 'center', color: '#94a3b8', marginBottom: 16 }}>
                 <FiBookOpen size={28} />
               </div>
               <h4 style={{ margin: '0 0 8px', fontSize: 18, color: '#334155' }}>Upload a file</h4>
               <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>PDF, DOCX, or Image (Max 5MB)</p>
             </div>
-
-            {/* DOCUMENT LIST */}
-            {profile.documents && profile.documents.length > 0 && (
-              <div style={{ marginTop: 20 }}>
-                <h4 style={{ fontSize: 14, color: '#64748b', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Uploaded Documents</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {profile.documents.map((doc, index) => (
-                    <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px 20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 8, background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FiBookOpen size={20} />
-                        </div>
-                        <div>
-                          <strong style={{ display: 'block', fontSize: 15, color: '#1e293b', marginBottom: 4 }}>{doc.name}</strong>
-                          <span style={{ fontSize: 13, color: '#64748b' }}>{doc.date} • {doc.size}</span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 12 }}>
-                        <button onClick={() => {
-                          if (doc.url) window.open(doc.url, '_blank');
-                          else showToast('This document is not available for preview.', 'error');
-                        }} style={{ background: 'none', border: 'none', color: '#0f7c82', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>View</button>
-                        <button onClick={() => removeDocument(index)} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Remove</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
         </div>
 
       </div>
-
-      {/* UNSAVED CHANGES MODAL */}
-      {pendingNavigation && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ background: 'white', padding: 32, borderRadius: 16, width: '100%', maxWidth: 400, boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
-                <FiAlertCircle />
-              </div>
-            </div>
-            <h3 style={{ textAlign: 'center', margin: '0 0 12px 0', color: '#0f172a', fontSize: 20 }}>Unsaved Changes</h3>
-            <p style={{ textAlign: 'center', color: '#64748b', margin: '0 0 24px 0', lineHeight: 1.5 }}>
-              You have made changes to your profile that haven't been saved. Are you sure you want to leave this page?
-            </p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button 
-                onClick={cancelNavigation}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 8, border: '1px solid #cbd5e1', background: 'white', color: '#475569', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Keep Editing
-              </button>
-              <button 
-                onClick={confirmNavigation}
-                style={{ flex: 1, padding: '12px 0', borderRadius: 8, border: 'none', background: '#ef4444', color: 'white', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Discard Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {toast.show && (
-        <div style={{
-          position: 'fixed', top: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999,
-          background: toast.type === 'error' ? '#fee2e2' : '#f0fdf4',
-          color: toast.type === 'error' ? '#991b1b' : '#166534',
-          border: `1px solid ${toast.type === 'error' ? '#f87171' : '#4ade80'}`,
-          padding: '16px 24px', borderRadius: 8, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-          display: 'flex', alignItems: 'center', gap: 12,
-          animation: 'slideDown 0.3s ease-out'
-        }}>
-          {toast.type === 'error' ? <FiAlertCircle size={20} /> : <FiCheckCircle size={20} />}
-          <span style={{ fontSize: 14, fontWeight: 600 }}>{toast.message}</span>
-        </div>
-      )}
-      <style>{`
-        @keyframes slideDown {
-          from { transform: translate(-50%, -100%); opacity: 0; }
-          to { transform: translate(-50%, 0); opacity: 1; }
-        }
-        
-        /* RESPONSIVENESS */
-        .profile-container {
-          display: flex;
-          min-height: 100vh;
-          background: #f5f7fa;
-        }
-        
-        .profile-main {
-          flex: 1;
-          width: 100%;
-        }
-
-        .profile-header-bar {
-          height: 88px;
-          background: white;
-          border-bottom: 1px solid #eee;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0 32px;
-          flex-shrink: 0;
-        }
-
-        .profile-content {
-          padding: 32px;
-          flex: 1;
-          overflow-y: auto;
-        }
-        
-        .profile-banner-v2 {
-          position: relative;
-          margin-bottom: 80px;
-          background: white;
-          border-radius: 24px;
-          border: 1px solid #e2e8f0;
-        }
-
-        .banner-bg-v2 {
-          height: 160px;
-          background: linear-gradient(135deg, #0f7c82 0%, #14b8a6 100%);
-          border-top-left-radius: 23px;
-          border-top-right-radius: 23px;
-        }
-
-        .banner-content-v2 {
-          position: relative;
-          z-index: 10;
-          display: flex;
-          align-items: flex-end;
-          gap: 24px;
-          padding: 0 40px;
-          margin-top: -30px;
-          padding-bottom: 24px;
-        }
-
-        .banner-photo-upload-v2 {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          border-radius: 50%;
-          border: 4px solid white;
-          background: #f8fafc;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          overflow: hidden;
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-          flex-shrink: 0;
-        }
-        
-        .banner-photo-upload-v2 img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: filter 0.2s;
-        }
-
-        .banner-photo-upload-v2:hover img {
-          filter: brightness(0.7);
-        }
-
-        .photo-edit-overlay-v2 {
-          position: absolute;
-          background: rgba(15, 124, 130, 0.9);
-          color: white;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          opacity: 0;
-          transition: opacity 0.2s;
-          pointer-events: none;
-        }
-
-        .banner-photo-upload-v2:hover .photo-edit-overlay-v2 {
-          opacity: 1;
-        }
-
-        .banner-photo-placeholder-v2 {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          color: #94a3b8;
-        }
-
-        .banner-text-v2 {
-          flex: 1;
-          padding-bottom: 5px;
-        }
-
-        .banner-text-v2 h1 {
-          margin: 0;
-          font-size: 26px;
-          color: #0f172a;
-          font-weight: 700;
-        }
-
-        .banner-text-v2 p {
-          margin: 4px 0 0;
-          font-size: 15px;
-          color: #475569;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-
-        
-        .profile-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 24px;
-        }
-        
-        .basic-section {
-          display: flex;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-
-        .header-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 24px;
-        }
-        
-        @media (max-width: 1024px) {
-          .profile-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        
-        @media (max-width: 768px) {
-          .profile-container {
-            flex-direction: column;
-          }
-          .profile-header-bar {
-            padding: 0 16px;
-          }
-          .profile-content {
-            padding: 16px;
-          }
-          .header-section {
-            flex-direction: column;
-            gap: 16px;
-          }
-          .basic-section {
-            flex-direction: column;
-          }
-          .profile-banner-v2 {
-            margin-bottom: 20px;
-          }
-          .banner-content-v2 {
-            flex-direction: column;
-            align-items: center;
-            padding: 0 16px;
-            margin-top: -60px;
-            gap: 12px;
-          }
-          .banner-text-v2 {
-            text-align: center;
-          }
-          .banner-text-v2 p {
-            justify-content: center;
-          }
-        }
-      `}</style>
     </div>
   );
 }
