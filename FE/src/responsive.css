@@ -253,6 +253,18 @@ h1, h2, h3, h4, p, span, td, th, label, div {
     grid-template-columns: 1fr !important;
   }
 
+  /* --- RECRUITMENT TABLE OVERFLOW --- */
+  .recruit-table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+  }
+  
+  .recruit-table-head, .recruit-table-row {
+    min-width: 600px !important;
+  }
+
   /* --- TABLES: horizontal scroll --- */
   table {
     display: block !important;
