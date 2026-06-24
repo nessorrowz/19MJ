@@ -74,6 +74,27 @@ export default function CreateJobPosting() {
     );
   };
 
+  const insertTag = (field, tagStart, tagEnd) => {
+    const textarea = document.getElementById(field + "-textarea");
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = form[field];
+    
+    const textBefore = value.substring(0, start);
+    const selectedText = value.substring(start, end);
+    const textAfter = value.substring(end);
+    
+    const newValue = textBefore + tagStart + selectedText + tagEnd + textAfter;
+    updateField(field, newValue);
+    
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + tagStart.length, end + tagStart.length);
+    }, 0);
+  };
+
   const publishJob = async () => {
     try {
       const payload = {
@@ -202,11 +223,12 @@ export default function CreateJobPosting() {
 
                   <div className="editor-wrapper">
                     <div className="editor-toolbar">
-                      <button type="button"><FiBold size={16} /></button>
-                      <button type="button"><FiList size={16} /></button>
+                      <button type="button" onClick={() => insertTag("description", "<b>", "</b>")}><FiBold size={16} /></button>
+                      <button type="button" onClick={() => insertTag("description", "<ol><li>", "</li></ol>")}><FiList size={16} /></button>
                     </div>
 
                     <textarea
+                      id="description-textarea"
                       rows={8}
                       placeholder="Describe the role, the team, and what makes this a great opportunity."
                       value={form.description}
@@ -227,11 +249,12 @@ export default function CreateJobPosting() {
 
                   <div className="editor-wrapper">
                     <div className="editor-toolbar">
-                      <button type="button"><FiBold size={16} /></button>
-                      <button type="button"><FiList size={16} /></button>
+                      <button type="button" onClick={() => insertTag("requirements", "<b>", "</b>")}><FiBold size={16} /></button>
+                      <button type="button" onClick={() => insertTag("requirements", "<ol><li>", "</li></ol>")}><FiList size={16} /></button>
                     </div>
 
                     <textarea
+                      id="requirements-textarea"
                       rows={6}
                       placeholder="List skills, qualifications, and experience required."
                       value={form.requirements}
