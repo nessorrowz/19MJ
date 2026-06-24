@@ -513,9 +513,11 @@ export default function CreateJobPosting() {
                 {/* About the Role */}
                 <div className="review-section">
                   <h4 className="review-section-title">About the Role</h4>
-                  <p className="review-section-text">
-                    {form.description || "No description provided."}
-                  </p>
+                  {form.description ? (
+                    <div className="review-section-text ql-editor" dangerouslySetInnerHTML={{ __html: form.description }} style={{ padding: 0 }} />
+                  ) : (
+                    <p className="review-section-text">No description provided.</p>
+                  )}
                   {form.description && form.description.length > 200 && (
                     <button type="button" className="read-more-btn">Read more</button>
                   )}
