@@ -48,10 +48,10 @@ export default function MyApplicationsPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="page-container" style={styles.container}>
       <CandidateSidebar active="applications" />
 
-      <div style={styles.main}>
+      <div className="page-main" style={styles.main}>
         <CandidateHeader title="My Applications" />
 
         <div style={styles.content}>

@@ -413,11 +413,10 @@ export default function CandidateProfile() {
 
 
   return (
-    <div style={styles.container}>
-
+    <div className="page-container" style={styles.container}>
       <CandidateSidebar active="my-profile" />
 
-      <div style={styles.main}>
+      <div className="page-main" style={styles.main}>
 
 
         {/* HEADER */}

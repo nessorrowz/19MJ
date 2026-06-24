@@ -358,10 +358,10 @@ export default function InterviewPracticePage() {
     : 0;
 
   return (
-    <div style={styles.container}>
+    <div className="page-container" style={styles.container}>
       <CandidateSidebar active="practice" />
 
-      <div style={styles.main}>
+      <div className="page-main" style={styles.main}>
         {/* HEADER */}
         <CandidateHeader title="Interview Practice" />
 

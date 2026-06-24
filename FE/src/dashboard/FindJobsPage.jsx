@@ -236,10 +236,10 @@ export default function FindJobsPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="page-container" style={styles.container}>
       <CandidateSidebar active="jobs" />
 
-      <div style={styles.main}>
+      <div className="page-main" style={styles.main}>
         <CandidateHeader title="Jobs" />
 
         <div style={styles.content}>

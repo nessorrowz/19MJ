@@ -196,11 +196,11 @@ export default function CandidateDashboard() {
   else if (currentHour < 18) greeting = "Good afternoon";
 
   return (
-    <div style={styles.container}>
+    <div className="page-container" style={styles.container}>
 
       <CandidateSidebar active="dashboard" />
 
-      <div style={styles.main}>
+      <div className="page-main" style={styles.main}>
 
 
         {/* HEADER */}
