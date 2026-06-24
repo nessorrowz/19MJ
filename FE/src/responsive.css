@@ -98,7 +98,7 @@ h1, h2, h3, h4, p, span, td, th, label, div {
     z-index: 100 !important;
   }
 
-  .company-sidebar {
+  .company-sidebar, .candidate-sidebar {
     width: 100% !important;
     min-width: unset !important;
     flex-direction: row !important;
@@ -110,19 +110,19 @@ h1, h2, h3, h4, p, span, td, th, label, div {
     justify-content: space-between !important;
   }
 
-  .company-sidebar > div:first-child {
+  .company-sidebar > div:first-child, .candidate-sidebar > div:first-child {
     display: contents !important;
   }
 
-  .company-sidebar img {
+  .company-sidebar img, .candidate-sidebar img {
     display: none !important;
   }
 
-  .company-sidebar .sidebar-menu {
+  .company-sidebar .sidebar-menu, .candidate-sidebar .sidebar-menu {
     display: contents !important;
   }
 
-  .company-sidebar .sidebar-item {
+  .company-sidebar .sidebar-item, .candidate-sidebar .candidate-sidebar-menu {
     margin-top: 0 !important;
     padding: 10px 14px !important;
     white-space: nowrap !important;
@@ -133,19 +133,19 @@ h1, h2, h3, h4, p, span, td, th, label, div {
     background: transparent !important;
   }
   
-  .company-sidebar .sidebar-item.active {
+  .company-sidebar .sidebar-item.active, .candidate-sidebar .candidate-sidebar-menu.active {
     background: #0f7c82 !important;
     color: white !important;
     border-radius: 12px !important;
   }
 
-  .company-sidebar .sidebar-item span {
+  .company-sidebar .sidebar-item span, .candidate-sidebar .candidate-sidebar-menu span {
     display: inline !important;
     font-size: 13px !important;
     margin-left: 5px !important;
   }
 
-  .company-sidebar > div:last-child {
+  .company-sidebar > div:last-child, .candidate-sidebar > div:last-child {
     margin-left: auto !important; /* Push logout to the right edge */
   }
 
