@@ -428,16 +428,30 @@ export default function JobPostings() {
 
                 <div className="detail-section" style={{ marginBottom: 32 }}>
                   <h3 style={{ fontSize: 18, marginBottom: 12, color: '#1e293b' }}>Job Description</h3>
-                  <div style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {selectedJob.description || 'No description provided for this job posting.'}
-                  </div>
+                  {selectedJob.description ? (
+                    <div 
+                      style={{ color: '#475569', lineHeight: 1.6 }} 
+                      dangerouslySetInnerHTML={{ __html: selectedJob.description }} 
+                    />
+                  ) : (
+                    <div style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      No description provided for this job posting.
+                    </div>
+                  )}
                 </div>
 
                 <div className="detail-section" style={{ marginBottom: 32 }}>
                   <h3 style={{ fontSize: 18, marginBottom: 12, color: '#1e293b' }}>Requirements</h3>
-                  <div style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                    {selectedJob.requirements || 'No specific requirements listed.'}
-                  </div>
+                  {selectedJob.requirements ? (
+                    <div 
+                      style={{ color: '#475569', lineHeight: 1.6 }} 
+                      dangerouslySetInnerHTML={{ __html: selectedJob.requirements }} 
+                    />
+                  ) : (
+                    <div style={{ color: '#475569', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                      No specific requirements listed.
+                    </div>
+                  )}
                 </div>
 
                 {selectedJob.skills && selectedJob.skills.length > 0 && (
