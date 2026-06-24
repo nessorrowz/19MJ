@@ -56,6 +56,20 @@ const api = {
     if (!res.ok) throw new Error(data.message || 'Terjadi kesalahan');
     return data;
   },
+  patch: async (path, body) => {
+    const token = getToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Terjadi kesalahan');
+    return data;
+  },
 };
 
 export default api;
